@@ -41,25 +41,46 @@ export default function ChatWindow() {
     const [messages, setMessages] = useState<Message[]>([])
     const [input, setInput] = useState('')
     const [loading, setLoading] = useState(false)
+    const [conversationId, setConversationId] = useState<string | null>(null)
     const bottomRef = useRef<HTMLDivElement | null>(null)
     const supabase = createClient()
 
-    // 메시지 불러오기
+    // 대화방 생성 또는 불러오기
     useEffect(() => {
-        const fetchMessages = async () => {
+        const initConversation = async () => {
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) return
 
-            const { data } = await supabase
-                .from('messages')
+            // 가장 최근 대화방 불러오기
+            const { data: existing } = await supabase
+                .from('conversations')
                 .select('*')
                 .eq('user_id', user.id)
-                .order('created_at', { ascending: true })
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single()
 
-            if (data) setMessages(data)
+            if (existing) {
+                setConversationId(existing.id)
+                // 해당 대화방 메시지 불러오기
+                const { data: msgs } = await supabase
+                    .from('messages')
+                    .select('*')
+                    .eq('conversation_id', existing.id)
+                    .order('created_at', { ascending: true })
+                if (msgs) setMessages(msgs)
+            } else {
+                // 새 대화방 생성
+                const { data: newConv } = await supabase
+                    .from('conversations')
+                    .insert({ user_id: user.id, title: '새 대화' })
+                    .select()
+                    .single()
+                if (newConv) setConversationId(newConv.id)
+            }
         }
 
-        fetchMessages()
+        initConversation()
     }, [])
 
     useEffect(() => {
@@ -67,7 +88,7 @@ export default function ChatWindow() {
     }, [messages])
 
     const handleSend = async () => {
-        if (!input.trim() || loading) return
+        if (!input.trim() || loading || !conversationId) return
 
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
@@ -79,7 +100,7 @@ export default function ChatWindow() {
         // 사용자 메시지 저장
         const { data: userMsg } = await supabase
             .from('messages')
-            .insert({ user_id: user.id, role: 'user', content })
+            .insert({ conversation_id: conversationId, user_id: user.id, role: 'user', content })
             .select()
             .single()
 
@@ -91,7 +112,7 @@ export default function ChatWindow() {
 
             const { data: aiMsg } = await supabase
                 .from('messages')
-                .insert({ user_id: user.id, role: 'assistant', content: aiContent })
+                .insert({ conversation_id: conversationId, user_id: user.id, role: 'assistant', content: aiContent })
                 .select()
                 .single()
 
