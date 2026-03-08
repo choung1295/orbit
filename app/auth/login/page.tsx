@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Orbit, Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -22,7 +22,7 @@ export default function LoginPage() {
             const supabase = createClient()
             const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
             if (authError) throw authError
-            router.push('/app/orbit')
+            router.push('/orbit')
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : '로그인 중 오류가 발생했습니다.')
         } finally {
