@@ -1,18 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Plus, MessageSquare, Search, Orbit, Settings, LogOut, ChevronDown } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
-const DUMMY_CHATS = [
-    { id: '1', title: 'Next.js 서버 컴포넌트', updatedAt: '2분 전' },
-    { id: '2', title: 'TypeScript 타입 추론 질문', updatedAt: '1시간 전' },
-    { id: '3', title: 'Supabase RLS 설정 방법', updatedAt: '어제' },
-    { id: '4', title: 'React Query vs SWR 비교', updatedAt: '어제' },
-    { id: '5', title: 'Tailwind CSS 최적화', updatedAt: '3일 전' },
-]
+interface Conversation {
+    id: string
+    title: string
+    created_at: string
+}
 
 interface ChatSidebarProps {
     activeChatId?: string
@@ -20,16 +18,34 @@ interface ChatSidebarProps {
     onNewChat?: () => void
 }
 
-export default function ChatSidebar({ activeChatId = '1', onSelectChat, onNewChat }: ChatSidebarProps) {
+export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: ChatSidebarProps) {
     const [search, setSearch] = useState('')
+    const [conversations, setConversations] = useState<Conversation[]>([])
     const router = useRouter()
+    const supabase = createClient()
 
-    const filtered = DUMMY_CHATS.filter((c) =>
+    useEffect(() => {
+        const fetchConversations = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) return
+
+            const { data } = await supabase
+                .from('conversations')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+
+            if (data) setConversations(data)
+        }
+
+        fetchConversations()
+    }, [activeChatId])
+
+    const filtered = conversations.filter((c) =>
         c.title.toLowerCase().includes(search.toLowerCase())
     )
 
     const handleLogout = async () => {
-        const supabase = createClient()
         await supabase.auth.signOut()
         router.push('/auth/login')
     }
@@ -73,22 +89,28 @@ export default function ChatSidebar({ activeChatId = '1', onSelectChat, onNewCha
             {/* 대화 목록 */}
             <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-1">
                 <p className="px-3 py-1 text-xs font-medium text-[#606070] uppercase tracking-wider">RECENT</p>
-                {filtered.map((chat) => (
-                    <button
-                        key={chat.id}
-                        onClick={() => onSelectChat?.(chat.id)}
-                        className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${chat.id === activeChatId
-                                ? 'bg-indigo-600/15 border border-indigo-500/20 text-[#f0f0f5]'
-                                : 'text-[#a0a0b0] hover:bg-[#1a1a1f] hover:text-[#f0f0f5]'
-                            }`}
-                    >
-                        <MessageSquare className="w-4 h-4 mt-0.5 shrink-0 opacity-60" />
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm truncate">{chat.title}</p>
-                            <p className="text-xs text-[#606070] mt-0.5">{chat.updatedAt}</p>
-                        </div>
-                    </button>
-                ))}
+                {filtered.length === 0 ? (
+                    <p className="px-3 py-2 text-xs text-[#606070]">대화가 없습니다.</p>
+                ) : (
+                    filtered.map((chat) => (
+                        <button
+                            key={chat.id}
+                            onClick={() => onSelectChat?.(chat.id)}
+                            className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${chat.id === activeChatId
+                                    ? 'bg-indigo-600/15 border border-indigo-500/20 text-[#f0f0f5]'
+                                    : 'text-[#a0a0b0] hover:bg-[#1a1a1f] hover:text-[#f0f0f5]'
+                                }`}
+                        >
+                            <MessageSquare className="w-4 h-4 mt-0.5 shrink-0 opacity-60" />
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm truncate">{chat.title}</p>
+                                <p className="text-xs text-[#606070] mt-0.5">
+                                    {new Date(chat.created_at).toLocaleDateString('ko-KR')}
+                                </p>
+                            </div>
+                        </button>
+                    ))
+                )}
             </div>
 
             {/* 하단 유저 메뉴 */}

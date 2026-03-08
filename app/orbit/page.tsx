@@ -6,29 +6,24 @@ import ChatWindow from '@/components/chat/ChatWindow'
 import { PanelLeft } from 'lucide-react'
 
 export default function OrbitAppPage() {
-    const [activeChatId, setActiveChatId] = useState('1')
+    const [activeChatId, setActiveChatId] = useState<string | null>(null)
     const [sidebarOpen, setSidebarOpen] = useState(true)
 
     const handleNewChat = () => {
-        setActiveChatId(`new-${Date.now()}`)
+        setActiveChatId(null)
     }
 
     return (
         <div className="flex h-screen bg-[#0f0f11] overflow-hidden">
-            {/* 사이드바 */}
-            <div
-                className={`shrink-0 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-0 overflow-hidden'}`}
-            >
+            <div className={`shrink-0 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-0 overflow-hidden'}`}>
                 <ChatSidebar
-                    activeChatId={activeChatId}
+                    activeChatId={activeChatId ?? ''}
                     onSelectChat={setActiveChatId}
                     onNewChat={handleNewChat}
                 />
             </div>
 
-            {/* 메인 채팅 영역 */}
             <div className="flex-1 flex flex-col min-w-0">
-                {/* 상단 툴바 */}
                 <div className="flex items-center gap-3 px-6 h-16 border-b border-[#2a2a35] shrink-0">
                     <button
                         onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -38,7 +33,7 @@ export default function OrbitAppPage() {
                         <PanelLeft className="w-5 h-5" />
                     </button>
                     <h2 className="text-sm font-medium text-[#a0a0b0] truncate">
-                        Next.js 서버 컴포넌트
+                        Orbit AI
                     </h2>
                     <div className="ml-auto flex items-center gap-2">
                         <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-600/15 text-indigo-300 border border-indigo-500/20">
@@ -47,9 +42,8 @@ export default function OrbitAppPage() {
                     </div>
                 </div>
 
-                {/* 채팅 윈도우 */}
                 <div className="flex-1 min-h-0 px-4 py-4">
-                    <ChatWindow />
+                    <ChatWindow conversationId={activeChatId} onConversationCreated={setActiveChatId} />
                 </div>
             </div>
         </div>
