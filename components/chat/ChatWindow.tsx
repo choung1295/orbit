@@ -2,34 +2,14 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Send, Bot, User } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 interface Message {
     id: string
     role: 'user' | 'assistant'
     content: string
-    createdAt: Date
+    created_at: string
 }
-
-const DUMMY_MESSAGES: Message[] = [
-    {
-        id: '1',
-        role: 'assistant',
-        content: '안녕하세요! Orbit AI입니다. 무엇을 도와드릴까요?',
-        createdAt: new Date(),
-    },
-    {
-        id: '2',
-        role: 'user',
-        content: 'Next.js에서 서버 컴포넌트와 클라이언트 컴포넌트의 차이를 설명해줘.',
-        createdAt: new Date(),
-    },
-    {
-        id: '3',
-        role: 'assistant',
-        content: 'Next.js App Router에서는 두 가지 렌더링 방식이 있습니다:\n\n**서버 컴포넌트**\n- 기본값으로 서버에서 렌더링됩니다.\n- 데이터베이스, 파일 시스템 등에 직접 접근 가능\n\n**클라이언트 컴포넌트**\n- `"use client"` 지시어가 필요합니다.\n- useState, useEffect 등 훅 사용 가능',
-        createdAt: new Date(),
-    },
-]
 
 function MessageBubble({ message }: { message: Message }) {
     const isUser = message.role === 'user'
@@ -58,10 +38,29 @@ function MessageBubble({ message }: { message: Message }) {
 }
 
 export default function ChatWindow() {
-    const [messages, setMessages] = useState<Message[]>(DUMMY_MESSAGES)
+    const [messages, setMessages] = useState<Message[]>([])
     const [input, setInput] = useState('')
     const [loading, setLoading] = useState(false)
     const bottomRef = useRef<HTMLDivElement | null>(null)
+    const supabase = createClient()
+
+    // 메시지 불러오기
+    useEffect(() => {
+        const fetchMessages = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) return
+
+            const { data } = await supabase
+                .from('messages')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: true })
+
+            if (data) setMessages(data)
+        }
+
+        fetchMessages()
+    }, [])
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -70,24 +69,33 @@ export default function ChatWindow() {
     const handleSend = async () => {
         if (!input.trim() || loading) return
 
-        const userMsg: Message = {
-            id: Date.now().toString(),
-            role: 'user',
-            content: input.trim(),
-            createdAt: new Date(),
-        }
-        setMessages((prev) => [...prev, userMsg])
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        const content = input.trim()
         setInput('')
         setLoading(true)
 
-        setTimeout(() => {
-            const assistantMsg: Message = {
-                id: (Date.now() + 1).toString(),
-                role: 'assistant',
-                content: '현재 AI API가 연결되지 않았습니다. Supabase와 AI API를 연결하면 실제 응답을 받을 수 있어요.',
-                createdAt: new Date(),
-            }
-            setMessages((prev) => [...prev, assistantMsg])
+        // 사용자 메시지 저장
+        const { data: userMsg } = await supabase
+            .from('messages')
+            .insert({ user_id: user.id, role: 'user', content })
+            .select()
+            .single()
+
+        if (userMsg) setMessages((prev) => [...prev, userMsg])
+
+        // AI 응답 (mock)
+        setTimeout(async () => {
+            const aiContent = '현재 AI API가 연결되지 않았습니다. Supabase와 AI API를 연결하면 실제 응답을 받을 수 있어요.'
+
+            const { data: aiMsg } = await supabase
+                .from('messages')
+                .insert({ user_id: user.id, role: 'assistant', content: aiContent })
+                .select()
+                .single()
+
+            if (aiMsg) setMessages((prev) => [...prev, aiMsg])
             setLoading(false)
         }, 1000)
     }
