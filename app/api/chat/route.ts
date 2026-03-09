@@ -1,7 +1,5 @@
 export const dynamic = "force-dynamic"
 
-import { NextResponse } from "next/server"
-
 export async function POST(req: Request) {
     try {
         const { default: OpenAI } = await import("openai")
@@ -13,14 +11,15 @@ export async function POST(req: Request) {
         const message = body?.message
 
         if (!message || typeof message !== "string") {
-            return NextResponse.json(
-                { error: "message가 없습니다." },
-                { status: 400 }
+            return new Response(
+                JSON.stringify({ error: "message가 없습니다." }),
+                { status: 400, headers: { "Content-Type": "application/json" } }
             )
         }
 
-        const response = await client.chat.completions.create({
+        const stream = await client.chat.completions.create({
             model: "gpt-4.1-mini",
+            stream: true,
             messages: [
                 {
                     role: "system",
@@ -36,14 +35,40 @@ export async function POST(req: Request) {
             ],
         })
 
-        return NextResponse.json({
-            answer: response.choices[0]?.message?.content || "응답이 비어 있습니다.",
+        const encoder = new TextEncoder()
+
+        const readable = new ReadableStream({
+            async start(controller) {
+                try {
+                    for await (const chunk of stream) {
+                        const text = chunk.choices[0]?.delta?.content || ""
+                        if (text) {
+                            controller.enqueue(encoder.encode(text))
+                        }
+                    }
+                } catch (err) {
+                    // Client disconnected (AbortError) — silently stop
+                    if (!(err instanceof Error && err.name === "AbortError")) {
+                        console.error("Stream error:", err)
+                    }
+                } finally {
+                    controller.close()
+                }
+            },
+        })
+
+        return new Response(readable, {
+            headers: {
+                "Content-Type": "text/plain; charset=utf-8",
+                "Cache-Control": "no-cache",
+                Connection: "keep-alive",
+            },
         })
     } catch (error) {
         console.error("OpenAI API error:", error)
-        return NextResponse.json(
-            { error: "AI 응답 중 오류가 발생했습니다." },
-            { status: 500 }
+        return new Response(
+            JSON.stringify({ error: "AI 응답 중 오류가 발생했습니다." }),
+            { status: 500, headers: { "Content-Type": "application/json" } }
         )
     }
 }
