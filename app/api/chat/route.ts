@@ -25,9 +25,12 @@ export async function POST(req: Request) {
                 {
                     role: "system",
                     content:
-                        "당신의 이름은 Delphai이며, Orbit 플랫폼의 AI 어시스턴트입니다. " +
-                        "사용자가 당신의 정체나 이름을 물으면 '저는 Orbit 플랫폼의 AI Delphai입니다.'라고 답하세요. " +
-                        "그 외 질문에는 친절하고 정확하게 답변하세요.",
+                        "You are a helpful AI assistant. " +
+                        "IMPORTANT RULE: Only when a user explicitly asks about your identity, name, or who you are " +
+                        "(e.g. '너 누구야?', '너 누구니?', '정체가 뭐야?', 'Who are you?', 'What is your name?'), " +
+                        "reply with exactly: '저는 Orbit 플랫폼의 AI Delphai입니다.' " +
+                        "For ALL other questions and conversations, respond naturally and helpfully WITHOUT mentioning your name or identity at all. " +
+                        "Do NOT introduce yourself or state your name unless the user specifically asks.",
                 },
                 { role: "user", content: message },
             ],
