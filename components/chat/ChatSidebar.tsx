@@ -39,7 +39,7 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
         }
 
         fetchConversations()
-    }, [activeChatId])
+    }, [activeChatId, supabase])
 
     const filtered = conversations.filter((c) =>
         c.title.toLowerCase().includes(search.toLowerCase())
@@ -97,8 +97,8 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                             key={chat.id}
                             onClick={() => onSelectChat?.(chat.id)}
                             className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${chat.id === activeChatId
-                                    ? 'bg-indigo-600/15 border border-indigo-500/20 text-[#f0f0f5]'
-                                    : 'text-[#a0a0b0] hover:bg-[#1a1a1f] hover:text-[#f0f0f5]'
+                                ? 'bg-indigo-600/15 border border-indigo-500/20 text-[#f0f0f5]'
+                                : 'text-[#a0a0b0] hover:bg-[#1a1a1f] hover:text-[#f0f0f5]'
                                 }`}
                         >
                             <MessageSquare className="w-4 h-4 mt-0.5 shrink-0 opacity-60" />
