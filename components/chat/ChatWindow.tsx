@@ -482,7 +482,7 @@ export default function ChatWindow({
                             <div className="w-8 h-8 rounded-full bg-[#232a35] flex items-center justify-center shrink-0 mt-1">
                                 <Bot className="w-4 h-4 text-indigo-400" />
                             </div>
-                            <div className="max-w-[75%] px-4 py-3 rounded-2xl bg-[#1a1a1f] border border-[#2a2a35] text-sm leading-relaxed whitespace-pre-wrap break-words text-[#c0c0c8]">
+                            <div className="max-w-[75%] px-4 py-3 rounded-2xl bg-[#202028] border border-[#3a3a4a] text-sm leading-relaxed whitespace-pre-wrap break-words text-[#c0c0c8]">
                                 {streamingText}
                             </div>
                         </div>

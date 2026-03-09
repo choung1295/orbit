@@ -37,7 +37,6 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
 
             if (data) setConversations(data)
         }
-
         fetchConversations()
     }, [activeChatId, supabase])
 
@@ -59,13 +58,15 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                         <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center">
                             <Orbit className="w-4 h-4 text-white" />
                         </div>
-                        <span className="font-bold text-[#f0f0f5] group-hover:text-indigo-300 transition-colors">Orbit</span>
+                        <span className="font-bold text-[#f0f0f5] group-hover:text-indigo-300 transition-colors truncate">
+                            Orbit
+                        </span>
                     </Link>
                     <ChevronDown className="w-4 h-4 text-[#606070] ml-auto" />
                 </div>
                 <button
                     onClick={onNewChat}
-                    className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 border border-indigo-500/20 text-indigo-300 transition-all text-sm font-medium"
+                    className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 transition-colors"
                 >
                     <Plus className="w-4 h-4" />
                     New chat
@@ -86,42 +87,52 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                 </div>
             </div>
 
-            {/* 대화 목록 */}
-            <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-1">
-                <p className="px-3 py-1 text-xs font-medium text-[#606070] uppercase tracking-wider">RECENT</p>
+            {/* 대화 목록 — 점으로 표시 */}
+            <div className="flex-1 overflow-y-auto px-4 py-1">
+                <p className="px-1 py-1 text-xs font-medium text-[#606070] uppercase tracking-widest mb-1">
+                    RECENT
+                </p>
                 {filtered.length === 0 ? (
-                    <p className="px-3 py-2 text-xs text-[#606070]">대화가 없습니다.</p>
+                    <p className="px-1 text-xs text-[#606070]">대화가 없습니다.</p>
                 ) : (
-                    filtered.map((chat) => (
-                        <button
-                            key={chat.id}
-                            onClick={() => onSelectChat?.(chat.id)}
-                            className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${chat.id === activeChatId
-                                ? 'bg-indigo-600/15 border border-indigo-500/20 text-[#f0f0f5]'
-                                : 'text-[#a0a0b0] hover:bg-[#1a1a1f] hover:text-[#f0f0f5]'
-                                }`}
-                        >
-                            <MessageSquare className="w-4 h-4 mt-0.5 shrink-0 opacity-60" />
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm truncate">{chat.title}</p>
-                                <p className="text-xs text-[#606070] mt-0.5">
-                                    {new Date(chat.created_at).toLocaleDateString('ko-KR')}
-                                </p>
-                            </div>
-                        </button>
-                    ))
+                    filtered.map((chat) => {
+                        const isActive = activeChatId === chat.id
+                        return (
+                            <button
+                                key={chat.id}
+                                onClick={() => onSelectChat?.(chat.id)}
+                                className="w-full flex items-center px-2 py-0.5 rounded hover:bg-[#1a1a1f] transition-colors group"
+                                title={chat.title}
+                            >
+                                <span
+                                    className={`leading-none transition-colors ${isActive
+                                            ? 'text-indigo-400'
+                                            : 'text-[#404050] group-hover:text-[#8080a0]'
+                                        }`}
+                                    style={{ fontSize: '10px' }}
+                                >
+                                    {isActive ? '●' : '•'}
+                                </span>
+                            </button>
+                        )
+                    })
                 )}
             </div>
 
-            {/* 하단 유저 메뉴 */}
-            <div className="p-4 border-t border-[#2a2a35] space-y-1">
-                <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[#a0a0b0] hover:bg-[#1a1a1f] hover:text-[#f0f0f5] transition-all text-sm">
+            {/* 하단 메뉴 */}
+            <div className="p-3 border-t border-[#2a2a35] space-y-0.5">
+                {/* 제안하기 버튼 추가 */}
+                <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[#a0a0b0] hover:bg-[#1a1a1f] hover:text-[#f0f0f5] transition-colors">
+                    <MessageSquare className="w-4 h-4 shrink-0" />
+                    제안하기
+                </button>
+                <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[#a0a0b0] hover:bg-[#1a1a1f] hover:text-[#f0f0f5] transition-colors">
                     <Settings className="w-4 h-4" />
                     Settings
                 </button>
                 <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[#a0a0b0] hover:bg-[#1a1a1f] hover:text-[#f0f0f5] transition-all text-sm"
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[#a0a0b0] hover:bg-[#1a1a1f] hover:text-[#f0f0f5] transition-colors"
                 >
                     <LogOut className="w-4 h-4" />
                     Log out
