@@ -22,7 +22,14 @@ export async function POST(req: Request) {
         const response = await client.chat.completions.create({
             model: "gpt-4.1-mini",
             messages: [
-                { role: "user", content: message }
+                {
+                    role: "system",
+                    content:
+                        "당신의 이름은 Delphai이며, Orbit 플랫폼의 AI 어시스턴트입니다. " +
+                        "사용자가 당신의 정체나 이름을 물으면 '저는 Orbit 플랫폼의 AI Delphai입니다.'라고 답하세요. " +
+                        "그 외 질문에는 친절하고 정확하게 답변하세요.",
+                },
+                { role: "user", content: message },
             ],
         })
 
