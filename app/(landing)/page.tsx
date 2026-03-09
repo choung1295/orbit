@@ -1,7 +1,20 @@
-import Navbar from '@/components/landing/Navbar'
-import HeroSection from '@/components/landing/HeroSection'
-import FeaturesSection from '@/components/landing/FeaturesSection'
-import CTASection from '@/components/landing/CTASection'
+"use client";
+
+import dynamic from "next/dynamic";
+
+const Navbar = dynamic(() => import("@/components/landing/Navbar"), {
+    ssr: false,
+});
+const HeroSection = dynamic(() => import("@/components/landing/HeroSection"), {
+    ssr: false,
+});
+const FeaturesSection = dynamic(
+    () => import("@/components/landing/FeaturesSection"),
+    { ssr: false }
+);
+const CTASection = dynamic(() => import("@/components/landing/CTASection"), {
+    ssr: false,
+});
 
 export default function LandingPage() {
     return (
@@ -11,5 +24,5 @@ export default function LandingPage() {
             <FeaturesSection />
             <CTASection />
         </main>
-    )
+    );
 }
