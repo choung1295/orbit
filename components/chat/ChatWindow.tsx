@@ -311,7 +311,7 @@ export default function ChatWindow({
                                 }
                             }}
                             rows={1}
-                            className="flex-1 bg-transparent text-sm text-[#f0f0f5] placeholder:text-[#606070] resize-none outline-none max-h-40"
+                            className="flex-1 bg-transparent text-sm text-[#f0f0f5] placeholder:text-[#606070] resize-none outline-none max-h-40 pr-2"
                         />
 
                         <button
