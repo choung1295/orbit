@@ -3,10 +3,10 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Orbit — AI Chat Platform',
-  description: 'The AI chat workspace built for deep work.',
+  description: 'orbitai.co.kr',
   openGraph: {
     title: 'Orbit — AI Chat Platform',
-    description: 'Your Strategic AI Companion. Delphi inside.',
+    description: 'orbitai.co.kr',
     url: 'https://orbitai.co.kr',
     siteName: 'Orbit AI',
     images: [
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Orbit — AI Chat Platform',
-    description: 'Your Strategic AI Companion. Delphi inside.',
+    description: 'orbitai.co.kr',
     images: ['https://orbitai.co.kr/og-image.png'],
   },
 }
