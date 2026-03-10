@@ -106,16 +106,16 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                             >
                                 <span
                                     className={`leading-none shrink-0 transition-colors ${isActive
-                                            ? 'text-indigo-400'
-                                            : 'text-[#707080] group-hover:text-[#a0a0b8]'
+                                        ? 'text-indigo-400'
+                                        : 'text-[#707080] group-hover:text-[#a0a0b8]'
                                         }`}
                                     style={{ fontSize: '14px' }}
                                 >
                                     {isActive ? '●' : '•'}
                                 </span>
                                 <span className={`text-sm truncate transition-colors ${isActive
-                                        ? 'text-[#f0f0f5]'
-                                        : 'text-[#707080] group-hover:text-[#a0a0b8]'
+                                    ? 'text-[#f0f0f5]'
+                                    : 'text-[#707080] group-hover:text-[#a0a0b8]'
                                     }`}>
                                     {chat.title}
                                 </span>

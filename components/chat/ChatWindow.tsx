@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, useCallback } from "react"
-import { Send, Bot, User, Plus, Paperclip, Image, X, Mic, Square, Copy, Check } from "lucide-react"
+import { Send, Bot, User, Plus, Paperclip, Image, X, Mic, Square, Copy, Check, Pencil, RotateCcw } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
 interface Message {
@@ -17,10 +17,6 @@ interface ChatWindowProps {
     onConversationCreated: (id: string) => void
 }
 
-/* ────────────────────────────────────────
-   음성 파형 애니메이션 컴포넌트
-   (녹음 중 초록 원 안에 파형 표시)
-──────────────────────────────────────── */
 function VoiceWaveIcon() {
     return (
         <div className="flex items-center justify-center gap-[3px] w-5 h-5">
@@ -37,12 +33,11 @@ function VoiceWaveIcon() {
     )
 }
 
-/* ────────────────────────────────────────
-   메시지 버블
-──────────────────────────────────────── */
-function MessageBubble({ message }: { message: Message }) {
+function MessageBubble({ message, onRetry }: { message: Message; onRetry?: (content: string) => void }) {
     const isUser = message.role === "user"
     const [copied, setCopied] = useState(false)
+    const [isEditing, setIsEditing] = useState(false)
+    const [editValue, setEditValue] = useState(message.content)
 
     const handleCopy = async () => {
         try {
@@ -55,7 +50,7 @@ function MessageBubble({ message }: { message: Message }) {
     }
 
     return (
-        <div className={`group flex gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
+        <div className={`flex gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
             <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 bg-[#232a35]">
                 {isUser ? (
                     <User className="w-4 h-4 text-indigo-300" />
@@ -68,7 +63,7 @@ function MessageBubble({ message }: { message: Message }) {
                 <div
                     className={`px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words ${isUser
                         ? "bg-indigo-600/20 border border-indigo-500/20 text-[#f0f0f5]"
-                        : "bg-[#1a1a1f] border border-[#2a2a35] text-[#c0c0c8]"
+                        : "bg-[#1e1e26] border border-[#32323f] text-[#d0d0d8]"
                         }`}
                 >
                     {message.fileName && (
@@ -77,14 +72,25 @@ function MessageBubble({ message }: { message: Message }) {
                             <span className="truncate">{message.fileName}</span>
                         </div>
                     )}
-                    {message.content}
+                    {isEditing ? (
+                        <textarea
+                            className="w-full bg-transparent outline-none resize-none text-sm text-[#f0f0f5]"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            autoFocus
+                            rows={3}
+                        />
+                    ) : (
+                        message.content
+                    )}
                 </div>
 
-                {/* 복사 버튼: 데스크탑 hover 시 표시, 모바일 항상 표시 */}
-                <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+                {/* 버튼 영역 — 항상 표시 */}
+                <div className={`flex items-center gap-1 ${isUser ? "justify-end" : "justify-start"}`}>
+                    {/* 복사 버튼 — 공통 */}
                     <button
                         onClick={handleCopy}
-                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 p-1 rounded-md text-[#505060] hover:text-[#c0c0c8] hover:bg-[#22222a]"
+                        className="p-1 rounded-md text-[#505060] hover:text-[#c0c0c8] hover:bg-[#22222a] transition-colors"
                         aria-label="메시지 복사"
                     >
                         {copied ? (
@@ -93,15 +99,32 @@ function MessageBubble({ message }: { message: Message }) {
                             <Copy className="w-3.5 h-3.5" />
                         )}
                     </button>
+
+                    {/* 사용자 말풍선 전용: 편집 + 재시도 */}
+                    {isUser && (
+                        <>
+                            <button
+                                onClick={() => setIsEditing(!isEditing)}
+                                className="p-1 rounded-md text-[#505060] hover:text-[#c0c0c8] hover:bg-[#22222a] transition-colors"
+                                aria-label="메시지 편집"
+                            >
+                                <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                                onClick={() => onRetry?.(message.content)}
+                                className="p-1 rounded-md text-[#505060] hover:text-[#c0c0c8] hover:bg-[#22222a] transition-colors"
+                                aria-label="재시도"
+                            >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
         </div>
     )
 }
 
-/* ────────────────────────────────────────
-   메인 ChatWindow
-──────────────────────────────────────── */
 export default function ChatWindow({
     conversationId,
     onConversationCreated,
@@ -112,19 +135,16 @@ export default function ChatWindow({
     const [input, setInput] = useState("")
     const [loading, setLoading] = useState(false)
     const [streamingText, setStreamingText] = useState("")
+    const [userEmail, setUserEmail] = useState<string | null>(null)
 
-    // + 메뉴
     const [plusMenuOpen, setPlusMenuOpen] = useState(false)
     const plusMenuRef = useRef<HTMLDivElement | null>(null)
 
-    // 파일 첨부
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const fileInputRef = useRef<HTMLInputElement | null>(null)
 
-    // 중지
     const abortControllerRef = useRef<AbortController | null>(null)
 
-    // 마이크
     const [isRecording, setIsRecording] = useState(false)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const recognitionRef = useRef<any>(null)
@@ -132,7 +152,15 @@ export default function ChatWindow({
     const bottomRef = useRef<HTMLDivElement | null>(null)
     const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
-    // ── 바깥 클릭 시 + 메뉴 닫기 ──
+    // 사용자 정보 로드
+    useEffect(() => {
+        const loadUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user?.email) setUserEmail(user.email)
+        }
+        loadUser()
+    }, [supabase])
+
     useEffect(() => {
         const handleClick = (e: MouseEvent) => {
             if (plusMenuRef.current && !plusMenuRef.current.contains(e.target as Node)) {
@@ -143,7 +171,6 @@ export default function ChatWindow({
         return () => document.removeEventListener("mousedown", handleClick)
     }, [])
 
-    // ── 메시지 로드 ──
     useEffect(() => {
         if (!conversationId) {
             setMessages([])
@@ -170,17 +197,14 @@ export default function ChatWindow({
         fetchMessages()
     }, [conversationId, supabase])
 
-    // ── 자동 스크롤 ──
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" })
     }, [messages, loading, streamingText])
 
-    // ── 중지 핸들러 ──
     const handleStop = useCallback(() => {
         abortControllerRef.current?.abort()
     }, [])
 
-    // ── 마이크 ──
     const toggleRecording = useCallback(() => {
         if (isRecording) {
             recognitionRef.current?.stop()
@@ -204,14 +228,11 @@ export default function ChatWindow({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         recognition.onresult = (event: any) => {
             let finalTranscript = ""
-            let interimTranscript = ""
 
             for (let i = event.resultIndex; i < event.results.length; i++) {
                 const transcript = event.results[i][0].transcript
                 if (event.results[i].isFinal) {
                     finalTranscript += transcript
-                } else {
-                    interimTranscript += transcript
                 }
             }
 
@@ -235,11 +256,10 @@ export default function ChatWindow({
         setIsRecording(true)
     }, [isRecording])
 
-    // ── 메시지 전송 (스트리밍) ──
-    const handleSend = async () => {
+    const handleSend = async (overrideContent?: string) => {
         if (loading) return
 
-        const cleaned = input.trim()
+        const cleaned = (overrideContent ?? input).trim()
 
         if (cleaned.length < 2) {
             alert("메시지는 2글자 이상 입력해 주세요.")
@@ -277,7 +297,6 @@ export default function ChatWindow({
         if (fileInputRef.current) {
             fileInputRef.current.value = ""
         }
-        // 녹음 중이면 중지
         if (isRecording) {
             recognitionRef.current?.stop()
             setIsRecording(false)
@@ -288,7 +307,6 @@ export default function ChatWindow({
         abortControllerRef.current = controller
 
         try {
-            // 1) 새 대화가 없으면 먼저 생성
             if (!currentConversationId) {
                 const { data: newConv, error: convError } = await supabase
                     .from("conversations")
@@ -309,7 +327,6 @@ export default function ChatWindow({
                 onConversationCreated(newConv.id)
             }
 
-            // 2) 사용자 메시지 저장
             const { data: userMsg, error: userMsgError } = await supabase
                 .from("messages")
                 .insert({
@@ -335,7 +352,6 @@ export default function ChatWindow({
                 setMessages((prev) => [...prev, enrichedMsg])
             }
 
-            // 3) OpenAI 스트리밍 호출
             const res = await fetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -366,7 +382,6 @@ export default function ChatWindow({
                 return
             }
 
-            // 스트리밍 읽기
             const reader = res.body?.getReader()
             const decoder = new TextDecoder()
             let accumulated = ""
@@ -383,7 +398,6 @@ export default function ChatWindow({
 
             const aiContent = accumulated.trim() || "응답이 비어 있습니다."
 
-            // 4) AI 메시지 저장
             const { data: aiMsg, error: aiMsgError } = await supabase
                 .from("messages")
                 .insert({
@@ -405,7 +419,6 @@ export default function ChatWindow({
                 setMessages((prev) => [...prev, aiMsg as Message])
             }
         } catch (error) {
-            // AbortError = 사용자가 중지 버튼 클릭
             if (error instanceof DOMException && error.name === "AbortError") {
                 const partial = streamingText.trim()
                 if (partial && currentConversationId) {
@@ -450,15 +463,31 @@ export default function ChatWindow({
         }
     }
 
+    // 이니셜 추출
+    const getInitial = (email: string | null) => {
+        if (!email) return "U"
+        return email.charAt(0).toUpperCase()
+    }
+
     return (
         <div className="flex flex-col h-full">
-            {/* 음성 파형 애니메이션 keyframes */}
             <style jsx>{`
                 @keyframes voiceWave {
                     0% { height: 4px; }
                     100% { height: 16px; }
                 }
             `}</style>
+
+            {/* ── 상단 헤더 (프로필) ── */}
+            <div className="flex items-center justify-between px-6 py-3 border-b border-[#2a2a35]">
+                <span className="text-sm font-medium text-[#a0a0b0]">Orbit AI</span>
+                <div className="flex items-center gap-2">
+                    <span className="text-xs text-[#606070]">{userEmail}</span>
+                    <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white text-sm font-semibold">
+                        {getInitial(userEmail)}
+                    </div>
+                </div>
+            </div>
 
             {/* ── 메시지 영역 ── */}
             <div className="flex-1 overflow-y-auto px-6 py-6">
@@ -472,30 +501,31 @@ export default function ChatWindow({
                         </div>
                     ) : (
                         messages.map((msg) => (
-                            <MessageBubble key={msg.id} message={msg} />
+                            <MessageBubble
+                                key={msg.id}
+                                message={msg}
+                                onRetry={(content) => handleSend(content)}
+                            />
                         ))
                     )}
 
-                    {/* 스트리밍 중인 AI 응답 */}
                     {loading && streamingText && (
                         <div className="flex gap-3">
                             <div className="w-8 h-8 rounded-full bg-[#232a35] flex items-center justify-center shrink-0 mt-1">
                                 <Bot className="w-4 h-4 text-indigo-400" />
                             </div>
-                            <div className="max-w-[75%] px-4 py-3 rounded-2xl bg-[#202028] border border-[#3a3a4a] text-sm leading-relaxed whitespace-pre-wrap break-words text-[#c0c0c8]">
+                            <div className="max-w-[75%] px-4 py-3 rounded-2xl bg-[#1e1e26] border border-[#32323f] text-sm leading-relaxed whitespace-pre-wrap break-words text-[#d0d0d8]">
                                 {streamingText}
                             </div>
                         </div>
                     )}
 
-                    {/* 로딩 점 (아직 텍스트 도착 전) */}
                     {loading && !streamingText && (
                         <div className="flex gap-3">
                             <div className="w-8 h-8 rounded-full bg-[#232a35] flex items-center justify-center shrink-0 mt-1">
                                 <Bot className="w-4 h-4 text-indigo-400" />
                             </div>
-
-                            <div className="px-4 py-3 rounded-2xl bg-[#1a1a1f] border border-[#2a2a35]">
+                            <div className="px-4 py-3 rounded-2xl bg-[#1e1e26] border border-[#32323f]">
                                 <div className="flex gap-1.5 items-center">
                                     {[0, 1, 2].map((i) => (
                                         <div
@@ -516,7 +546,6 @@ export default function ChatWindow({
             {/* ── 입력 영역 ── */}
             <div className="py-6">
                 <div className="max-w-3xl mx-auto px-6">
-                    {/* 파일 선택 미리보기 */}
                     {selectedFile && (
                         <div className="flex items-center gap-2 mb-2 px-4 py-2 rounded-xl bg-[#1a1a1f] border border-[#2a2a35] text-sm text-[#a0a0b0] animate-fade-in">
                             <Paperclip className="w-4 h-4 text-indigo-400 shrink-0" />
@@ -534,8 +563,7 @@ export default function ChatWindow({
                         </div>
                     )}
 
-                    <div className="flex items-center gap-2 p-3 rounded-2xl bg-[#1a1a1f] border border-[#2a2a35]">
-                        {/* ── "+" 메뉴 ── */}
+                    <div className="flex items-center gap-2 p-3 rounded-2xl bg-[#202028] border border-[#3a3a4a]">
                         <div className="relative" ref={plusMenuRef}>
                             <button
                                 onClick={() => setPlusMenuOpen(!plusMenuOpen)}
@@ -545,7 +573,6 @@ export default function ChatWindow({
                                 <Plus className={`w-5 h-5 transition-transform duration-200 ${plusMenuOpen ? "rotate-45" : ""}`} />
                             </button>
 
-                            {/* 팝업 메뉴 */}
                             {plusMenuOpen && (
                                 <div className="absolute bottom-full left-0 mb-2 w-56 py-2 rounded-xl bg-[#1e1e24] border border-[#2a2a35] shadow-2xl shadow-black/40 animate-fade-in z-50">
                                     <button
@@ -562,7 +589,6 @@ export default function ChatWindow({
                             )}
                         </div>
 
-                        {/* 숨겨진 파일 입력 */}
                         <input
                             ref={fileInputRef}
                             type="file"
@@ -574,7 +600,6 @@ export default function ChatWindow({
                             }}
                         />
 
-                        {/* ── 텍스트 입력 ── */}
                         <textarea
                             ref={textareaRef}
                             placeholder="메시지를 입력하세요... (Shift+Enter로 줄 바꿈)"
@@ -594,7 +619,6 @@ export default function ChatWindow({
                             className="flex-1 bg-transparent text-sm text-[#f0f0f5] placeholder:text-[#606070] resize-none outline-none max-h-40 pr-2"
                         />
 
-                        {/* ── 마이크 버튼 ── */}
                         <button
                             onClick={toggleRecording}
                             className={`h-9 w-9 rounded-full flex items-center justify-center transition-all duration-300 shrink-0 ${isRecording
@@ -610,7 +634,6 @@ export default function ChatWindow({
                             )}
                         </button>
 
-                        {/* ── Send / Stop 버튼 ── */}
                         {loading ? (
                             <button
                                 onClick={handleStop}
@@ -621,7 +644,7 @@ export default function ChatWindow({
                             </button>
                         ) : (
                             <button
-                                onClick={handleSend}
+                                onClick={() => handleSend()}
                                 disabled={!input.trim() && !selectedFile}
                                 className="h-9 w-9 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors shrink-0"
                                 aria-label="메시지 전송"
@@ -631,7 +654,7 @@ export default function ChatWindow({
                         )}
                     </div>
 
-                    <p className="text-center text-xs text-[#404450] mt-3">
+                    <p className="text-center text-xs text-[#606070] mt-3">
                         Orbit AI는 실수를 할 수 있습니다. 중요한 내용은 직접 확인하세요.
                     </p>
                 </div>
