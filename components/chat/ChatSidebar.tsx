@@ -16,6 +16,8 @@ interface ChatSidebarProps {
     activeChatId?: string
     onSelectChat?: (id: string) => void
     onNewChat?: () => void
+    sidebarOpen?: boolean
+    setSidebarOpen?: (open: boolean) => void
 }
 
 export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: ChatSidebarProps) {
@@ -50,9 +52,8 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
         router.push('/auth/login')
     }
 
-    const SidebarContent = () => (
+    const SidebarContent = ({ onClose }: { onClose?: () => void }) => (
         <aside className="flex flex-col w-64 bg-[#12121699] border-r border-[#2a2a35] h-full">
-            {/* 헤더 */}
             <div className="p-4 border-b border-[#2a2a35]">
                 <div className="flex items-center gap-2 mb-4">
                     <Link href="/orbit" className="flex items-center gap-2 group">
@@ -64,17 +65,18 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                         </span>
                     </Link>
                     <ChevronDown className="w-4 h-4 text-[#606070] ml-auto" />
-                    {/* 모바일 닫기 버튼 */}
-                    <button
-                        onClick={() => setMobileOpen(false)}
-                        className="md:hidden p-1 rounded-md text-[#606070] hover:text-[#f0f0f5] hover:bg-[#22222a] transition-colors"
-                        aria-label="사이드바 닫기"
-                    >
-                        <X className="w-4 h-4" />
-                    </button>
+                    {onClose && (
+                        <button
+                            onClick={onClose}
+                            className="p-1 rounded-md text-[#606070] hover:text-[#f0f0f5] hover:bg-[#22222a] transition-colors"
+                            aria-label="닫기"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    )}
                 </div>
                 <button
-                    onClick={() => { onNewChat?.(); setMobileOpen(false) }}
+                    onClick={() => { onNewChat?.(); onClose?.() }}
                     className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 transition-colors"
                 >
                     <Plus className="w-4 h-4" />
@@ -82,7 +84,6 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                 </button>
             </div>
 
-            {/* 검색 */}
             <div className="px-4 py-3">
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#1a1a1f] border border-[#2a2a35]">
                     <Search className="w-4 h-4 text-[#606070] shrink-0" />
@@ -96,7 +97,6 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                 </div>
             </div>
 
-            {/* 대화 목록 */}
             <div className="flex-1 overflow-y-auto px-4 py-1">
                 <p className="px-1 py-1 text-xs font-medium text-[#606070] uppercase tracking-widest mb-1">
                     RECENT
@@ -109,7 +109,7 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                         return (
                             <button
                                 key={chat.id}
-                                onClick={() => { onSelectChat?.(chat.id); setMobileOpen(false) }}
+                                onClick={() => { onSelectChat?.(chat.id); onClose?.() }}
                                 className="w-full flex items-center gap-2 px-2 py-0.5 rounded hover:bg-[#1a1a1f] transition-colors group"
                                 title={chat.title}
                             >
@@ -128,7 +128,6 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                 )}
             </div>
 
-            {/* 하단 메뉴 */}
             <div className="p-3 border-t border-[#2a2a35] space-y-0.5">
                 <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[#a0a0b0] hover:bg-[#1a1a1f] hover:text-[#f0f0f5] transition-colors">
                     <MessageSquare className="w-4 h-4 shrink-0" />
@@ -151,13 +150,13 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
 
     return (
         <>
-            {/* 모바일 햄버거 버튼 */}
+            {/* 모바일 햄버거 — 열려있으면 X, 닫혀있으면 ☰ */}
             <button
-                onClick={() => setMobileOpen(true)}
+                onClick={() => setMobileOpen(!mobileOpen)}
                 className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-xl bg-[#1e1e26] border border-[#2a2a35] text-[#a0a0b0] hover:text-[#f0f0f5] transition-colors"
-                aria-label="메뉴 열기"
+                aria-label="메뉴 토글"
             >
-                <Menu className="w-5 h-5" />
+                {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
 
             {/* 데스크탑 사이드바 */}
@@ -165,17 +164,15 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                 <SidebarContent />
             </div>
 
-            {/* 모바일 드로어 오버레이 */}
+            {/* 모바일 드로어 */}
             {mobileOpen && (
                 <div className="md:hidden fixed inset-0 z-40 flex">
-                    {/* 배경 딤 */}
                     <div
                         className="absolute inset-0 bg-black/60"
                         onClick={() => setMobileOpen(false)}
                     />
-                    {/* 드로어 */}
                     <div className="relative z-50 h-full">
-                        <SidebarContent />
+                        <SidebarContent onClose={() => setMobileOpen(false)} />
                     </div>
                 </div>
             )}
