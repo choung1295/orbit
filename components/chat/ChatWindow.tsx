@@ -33,7 +33,7 @@ function VoiceWaveIcon() {
     )
 }
 
-function MessageBubble({ message, onRetry }: { message: Message; onRetry?: (content: string) => void }) {
+function MessageBubble({ message, onRetry, onRegenerate }: { message: Message; onRetry?: (content: string) => void; onRegenerate?: () => void }) {
     const isUser = message.role === "user"
     const [copied, setCopied] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
@@ -99,6 +99,17 @@ function MessageBubble({ message, onRetry }: { message: Message; onRetry?: (cont
                             <Copy className="w-3.5 h-3.5" />
                         )}
                     </button>
+
+                    {/* AI 답변 전용: 재생성 */}
+                    {!isUser && (
+                        <button
+                            onClick={() => onRegenerate?.()}
+                            className="p-1 rounded-md text-[#505060] hover:text-[#c0c0c8] hover:bg-[#22222a] transition-colors"
+                            aria-label="답변 재생성"
+                        >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                        </button>
+                    )}
 
                     {/* 사용자 말풍선 전용: 편집 + 재시도 */}
                     {isUser && (
@@ -497,6 +508,12 @@ export default function ChatWindow({
                                 key={msg.id}
                                 message={msg}
                                 onRetry={(content) => handleSend(content)}
+                                onRegenerate={() => {
+                                    // 바로 앞 사용자 메시지 찾아서 재전송
+                                    const idx = messages.findIndex(m => m.id === msg.id)
+                                    const prevUser = messages.slice(0, idx).reverse().find(m => m.role === "user")
+                                    if (prevUser) handleSend(prevUser.content)
+                                }}
                             />
                         ))
                     )}
