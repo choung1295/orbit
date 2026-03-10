@@ -101,17 +101,23 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                             <button
                                 key={chat.id}
                                 onClick={() => onSelectChat?.(chat.id)}
-                                className="w-full flex items-center px-2 py-0.5 rounded hover:bg-[#1a1a1f] transition-colors group"
+                                className="w-full flex items-center gap-2 px-2 py-0.5 rounded hover:bg-[#1a1a1f] transition-colors group"
                                 title={chat.title}
                             >
                                 <span
-                                    className={`leading-none transition-colors ${isActive
+                                    className={`leading-none shrink-0 transition-colors ${isActive
                                             ? 'text-indigo-400'
                                             : 'text-[#707080] group-hover:text-[#a0a0b8]'
                                         }`}
                                     style={{ fontSize: '14px' }}
                                 >
                                     {isActive ? '●' : '•'}
+                                </span>
+                                <span className={`text-sm truncate transition-colors ${isActive
+                                        ? 'text-[#f0f0f5]'
+                                        : 'text-[#707080] group-hover:text-[#a0a0b8]'
+                                    }`}>
+                                    {chat.title}
                                 </span>
                             </button>
                         )
