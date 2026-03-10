@@ -5,19 +5,18 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Plus, MessageSquare, Search, Orbit, Settings, LogOut, ChevronDown, Menu, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { getConversations } from '@/lib/supabase/queries/conversations'
 
 interface Conversation {
     id: string
     title: string
-    created_at: string
+    updated_at: string
 }
 
 interface ChatSidebarProps {
     activeChatId?: string
     onSelectChat?: (id: string) => void
     onNewChat?: () => void
-    sidebarOpen?: boolean
-    setSidebarOpen?: (open: boolean) => void
 }
 
 export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: ChatSidebarProps) {
@@ -28,20 +27,10 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
     const supabase = createClient()
 
     useEffect(() => {
-        const fetchConversations = async () => {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (!user) return
-
-            const { data } = await supabase
-                .from('conversations')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false })
-
-            if (data) setConversations(data)
-        }
-        fetchConversations()
-    }, [activeChatId, supabase])
+        getConversations()
+            .then(setConversations)
+            .catch(console.error)
+    }, [activeChatId])
 
     const filtered = conversations.filter((c) =>
         c.title.toLowerCase().includes(search.toLowerCase())
@@ -150,7 +139,6 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
 
     return (
         <>
-            {/* 모바일 햄버거 — 열려있으면 X, 닫혀있으면 ☰ */}
             <button
                 onClick={() => setMobileOpen(!mobileOpen)}
                 className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-xl bg-[#1e1e26] border border-[#2a2a35] text-[#a0a0b0] hover:text-[#f0f0f5] transition-colors"
@@ -159,12 +147,10 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                 {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
 
-            {/* 데스크탑 사이드바 */}
             <div className="hidden md:flex h-full">
                 <SidebarContent />
             </div>
 
-            {/* 모바일 드로어 */}
             {mobileOpen && (
                 <div className="md:hidden fixed inset-0 z-40 flex">
                     <div
