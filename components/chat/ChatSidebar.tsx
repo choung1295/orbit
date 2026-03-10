@@ -107,9 +107,9 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                                 <span
                                     className={`leading-none transition-colors ${isActive
                                             ? 'text-indigo-400'
-                                            : 'text-[#404050] group-hover:text-[#8080a0]'
+                                            : 'text-[#707080] group-hover:text-[#a0a0b8]'
                                         }`}
-                                    style={{ fontSize: '10px' }}
+                                    style={{ fontSize: '14px' }}
                                 >
                                     {isActive ? '●' : '•'}
                                 </span>
