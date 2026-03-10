@@ -59,7 +59,52 @@ function MessageBubble({ message, onRetry, onRegenerate }: { message: Message; o
                 )}
             </div>
 
-            <div className="max-w-[75%] flex flex-col gap-1">
+            <div className={`flex flex-col gap-1 max-w-[75%] ${isUser ? "items-end ml-auto" : "items-start"}`}>
+                {/* 버튼 영역 — 메시지 위 */}
+                <div className={`flex items-center gap-1 ${isUser ? "justify-end" : "justify-start"}`}>
+                    <button
+                        onClick={handleCopy}
+                        className="p-1 rounded-md text-[#505060] hover:text-[#c0c0c8] hover:bg-[#22222a] transition-colors"
+                        aria-label="메시지 복사"
+                    >
+                        {copied ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : (
+                            <Copy className="w-3.5 h-3.5" />
+                        )}
+                    </button>
+
+                    {!isUser && (
+                        <button
+                            onClick={() => onRegenerate?.()}
+                            className="p-1 rounded-md text-[#505060] hover:text-[#c0c0c8] hover:bg-[#22222a] transition-colors"
+                            aria-label="답변 재생성"
+                        >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                        </button>
+                    )}
+
+                    {isUser && (
+                        <>
+                            <button
+                                onClick={() => setIsEditing(!isEditing)}
+                                className="p-1 rounded-md text-[#505060] hover:text-[#c0c0c8] hover:bg-[#22222a] transition-colors"
+                                aria-label="메시지 편집"
+                            >
+                                <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                                onClick={() => onRetry?.(message.content)}
+                                className="p-1 rounded-md text-[#505060] hover:text-[#c0c0c8] hover:bg-[#22222a] transition-colors"
+                                aria-label="재시도"
+                            >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                            </button>
+                        </>
+                    )}
+                </div>
+
+                {/* 말풍선 */}
                 <div
                     className={`px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words ${isUser
                         ? "bg-indigo-600/20 border border-indigo-500/20 text-[#f0f0f5]"
@@ -82,53 +127,6 @@ function MessageBubble({ message, onRetry, onRegenerate }: { message: Message; o
                         />
                     ) : (
                         message.content
-                    )}
-                </div>
-
-                {/* 버튼 영역 — 항상 표시 */}
-                <div className={`flex items-center gap-1 ${isUser ? "justify-end" : "justify-start"}`}>
-                    {/* 복사 버튼 — 공통 */}
-                    <button
-                        onClick={handleCopy}
-                        className="p-1 rounded-md text-[#505060] hover:text-[#c0c0c8] hover:bg-[#22222a] transition-colors"
-                        aria-label="메시지 복사"
-                    >
-                        {copied ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
-                        ) : (
-                            <Copy className="w-3.5 h-3.5" />
-                        )}
-                    </button>
-
-                    {/* AI 답변 전용: 재생성 */}
-                    {!isUser && (
-                        <button
-                            onClick={() => onRegenerate?.()}
-                            className="p-1 rounded-md text-[#505060] hover:text-[#c0c0c8] hover:bg-[#22222a] transition-colors"
-                            aria-label="답변 재생성"
-                        >
-                            <RotateCcw className="w-3.5 h-3.5" />
-                        </button>
-                    )}
-
-                    {/* 사용자 말풍선 전용: 편집 + 재시도 */}
-                    {isUser && (
-                        <>
-                            <button
-                                onClick={() => setIsEditing(!isEditing)}
-                                className="p-1 rounded-md text-[#505060] hover:text-[#c0c0c8] hover:bg-[#22222a] transition-colors"
-                                aria-label="메시지 편집"
-                            >
-                                <Pencil className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                                onClick={() => onRetry?.(message.content)}
-                                className="p-1 rounded-md text-[#505060] hover:text-[#c0c0c8] hover:bg-[#22222a] transition-colors"
-                                aria-label="재시도"
-                            >
-                                <RotateCcw className="w-3.5 h-3.5" />
-                            </button>
-                        </>
                     )}
                 </div>
             </div>
@@ -229,14 +227,12 @@ export default function ChatWindow({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         recognition.onresult = (event: any) => {
             let finalTranscript = ""
-
             for (let i = event.resultIndex; i < event.results.length; i++) {
                 const transcript = event.results[i][0].transcript
                 if (event.results[i].isFinal) {
                     finalTranscript += transcript
                 }
             }
-
             if (finalTranscript) {
                 setInput((prev) => prev + finalTranscript)
             }
@@ -274,7 +270,6 @@ export default function ChatWindow({
         }
 
         const content = cleaned
-
         const { data: authData, error: authError } = await supabase.auth.getUser()
 
         if (authError) {
@@ -292,12 +287,8 @@ export default function ChatWindow({
         setLoading(true)
         setStreamingText("")
 
-        if (textareaRef.current) {
-            textareaRef.current.style.height = "auto"
-        }
-        if (fileInputRef.current) {
-            fileInputRef.current.value = ""
-        }
+        if (textareaRef.current) textareaRef.current.style.height = "auto"
+        if (fileInputRef.current) fileInputRef.current.value = ""
         if (isRecording) {
             recognitionRef.current?.stop()
             setIsRecording(false)
@@ -311,10 +302,7 @@ export default function ChatWindow({
             if (!currentConversationId) {
                 const { data: newConv, error: convError } = await supabase
                     .from("conversations")
-                    .insert({
-                        user_id: user.id,
-                        title: content.slice(0, 30),
-                    })
+                    .insert({ user_id: user.id, title: content.slice(0, 30) })
                     .select()
                     .single()
 
@@ -330,12 +318,7 @@ export default function ChatWindow({
 
             const { data: userMsg, error: userMsgError } = await supabase
                 .from("messages")
-                .insert({
-                    conversation_id: currentConversationId,
-                    user_id: user.id,
-                    role: "user",
-                    content,
-                })
+                .insert({ conversation_id: currentConversationId, user_id: user.id, role: "user", content })
                 .select()
                 .single()
 
@@ -363,22 +346,14 @@ export default function ChatWindow({
             if (!res.ok) {
                 const errData = await res.json().catch(() => ({}))
                 const errorText = errData?.error || "AI 응답 중 오류가 발생했습니다."
-
                 const { data: aiErrorMsg, error: aiErrorInsertError } = await supabase
                     .from("messages")
-                    .insert({
-                        conversation_id: currentConversationId,
-                        user_id: user.id,
-                        role: "assistant",
-                        content: errorText,
-                    })
+                    .insert({ conversation_id: currentConversationId, user_id: user.id, role: "assistant", content: errorText })
                     .select()
                     .single()
-
                 if (!aiErrorInsertError && aiErrorMsg) {
                     setMessages((prev) => [...prev, aiErrorMsg as Message])
                 }
-
                 setLoading(false)
                 return
             }
@@ -398,15 +373,9 @@ export default function ChatWindow({
             }
 
             const aiContent = accumulated.trim() || "응답이 비어 있습니다."
-
             const { data: aiMsg, error: aiMsgError } = await supabase
                 .from("messages")
-                .insert({
-                    conversation_id: currentConversationId,
-                    user_id: user.id,
-                    role: "assistant",
-                    content: aiContent,
-                })
+                .insert({ conversation_id: currentConversationId, user_id: user.id, role: "assistant", content: aiContent })
                 .select()
                 .single()
 
@@ -416,45 +385,28 @@ export default function ChatWindow({
                 return
             }
 
-            if (aiMsg) {
-                setMessages((prev) => [...prev, aiMsg as Message])
-            }
+            if (aiMsg) setMessages((prev) => [...prev, aiMsg as Message])
+
         } catch (error) {
             if (error instanceof DOMException && error.name === "AbortError") {
                 const partial = streamingText.trim()
                 if (partial && currentConversationId) {
                     const { data: partialMsg } = await supabase
                         .from("messages")
-                        .insert({
-                            conversation_id: currentConversationId,
-                            user_id: user.id,
-                            role: "assistant",
-                            content: partial + "\n\n_(응답이 중지되었습니다)_",
-                        })
+                        .insert({ conversation_id: currentConversationId, user_id: user.id, role: "assistant", content: partial + "\n\n_(응답이 중지되었습니다)_" })
                         .select()
                         .single()
-                    if (partialMsg) {
-                        setMessages((prev) => [...prev, partialMsg as Message])
-                    }
+                    if (partialMsg) setMessages((prev) => [...prev, partialMsg as Message])
                 }
             } else {
                 console.error("handleSend 오류:", error)
-
                 if (currentConversationId) {
                     const { data: aiErrorMsg } = await supabase
                         .from("messages")
-                        .insert({
-                            conversation_id: currentConversationId,
-                            user_id: user.id,
-                            role: "assistant",
-                            content: "AI 응답 중 예기치 않은 오류가 발생했습니다.",
-                        })
+                        .insert({ conversation_id: currentConversationId, user_id: user.id, role: "assistant", content: "AI 응답 중 예기치 않은 오류가 발생했습니다." })
                         .select()
                         .single()
-
-                    if (aiErrorMsg) {
-                        setMessages((prev) => [...prev, aiErrorMsg as Message])
-                    }
+                    if (aiErrorMsg) setMessages((prev) => [...prev, aiErrorMsg as Message])
                 }
             }
         } finally {
@@ -474,14 +426,12 @@ export default function ChatWindow({
             `}</style>
 
             {/* ── 메시지 영역 ── */}
-            <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="flex-1 overflow-y-auto px-4 py-6">
                 <div className="max-w-3xl mx-auto space-y-6">
                     {messages.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-20">
                             <Bot className="w-10 h-10 text-indigo-400/40" />
-                            <p className="text-[#606070] text-sm">
-                                무엇을 도와드릴까요? 메시지를 입력해보세요.
-                            </p>
+                            <p className="text-[#606070] text-sm">무엇을 도와드릴까요? 메시지를 입력해보세요.</p>
                         </div>
                     ) : (
                         messages.map((msg) => (
@@ -517,11 +467,7 @@ export default function ChatWindow({
                             <div className="px-4 py-3 rounded-2xl bg-[#1e1e26] border border-[#32323f]">
                                 <div className="flex gap-1.5 items-center">
                                     {[0, 1, 2].map((i) => (
-                                        <div
-                                            key={i}
-                                            className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce"
-                                            style={{ animationDelay: `${i * 0.15}s` }}
-                                        />
+                                        <div key={i} className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
                                     ))}
                                 </div>
                             </div>
@@ -533,17 +479,14 @@ export default function ChatWindow({
             </div>
 
             {/* ── 입력 영역 ── */}
-            <div className="py-6">
-                <div className="max-w-3xl mx-auto px-6">
+            <div className="py-4">
+                <div className="max-w-3xl mx-auto px-4">
                     {selectedFile && (
-                        <div className="flex items-center gap-2 mb-2 px-4 py-2 rounded-xl bg-[#1a1a1f] border border-[#2a2a35] text-sm text-[#a0a0b0] animate-fade-in">
+                        <div className="flex items-center gap-2 mb-2 px-4 py-2 rounded-xl bg-[#1a1a1f] border border-[#2a2a35] text-sm text-[#a0a0b0]">
                             <Paperclip className="w-4 h-4 text-indigo-400 shrink-0" />
                             <span className="truncate flex-1">{selectedFile.name}</span>
                             <button
-                                onClick={() => {
-                                    setSelectedFile(null)
-                                    if (fileInputRef.current) fileInputRef.current.value = ""
-                                }}
+                                onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = "" }}
                                 className="p-1 rounded-md hover:bg-[#2a2a35] transition-colors"
                                 aria-label="파일 제거"
                             >
@@ -563,12 +506,9 @@ export default function ChatWindow({
                             </button>
 
                             {plusMenuOpen && (
-                                <div className="absolute bottom-full left-0 mb-2 w-56 py-2 rounded-xl bg-[#1e1e24] border border-[#2a2a35] shadow-2xl shadow-black/40 animate-fade-in z-50">
+                                <div className="absolute bottom-full left-0 mb-2 w-56 py-2 rounded-xl bg-[#1e1e24] border border-[#2a2a35] shadow-2xl shadow-black/40 z-50">
                                     <button
-                                        onClick={() => {
-                                            fileInputRef.current?.click()
-                                            setPlusMenuOpen(false)
-                                        }}
+                                        onClick={() => { fileInputRef.current?.click(); setPlusMenuOpen(false) }}
                                         className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#c0c0c8] hover:bg-[#2a2a35] transition-colors"
                                     >
                                         <Image className="w-4 h-4 text-indigo-400" />
@@ -583,10 +523,7 @@ export default function ChatWindow({
                             type="file"
                             accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx"
                             className="hidden"
-                            onChange={(e) => {
-                                const file = e.target.files?.[0] ?? null
-                                setSelectedFile(file)
-                            }}
+                            onChange={(e) => { const file = e.target.files?.[0] ?? null; setSelectedFile(file) }}
                         />
 
                         <textarea
@@ -610,25 +547,14 @@ export default function ChatWindow({
 
                         <button
                             onClick={toggleRecording}
-                            className={`h-9 w-9 rounded-full flex items-center justify-center transition-all duration-300 shrink-0 ${isRecording
-                                ? "bg-[#22c55e] shadow-[0_0_16px_rgba(34,197,94,0.4)] scale-105"
-                                : "text-[#606070] hover:text-[#f0f0f5] hover:bg-[#22222a]"
-                                }`}
+                            className={`h-9 w-9 rounded-full flex items-center justify-center transition-all duration-300 shrink-0 ${isRecording ? "bg-[#22c55e] shadow-[0_0_16px_rgba(34,197,94,0.4)] scale-105" : "text-[#606070] hover:text-[#f0f0f5] hover:bg-[#22222a]"}`}
                             aria-label={isRecording ? "녹음 중지" : "음성 입력"}
                         >
-                            {isRecording ? (
-                                <VoiceWaveIcon />
-                            ) : (
-                                <Mic className="w-4 h-4" />
-                            )}
+                            {isRecording ? <VoiceWaveIcon /> : <Mic className="w-4 h-4" />}
                         </button>
 
                         {loading ? (
-                            <button
-                                onClick={handleStop}
-                                className="h-9 w-9 rounded-xl bg-red-600/80 hover:bg-red-500 flex items-center justify-center transition-colors shrink-0"
-                                aria-label="응답 중지"
-                            >
+                            <button onClick={handleStop} className="h-9 w-9 rounded-xl bg-red-600/80 hover:bg-red-500 flex items-center justify-center transition-colors shrink-0" aria-label="응답 중지">
                                 <Square className="w-3.5 h-3.5 text-white fill-white" />
                             </button>
                         ) : (
