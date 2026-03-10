@@ -4,6 +4,28 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'Orbit — AI Chat Platform',
   description: 'The AI chat workspace built for deep work.',
+  openGraph: {
+    title: 'Orbit — AI Chat Platform',
+    description: 'Your Strategic AI Companion. Delphi inside.',
+    url: 'https://orbitai.co.kr',
+    siteName: 'Orbit AI',
+    images: [
+      {
+        url: 'https://orbitai.co.kr/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Orbit AI — Your Strategic AI Companion',
+      },
+    ],
+    locale: 'ko_KR',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Orbit — AI Chat Platform',
+    description: 'Your Strategic AI Companion. Delphi inside.',
+    images: ['https://orbitai.co.kr/og-image.png'],
+  },
 }
 
 export default function RootLayout({
