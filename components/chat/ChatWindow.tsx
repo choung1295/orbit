@@ -146,7 +146,6 @@ export default function ChatWindow({
     const [input, setInput] = useState("")
     const [loading, setLoading] = useState(false)
     const [streamingText, setStreamingText] = useState("")
-    const [userEmail, setUserEmail] = useState<string | null>(null)
 
     const [plusMenuOpen, setPlusMenuOpen] = useState(false)
     const plusMenuRef = useRef<HTMLDivElement | null>(null)
@@ -162,15 +161,6 @@ export default function ChatWindow({
 
     const bottomRef = useRef<HTMLDivElement | null>(null)
     const textareaRef = useRef<HTMLTextAreaElement | null>(null)
-
-    // 사용자 정보 로드
-    useEffect(() => {
-        const loadUser = async () => {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (user?.email) setUserEmail(user.email)
-        }
-        loadUser()
-    }, [supabase])
 
     useEffect(() => {
         const handleClick = (e: MouseEvent) => {
@@ -474,12 +464,6 @@ export default function ChatWindow({
         }
     }
 
-    // 이니셜 추출
-    const getInitial = (email: string | null) => {
-        if (!email) return "U"
-        return email.charAt(0).toUpperCase()
-    }
-
     return (
         <div className="flex flex-col h-full">
             <style jsx>{`
@@ -488,9 +472,6 @@ export default function ChatWindow({
                     100% { height: 16px; }
                 }
             `}</style>
-
-
-
 
             {/* ── 메시지 영역 ── */}
             <div className="flex-1 overflow-y-auto px-6 py-6">
@@ -509,7 +490,6 @@ export default function ChatWindow({
                                 message={msg}
                                 onRetry={(content) => handleSend(content)}
                                 onRegenerate={() => {
-                                    // 바로 앞 사용자 메시지 찾아서 재전송
                                     const idx = messages.findIndex(m => m.id === msg.id)
                                     const prevUser = messages.slice(0, idx).reverse().find(m => m.role === "user")
                                     if (prevUser) handleSend(prevUser.content)
