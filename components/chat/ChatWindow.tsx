@@ -479,13 +479,20 @@ export default function ChatWindow({
             `}</style>
 
             {/* ── 상단 헤더 (프로필) ── */}
-            <div className="flex items-center justify-between px-6 py-3 border-b border-[#2a2a35]">
-                <span className="text-sm font-medium text-[#a0a0b0]">Orbit AI</span>
+            <div className="flex items-center justify-end px-6 py-3 border-b border-[#2a2a35]">
                 <div className="flex items-center gap-2">
-                    <span className="text-xs text-[#606070]">{userEmail}</span>
-                    <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white text-sm font-semibold">
-                        {getInitial(userEmail)}
-                    </div>
+                    <span className="text-xs font-semibold text-[#a0a0b0] tracking-widest px-2 py-0.5 rounded-md border border-[#3a3a4a] bg-[#1e1e26]">
+                        v0.1
+                    </span>
+                    <button className="relative group">
+                        <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold select-none"
+                            style={{
+                                background: "conic-gradient(from 180deg, #6366f1, #8b5cf6, #ec4899, #f59e0b, #6366f1)"
+                            }}
+                        >
+                            파이
+                        </div>
+                    </button>
                 </div>
             </div>
 
