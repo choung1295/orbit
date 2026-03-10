@@ -1,4 +1,6 @@
 export const dynamic = "force-dynamic"
+import { createClient } from "@/lib/supabase/server"
+import { v4 as uuidv4 } from "uuid"
 
 export async function POST(req: Request) {
     try {
@@ -9,6 +11,7 @@ export async function POST(req: Request) {
 
         const body = await req.json()
         const message = body?.message
+        const session_id = body?.session_id || uuidv4()
 
         if (!message || typeof message !== "string") {
             return new Response(
@@ -16,6 +19,15 @@ export async function POST(req: Request) {
                 { status: 400, headers: { "Content-Type": "application/json" } }
             )
         }
+
+        const supabase = await createClient()
+
+        // user 메시지 저장
+        await supabase.from("chat_messages").insert({
+            session_id,
+            role: "user",
+            content: message,
+        })
 
         const stream = await client.chat.completions.create({
             model: "gpt-4.1-mini",
@@ -36,6 +48,7 @@ export async function POST(req: Request) {
         })
 
         const encoder = new TextEncoder()
+        let assistantReply = ""
 
         const readable = new ReadableStream({
             async start(controller) {
@@ -43,11 +56,18 @@ export async function POST(req: Request) {
                     for await (const chunk of stream) {
                         const text = chunk.choices[0]?.delta?.content || ""
                         if (text) {
+                            assistantReply += text
                             controller.enqueue(encoder.encode(text))
                         }
                     }
+
+                    // assistant 답변 저장
+                    await supabase.from("chat_messages").insert({
+                        session_id,
+                        role: "assistant",
+                        content: assistantReply,
+                    })
                 } catch (err) {
-                    // Client disconnected (AbortError) — silently stop
                     if (!(err instanceof Error && err.name === "AbortError")) {
                         console.error("Stream error:", err)
                     }
@@ -62,6 +82,7 @@ export async function POST(req: Request) {
                 "Content-Type": "text/plain; charset=utf-8",
                 "Cache-Control": "no-cache",
                 Connection: "keep-alive",
+                "X-Session-Id": session_id,
             },
         })
     } catch (error) {
