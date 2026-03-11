@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Copy, Check, Pencil, RotateCcw, Paperclip } from "lucide-react"
 import { Message } from "./useChat"
-import DelphiAvatar from "./DelphiAvatar"
+import DelphaiAvatar from "./DelphaiAvatar"
 
 function renderContent(content: string) {
     return content.split('\n\n').map((para, i) => (
@@ -80,7 +80,7 @@ export default function MessageBubble({ message, onRetry, onRegenerate }: {
     return (
         <div className="flex gap-3.5 group">
             <div className="shrink-0 mt-1">
-                <DelphiAvatar size={32} />
+                <DelphaiAvatar size={32} />
             </div>
             <div className="flex-1 flex flex-col gap-2 min-w-0">
                 <div

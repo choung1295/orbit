@@ -3,7 +3,7 @@
 import { useRef, useEffect } from "react"
 import { Message } from "./useChat"
 import MessageBubble from "./MessageBubble"
-import DelphiAvatar from "./DelphiAvatar"
+import DelphaiAvatar from "./DelphaiAvatar"
 
 interface MessageListProps {
     messages: Message[]
@@ -24,7 +24,7 @@ export default function MessageList({ messages, loading, streamingText, onRetry,
         <div className="max-w-3xl mx-auto w-full px-4 py-8">
             {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
-                    <DelphiAvatar size={64} />
+                    <DelphaiAvatar size={64} />
                     <div>
                         <p className="text-[#d0d0dc] text-sm font-medium mb-1">무엇을 도와드릴까요?</p>
                         <p className="text-[#404050] text-xs">메시지를 입력해 대화를 시작하세요.</p>
@@ -44,7 +44,7 @@ export default function MessageList({ messages, loading, streamingText, onRetry,
                     {loading && streamingText && (
                         <div className="flex gap-3.5">
                             <div className="shrink-0 mt-1">
-                                <DelphiAvatar size={32} />
+                                <DelphaiAvatar size={32} />
                             </div>
                             <div
                                 className="flex-1 px-5 py-4 rounded-2xl rounded-tl-sm text-sm leading-[1.7] whitespace-pre-wrap break-words"
@@ -58,7 +58,7 @@ export default function MessageList({ messages, loading, streamingText, onRetry,
                     {loading && !streamingText && (
                         <div className="flex gap-3.5">
                             <div className="shrink-0 mt-1">
-                                <DelphiAvatar size={32} />
+                                <DelphaiAvatar size={32} />
                             </div>
                             <div
                                 className="px-5 py-4 rounded-2xl rounded-tl-sm"
