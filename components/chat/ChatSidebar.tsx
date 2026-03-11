@@ -37,6 +37,7 @@ export default function ChatSidebar({
     const [conversations, setConversations] = useState<Conversation[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [mobileOpen, setMobileOpen] = useState(false)
+
     const router = useRouter()
     const supabase = createClient()
 
@@ -71,7 +72,10 @@ export default function ChatSidebar({
         <aside className="flex flex-col w-64 bg-[#111116] border-r border-[#1e1e28] h-full">
             <div className="px-4 pt-5 pb-3">
                 <div className="flex items-center justify-between mb-4">
-                    <Link href="/orbit" className="group">
+                    <Link href="/orbit" className="flex items-center gap-2 group">
+                        {/* 미래 로고 자리: 지금은 비워두고 공간만 유지 */}
+                        <div className="w-6 h-6 shrink-0" aria-hidden="true" />
+
                         <span className="font-semibold text-[#f0f0f5] text-sm group-hover:text-violet-300 transition-colors tracking-wide">
                             Orbit
                         </span>
