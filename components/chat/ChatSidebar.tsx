@@ -21,12 +21,17 @@ interface ChatSidebarProps {
 
 function OrbitLogo() {
     return (
-        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <ellipse cx="11" cy="11" rx="9" ry="4.5" stroke="#8B5CF6" strokeWidth="1" fill="none" opacity="0.5" transform="rotate(-30 11 11)" />
-            <ellipse cx="11" cy="11" rx="5.5" ry="2.5" stroke="#8B5CF6" strokeWidth="1" fill="none" opacity="0.8" transform="rotate(-30 11 11)" />
-            <circle cx="11" cy="11" r="1.5" fill="#8B5CF6" />
-            <circle cx="19" cy="9.5" r="1.2" fill="#8B5CF6" opacity="0.9" />
-            <circle cx="5" cy="14" r="0.8" fill="#8B5CF6" opacity="0.6" />
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* 바깥 궤도 */}
+            <ellipse cx="13" cy="13" rx="11" ry="5.5" stroke="#8B5CF6" strokeWidth="1.2" fill="none" transform="rotate(-35 13 13)" />
+            {/* 안쪽 궤도 */}
+            <ellipse cx="13" cy="13" rx="6.5" ry="3" stroke="#8B5CF6" strokeWidth="1.2" fill="none" transform="rotate(-35 13 13)" />
+            {/* 중심 */}
+            <circle cx="13" cy="13" r="2" fill="#8B5CF6" />
+            {/* 큰 행성 */}
+            <circle cx="22.5" cy="10.5" r="1.8" fill="#8B5CF6" />
+            {/* 작은 행성 */}
+            <circle cx="4.5" cy="16.5" r="1.2" fill="#8B5CF6" opacity="0.8" />
         </svg>
     )
 }
