@@ -80,7 +80,7 @@ export default function MessageBubble({ message, onRetry, onRegenerate }: {
     return (
         <div className="flex gap-3.5 group">
             <div className="shrink-0 mt-1">
-                <DelphaiAvatar size={32} />
+                <DelphaiAvatar size={40} />
             </div>
             <div className="flex-1 flex flex-col gap-2 min-w-0">
                 <div

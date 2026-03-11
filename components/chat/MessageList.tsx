@@ -58,7 +58,7 @@ export default function MessageList({ messages, loading, streamingText, onRetry,
                     {loading && !streamingText && (
                         <div className="flex gap-3.5">
                             <div className="shrink-0 mt-1">
-                                <DelphaiAvatar size={32} />
+                                <DelphaiAvatar size={40} />
                             </div>
                             <div
                                 className="px-5 py-4 rounded-2xl rounded-tl-sm"
