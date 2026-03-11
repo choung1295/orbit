@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Plus, MessageSquare, Search, Settings, LogOut, ChevronDown, Menu, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getConversations } from '@/lib/supabase/queries/conversations'
+import DelphaiAvatar from './DelphaiAvatar'
 
 interface Conversation {
     id: string
@@ -17,23 +18,6 @@ interface ChatSidebarProps {
     activeChatId?: string
     onSelectChat?: (id: string) => void
     onNewChat?: () => void
-}
-
-function OrbitLogo() {
-    return (
-        <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-            {/* 바깥 궤도 */}
-            <ellipse cx="13" cy="13" rx="11" ry="5.5" stroke="#8B5CF6" strokeWidth="1.2" fill="none" transform="rotate(-35 13 13)" />
-            {/* 안쪽 궤도 */}
-            <ellipse cx="13" cy="13" rx="6.5" ry="3" stroke="#8B5CF6" strokeWidth="1.2" fill="none" transform="rotate(-35 13 13)" />
-            {/* 중심 */}
-            <circle cx="13" cy="13" r="2" fill="#8B5CF6" />
-            {/* 큰 행성 */}
-            <circle cx="22.5" cy="10.5" r="1.8" fill="#8B5CF6" />
-            {/* 작은 행성 */}
-            <circle cx="4.5" cy="16.5" r="1.2" fill="#8B5CF6" opacity="0.8" />
-        </svg>
-    )
 }
 
 export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: ChatSidebarProps) {
@@ -64,7 +48,7 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
             <div className="px-4 pt-5 pb-3">
                 <div className="flex items-center justify-between mb-4">
                     <Link href="/orbit" className="flex items-center gap-2 group">
-                        <OrbitLogo />
+                        <DelphaiAvatar size={22} />
                         <span className="font-semibold text-[#f0f0f5] text-sm group-hover:text-violet-300 transition-colors tracking-wide">
                             Orbit
                         </span>
