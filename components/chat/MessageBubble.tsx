@@ -106,7 +106,7 @@ export default function MessageBubble({
             {/* AI Avatar */}
             <div className="relative shrink-0 pt-1">
                 <div className="transition-transform duration-300 group-hover:scale-105">
-                    <DelphaiAvatar size={52} />
+                    <DelphaiAvatar size={45} />
                 </div>
 
                 {/* thinking orbit animation */}
