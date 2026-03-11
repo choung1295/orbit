@@ -6,9 +6,9 @@ import { Message } from "./useChat"
 import DelphaiAvatar from "./DelphaiAvatar"
 
 function renderContent(content: string) {
-    return content.split('\n\n').map((para, i) => (
-        <p key={i} className={i > 0 ? 'mt-3' : ''}>
-            {para.split('\n').map((line, j, arr) => (
+    return content.split("\n\n").map((para, i) => (
+        <p key={i} className={i > 0 ? "mt-3" : ""}>
+            {para.split("\n").map((line, j, arr) => (
                 <span key={j}>
                     {line}
                     {j < arr.length - 1 && <br />}
@@ -18,7 +18,11 @@ function renderContent(content: string) {
     ))
 }
 
-export default function MessageBubble({ message, onRetry, onRegenerate }: {
+export default function MessageBubble({
+    message,
+    onRetry,
+    onRegenerate,
+}: {
     message: Message
     onRetry?: (content: string) => void
     onRegenerate?: () => void
@@ -43,7 +47,7 @@ export default function MessageBubble({ message, onRetry, onRegenerate }: {
             <div className="flex flex-col items-end gap-1.5 group">
                 <div
                     className="max-w-[65%] px-5 py-3.5 rounded-2xl rounded-tr-sm text-sm leading-[1.7] whitespace-pre-wrap break-words"
-                    style={{ backgroundColor: '#4338a8', color: '#ededf8' }}
+                    style={{ backgroundColor: "#4338a8", color: "#ededf8" }}
                 >
                     {message.fileName && (
                         <div className="flex items-center gap-2 mb-2.5 px-3 py-1.5 rounded-lg bg-white/10 text-xs text-indigo-200">
@@ -51,26 +55,45 @@ export default function MessageBubble({ message, onRetry, onRegenerate }: {
                             <span className="truncate">{message.fileName}</span>
                         </div>
                     )}
+
                     {isEditing ? (
                         <textarea
                             className="w-full bg-transparent outline-none resize-none text-sm leading-[1.7]"
-                            style={{ color: '#ededf8' }}
+                            style={{ color: "#ededf8" }}
                             value={editValue}
                             onChange={(e) => setEditValue(e.target.value)}
                             autoFocus
                             rows={3}
                         />
-                    ) : message.content}
+                    ) : (
+                        message.content
+                    )}
                 </div>
+
                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => setIsEditing(!isEditing)} className="p-1.5 rounded-lg text-[#404050] hover:text-[#a0a0b8] hover:bg-[#1e1e28] transition-colors">
+                    <button
+                        onClick={() => setIsEditing(!isEditing)}
+                        className="p-1.5 rounded-lg text-[#404050] hover:text-[#a0a0b8] hover:bg-[#1e1e28] transition-colors"
+                    >
                         <Pencil className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => onRetry?.(message.content)} className="p-1.5 rounded-lg text-[#404050] hover:text-[#a0a0b8] hover:bg-[#1e1e28] transition-colors">
+
+                    <button
+                        onClick={() => onRetry?.(message.content)}
+                        className="p-1.5 rounded-lg text-[#404050] hover:text-[#a0a0b8] hover:bg-[#1e1e28] transition-colors"
+                    >
                         <RotateCcw className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={handleCopy} className="p-1.5 rounded-lg text-[#404050] hover:text-[#a0a0b8] hover:bg-[#1e1e28] transition-colors">
-                        {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+
+                    <button
+                        onClick={handleCopy}
+                        className="p-1.5 rounded-lg text-[#404050] hover:text-[#a0a0b8] hover:bg-[#1e1e28] transition-colors"
+                    >
+                        {copied ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : (
+                            <Copy className="w-3.5 h-3.5" />
+                        )}
                     </button>
                 </div>
             </div>
@@ -78,26 +101,48 @@ export default function MessageBubble({ message, onRetry, onRegenerate }: {
     }
 
     return (
-        <div className="flex gap-3.5 group">
-            <div className="shrink-0 mt-1">
-                <DelphaiAvatar size={40} />
+        <div className="flex items-start gap-4 group">
+
+            {/* AI Avatar */}
+            <div className="relative shrink-0 pt-1">
+                <div className="transition-transform duration-300 group-hover:scale-105">
+                    <DelphaiAvatar size={52} />
+                </div>
+
+                {/* thinking orbit animation */}
+                <div className="absolute inset-0 animate-spin-slow opacity-40">
+                    <div className="absolute w-2 h-2 bg-violet-400 rounded-full top-0 left-1/2 -translate-x-1/2 blur-[1px]" />
+                </div>
             </div>
+
             <div className="flex-1 flex flex-col gap-2 min-w-0">
                 <div
-                    className="px-5 py-4 rounded-2xl rounded-tl-sm text-sm leading-[1.7]"
+                    className="px-5 py-4 rounded-2xl rounded-tl-sm text-sm leading-[1.75]"
                     style={{
-                        backgroundColor: '#16161e',
-                        border: '1px solid #22222e',
-                        color: '#ceceda'
+                        backgroundColor: "#16161e",
+                        border: "1px solid #22222e",
+                        color: "#ceceda",
                     }}
                 >
                     {renderContent(message.content)}
                 </div>
+
                 <div className="flex items-center gap-0.5 pl-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={handleCopy} className="p-1.5 rounded-lg text-[#404050] hover:text-[#a0a0b8] hover:bg-[#1e1e28] transition-colors">
-                        {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    <button
+                        onClick={handleCopy}
+                        className="p-1.5 rounded-lg text-[#404050] hover:text-[#a0a0b8] hover:bg-[#1e1e28] transition-colors"
+                    >
+                        {copied ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : (
+                            <Copy className="w-3.5 h-3.5" />
+                        )}
                     </button>
-                    <button onClick={() => onRegenerate?.()} className="p-1.5 rounded-lg text-[#404050] hover:text-[#a0a0b8] hover:bg-[#1e1e28] transition-colors">
+
+                    <button
+                        onClick={() => onRegenerate?.()}
+                        className="p-1.5 rounded-lg text-[#404050] hover:text-[#a0a0b8] hover:bg-[#1e1e28] transition-colors"
+                    >
                         <RotateCcw className="w-3.5 h-3.5" />
                     </button>
                 </div>

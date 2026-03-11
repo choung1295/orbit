@@ -1,11 +1,20 @@
-'use client'
+"use client"
 
-import { useState, useEffect, useMemo } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { Plus, MessageSquare, Search, Settings, LogOut, ChevronDown, Menu, X } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
-import { getConversations } from '@/lib/supabase/queries/conversations'
+import { useState, useEffect, useMemo } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import {
+    Plus,
+    MessageSquare,
+    Search,
+    Settings,
+    LogOut,
+    ChevronDown,
+    Menu,
+    X,
+} from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
+import { getConversations } from "@/lib/supabase/queries/conversations"
 
 interface Conversation {
     id: string
@@ -19,8 +28,12 @@ interface ChatSidebarProps {
     onNewChat?: () => void
 }
 
-export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: ChatSidebarProps) {
-    const [search, setSearch] = useState('')
+export default function ChatSidebar({
+    activeChatId,
+    onSelectChat,
+    onNewChat,
+}: ChatSidebarProps) {
+    const [search, setSearch] = useState("")
     const [conversations, setConversations] = useState<Conversation[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [mobileOpen, setMobileOpen] = useState(false)
@@ -34,11 +47,12 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                 const data = await getConversations()
                 setConversations(data)
             } catch (error) {
-                console.error('Failed to fetch conversations:', error)
+                console.error("Failed to fetch conversations:", error)
             } finally {
                 setIsLoading(false)
             }
         }
+
         fetchConversations()
     }, [activeChatId])
 
@@ -50,19 +64,19 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
 
     const handleLogout = async () => {
         await supabase.auth.signOut()
-        router.push('/auth/login')
+        router.push("/auth/login")
     }
 
     const SidebarContent = ({ onClose }: { onClose?: () => void }) => (
         <aside className="flex flex-col w-64 bg-[#111116] border-r border-[#1e1e28] h-full">
             <div className="px-4 pt-5 pb-3">
                 <div className="flex items-center justify-between mb-4">
-                    {/* 아바타 제거 및 Orbit 텍스트만 유지 */}
-                    <Link href="/orbit" className="flex items-center gap-2 group">
+                    <Link href="/orbit" className="group">
                         <span className="font-semibold text-[#f0f0f5] text-sm group-hover:text-violet-300 transition-colors tracking-wide">
                             Orbit
                         </span>
                     </Link>
+
                     <div className="flex items-center gap-1">
                         <ChevronDown className="w-4 h-4 text-[#404050]" />
                         {onClose && (
@@ -77,7 +91,10 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                 </div>
 
                 <button
-                    onClick={() => { onNewChat?.(); onClose?.() }}
+                    onClick={() => {
+                        onNewChat?.()
+                        onClose?.()
+                    }}
                     className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 transition-all text-sm text-white font-medium shadow-sm active:scale-[0.98]"
                 >
                     <Plus className="w-4 h-4" />
@@ -104,26 +121,43 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                 </p>
 
                 {isLoading ? (
-                    /* 로딩 문구 수정: Thinking... */
-                    <p className="px-2 py-2 text-xs text-[#404050] animate-pulse italic">Thinking...</p>
+                    <p className="px-2 py-2 text-xs text-[#404050] animate-pulse italic">
+                        Thinking...
+                    </p>
                 ) : filtered.length === 0 ? (
-                    <p className="px-2 py-2 text-xs text-[#404050]">대화가 없습니다.</p>
+                    <p className="px-2 py-2 text-xs text-[#404050]">
+                        대화가 없습니다.
+                    </p>
                 ) : (
                     <div className="space-y-0.5">
                         {filtered.map((chat) => {
                             const isActive = activeChatId === chat.id
+
                             return (
                                 <button
                                     key={chat.id}
-                                    onClick={() => { onSelectChat?.(chat.id); onClose?.() }}
-                                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors text-left group ${isActive ? 'bg-[#1e1e2e]' : 'hover:bg-[#18181f]'
+                                    onClick={() => {
+                                        onSelectChat?.(chat.id)
+                                        onClose?.()
+                                    }}
+                                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors text-left group ${isActive
+                                            ? "bg-[#1e1e2e]"
+                                            : "hover:bg-[#18181f]"
                                         }`}
                                     title={chat.title}
                                 >
-                                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${isActive ? 'bg-violet-400' : 'bg-[#303040] group-hover:bg-[#505060]'
-                                        }`} />
-                                    <span className={`text-xs truncate transition-colors ${isActive ? 'text-[#f0f0f5] font-medium' : 'text-[#707080] group-hover:text-[#a0a0b0]'
-                                        }`}>
+                                    <span
+                                        className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${isActive
+                                                ? "bg-violet-400"
+                                                : "bg-[#303040] group-hover:bg-[#505060]"
+                                            }`}
+                                    />
+                                    <span
+                                        className={`text-xs truncate transition-colors ${isActive
+                                                ? "text-[#f0f0f5] font-medium"
+                                                : "text-[#707080] group-hover:text-[#a0a0b0]"
+                                            }`}
+                                    >
                                         {chat.title}
                                     </span>
                                 </button>
@@ -138,10 +172,12 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                     <MessageSquare className="w-3.5 h-3.5 shrink-0" />
                     제안하기
                 </button>
+
                 <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[#606070] hover:bg-[#18181f] hover:text-[#c0c0c8] transition-colors text-xs">
                     <Settings className="w-3.5 h-3.5 shrink-0" />
                     Settings
                 </button>
+
                 <button
                     onClick={handleLogout}
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-rose-400/70 hover:bg-rose-500/10 hover:text-rose-400 transition-colors text-xs"
@@ -159,7 +195,11 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                 onClick={() => setMobileOpen(!mobileOpen)}
                 className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-xl bg-[#1e1e26] border border-[#2a2a35] text-[#a0a0b0] hover:text-[#f0f0f5] transition-colors shadow-lg"
             >
-                {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                {mobileOpen ? (
+                    <X className="w-5 h-5" />
+                ) : (
+                    <Menu className="w-5 h-5" />
+                )}
             </button>
 
             <div className="hidden md:flex h-full shrink-0">
