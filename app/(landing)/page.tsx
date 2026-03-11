@@ -15,8 +15,8 @@ export default function LandingPage() {
 
     useEffect(() => {
         const supabase = createClient();
-        supabase.auth.getUser().then(({ data: authData }) => {
-            if (authData?.user) {
+        supabase.auth.getUser().then((result) => {
+            if (result.data?.user) {
                 router.replace("/orbit");
             }
         });
