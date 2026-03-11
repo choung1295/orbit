@@ -23,7 +23,11 @@ export function useChat(conversationId: string | null, onConversationCreated: (i
     const recognitionRef = useRef<any>(null) // eslint-disable-line @typescript-eslint/no-explicit-any
 
     const loadMessages = useCallback(async () => {
-        if (!conversationId) { setMessages([]); return }
+        if (!conversationId) {
+            setMessages([])
+            return
+        }
+
         try {
             const data = await getMessages(conversationId)
             setMessages(data as Message[])
@@ -37,22 +41,46 @@ export function useChat(conversationId: string | null, onConversationCreated: (i
     }, [])
 
     const toggleRecording = useCallback(() => {
-        if (isRecording) { recognitionRef.current?.stop(); setIsRecording(false); return }
-        const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition // eslint-disable-line @typescript-eslint/no-explicit-any
-        if (!SpeechRecognitionAPI) { alert("이 브라우저에서는 음성 인식이 지원되지 않습니다."); return }
+        if (isRecording) {
+            recognitionRef.current?.stop()
+            setIsRecording(false)
+            return
+        }
+
+        const SpeechRecognitionAPI =
+            (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition // eslint-disable-line @typescript-eslint/no-explicit-any
+
+        if (!SpeechRecognitionAPI) {
+            alert("이 브라우저에서는 음성 인식이 지원되지 않습니다.")
+            return
+        }
+
         const recognition = new SpeechRecognitionAPI()
         recognition.lang = "ko-KR"
         recognition.interimResults = true
         recognition.continuous = true
+
         recognition.onresult = (event: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
             let finalTranscript = ""
+
             for (let i = event.resultIndex; i < event.results.length; i++) {
-                if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript
+                }
             }
-            if (finalTranscript) setInput((prev) => prev + finalTranscript)
+
+            if (finalTranscript) {
+                setInput((prev) => prev + finalTranscript)
+            }
         }
-        recognition.onerror = (event: any) => { console.error("음성 인식 오류:", event.error); setIsRecording(false) } // eslint-disable-line @typescript-eslint/no-explicit-any
+
+        recognition.onerror = (event: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+            console.error("음성 인식 오류:", event.error)
+            setIsRecording(false)
+        }
+
         recognition.onend = () => setIsRecording(false)
+
         recognitionRef.current = recognition
         recognition.start()
         setIsRecording(true)
@@ -60,21 +88,37 @@ export function useChat(conversationId: string | null, onConversationCreated: (i
 
     const handleSend = async (overrideContent?: string) => {
         if (loading) return
+
         const cleaned = (overrideContent ?? input).trim()
-        if (cleaned.length < 2) { alert("메시지는 2글자 이상 입력해 주세요."); return }
-        if (/(.)\\1{7,}/.test(cleaned)) { alert("반복 입력이 감지되어 전송을 막았습니다."); return }
+
+        if (cleaned.length < 2) {
+            alert("메시지는 2글자 이상 입력해 주세요.")
+            return
+        }
+
+        if (/(.)\1{7,}/.test(cleaned)) {
+            alert("반복 입력이 감지되어 전송을 막았습니다.")
+            return
+        }
 
         const content = cleaned
         const { data: authData, error: authError } = await supabase.auth.getUser()
-        if (authError || !authData.user) return
-        const user = authData.user
+
+        if (authError || !authData.user) {
+            return
+        }
 
         const attachedFileName = selectedFile?.name ?? null
+
         setInput("")
         setSelectedFile(null)
         setLoading(true)
         setStreamingText("")
-        if (isRecording) { recognitionRef.current?.stop(); setIsRecording(false) }
+
+        if (isRecording) {
+            recognitionRef.current?.stop()
+            setIsRecording(false)
+        }
 
         let currentConversationId: string | null = conversationId
         const controller = new AbortController()
@@ -90,6 +134,7 @@ export function useChat(conversationId: string | null, onConversationCreated: (i
             const convId = currentConversationId as string
 
             const userMsg = await saveMessage(convId, "user", content)
+
             if (userMsg) {
                 const enrichedMsg: Message = {
                     ...(userMsg as Message),
@@ -109,7 +154,11 @@ export function useChat(conversationId: string | null, onConversationCreated: (i
                 const errData = await res.json().catch(() => ({}))
                 const errorText = errData?.error || "AI 응답 중 오류가 발생했습니다."
                 const aiErrorMsg = await saveMessage(convId, "assistant", errorText)
-                if (aiErrorMsg) setMessages((prev) => [...prev, aiErrorMsg as Message])
+
+                if (aiErrorMsg) {
+                    setMessages((prev) => [...prev, aiErrorMsg as Message])
+                }
+
                 setLoading(false)
                 return
             }
@@ -117,10 +166,12 @@ export function useChat(conversationId: string | null, onConversationCreated: (i
             const reader = res.body?.getReader()
             const decoder = new TextDecoder()
             let accumulated = ""
+
             if (reader) {
                 while (true) {
                     const { done, value } = await reader.read()
                     if (done) break
+
                     accumulated += decoder.decode(value, { stream: true })
                     setStreamingText(accumulated)
                 }
@@ -128,22 +179,40 @@ export function useChat(conversationId: string | null, onConversationCreated: (i
 
             const aiContent = accumulated.trim() || "응답이 비어 있습니다."
             const aiMsg = await saveMessage(convId, "assistant", aiContent)
-            if (aiMsg) setMessages((prev) => [...prev, aiMsg as Message])
 
+            if (aiMsg) {
+                setMessages((prev) => [...prev, aiMsg as Message])
+            }
         } catch (error) {
             if (error instanceof DOMException && error.name === "AbortError") {
                 const partial = streamingText.trim()
+
                 if (partial && currentConversationId) {
                     const convId = currentConversationId as string
-                    const partialMsg = await saveMessage(convId, "assistant", partial + "\n\n_(응답이 중지되었습니다)_")
-                    if (partialMsg) setMessages((prev) => [...prev, partialMsg as Message])
+                    const partialMsg = await saveMessage(
+                        convId,
+                        "assistant",
+                        partial + "\n\n_(응답이 중지되었습니다)_"
+                    )
+
+                    if (partialMsg) {
+                        setMessages((prev) => [...prev, partialMsg as Message])
+                    }
                 }
             } else {
                 console.error("handleSend 오류:", error)
+
                 if (currentConversationId) {
                     const convId = currentConversationId as string
-                    const aiErrorMsg = await saveMessage(convId, "assistant", "AI 응답 중 예기치 않은 오류가 발생했습니다.")
-                    if (aiErrorMsg) setMessages((prev) => [...prev, aiErrorMsg as Message])
+                    const aiErrorMsg = await saveMessage(
+                        convId,
+                        "assistant",
+                        "AI 응답 중 예기치 않은 오류가 발생했습니다."
+                    )
+
+                    if (aiErrorMsg) {
+                        setMessages((prev) => [...prev, aiErrorMsg as Message])
+                    }
                 }
             }
         } finally {
@@ -154,11 +223,18 @@ export function useChat(conversationId: string | null, onConversationCreated: (i
     }
 
     return {
-        messages, setMessages,
-        input, setInput,
-        loading, streamingText,
-        selectedFile, setSelectedFile,
+        messages,
+        setMessages,
+        input,
+        setInput,
+        loading,
+        streamingText,
+        selectedFile,
+        setSelectedFile,
         isRecording,
-        loadMessages, handleSend, handleStop, toggleRecording
+        loadMessages,
+        handleSend,
+        handleStop,
+        toggleRecording
     }
 }
