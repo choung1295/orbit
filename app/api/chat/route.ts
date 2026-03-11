@@ -6,12 +6,6 @@ import { runDelphai } from "@/lib/delphai";
 
 export async function POST(req: Request) {
     try {
-        const { default: OpenAI } = await import("openai");
-
-        const client = new OpenAI({
-            apiKey: process.env.OPENAI_API_KEY,
-        });
-
         const body = await req.json();
 
         const message = body?.message || "";
@@ -24,12 +18,7 @@ export async function POST(req: Request) {
             );
         }
 
-        const delphai = runDelphai(message);
-        const result = delphai.thinking.result;
-
-        console.log(result);
-
-        const reply = result;
+        const reply = await runDelphai(session_id, message);
 
         return Response.json({ reply, session_id });
 

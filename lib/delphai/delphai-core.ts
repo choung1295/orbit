@@ -1,13 +1,17 @@
-import { reason } from "./reasoning/reason";
-import { SYSTEM_PROMPT } from "./prompt/system-prompt";
+import { recallMemory } from "./memory/recall"
+import { saveMemory } from "./memory/save"
+import { buildPrompt } from "./prompt/build"
+import { callAI } from "../ai/callAI"
 
-export function runDelphai(input: string) {
-    const thinking = reason(input);
+export async function runDelphai(userId: string, message: string) {
 
-    return {
-        system: SYSTEM_PROMPT,
-        thinking,
-        input,
-        result: thinking.result,
-    };
+    const memories = await recallMemory(userId, message)
+
+    const prompt = buildPrompt(message, memories)
+
+    const aiResponse = await callAI(prompt)
+
+    await saveMemory(userId, message, aiResponse)
+
+    return aiResponse
 }
