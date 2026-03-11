@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import type { AuthResponse } from "@supabase/supabase-js";
 import dynamic from "next/dynamic";
 
 const Navbar = dynamic(() => import("@/components/landing/Navbar"), { ssr: false });
@@ -15,7 +16,7 @@ export default function LandingPage() {
 
     useEffect(() => {
         const supabase = createClient();
-        supabase.auth.getUser().then((result) => {
+        supabase.auth.getUser().then((result: AuthResponse) => {
             if (result.data?.user) {
                 router.replace("/orbit");
             }
