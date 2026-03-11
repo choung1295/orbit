@@ -30,7 +30,6 @@ export function useChat(
             setMessages([]);
             return;
         }
-
         try {
             const data = await getMessages(conversationId);
             setMessages(data as Message[]);
@@ -65,13 +64,11 @@ export function useChat(
 
         recognition.onresult = (event: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
             let finalTranscript = "";
-
             for (let i = event.resultIndex; i < event.results.length; i++) {
                 if (event.results[i].isFinal) {
                     finalTranscript += event.results[i][0].transcript;
                 }
             }
-
             if (finalTranscript) {
                 setInput((prev) => prev + finalTranscript);
             }
@@ -105,11 +102,8 @@ export function useChat(
         }
 
         const content = cleaned;
-        const { data: authData, error: authError } = await supabase.auth.getUser();
-
-        if (authError || !authData.user) {
-            return;
-        }
+        const { data: authData } = await supabase.auth.getUser();
+        const isLoggedIn = !!authData?.user;
 
         const attachedFileName = selectedFile?.name ?? null;
 
@@ -128,22 +122,30 @@ export function useChat(
         abortControllerRef.current = controller;
 
         try {
-            if (!currentConversationId) {
-                const newConv = await createConversation(content.slice(0, 30));
-                currentConversationId = newConv.id;
-                onConversationCreated(newConv.id);
-            }
-
-            const convId = currentConversationId as string;
-
-            const userMsg = await saveMessage(convId, "user", content);
-
-            if (userMsg) {
-                const enrichedMsg: Message = {
-                    ...(userMsg as Message),
+            if (isLoggedIn) {
+                if (!currentConversationId) {
+                    const newConv = await createConversation(content.slice(0, 30));
+                    currentConversationId = newConv.id;
+                    onConversationCreated(newConv.id);
+                }
+                const convId = currentConversationId as string;
+                const userMsg = await saveMessage(convId, "user", content);
+                if (userMsg) {
+                    const enrichedMsg: Message = {
+                        ...(userMsg as Message),
+                        ...(attachedFileName ? { fileName: attachedFileName } : {}),
+                    };
+                    setMessages((prev) => [...prev, enrichedMsg]);
+                }
+            } else {
+                const tempUserMsg: Message = {
+                    id: crypto.randomUUID(),
+                    role: "user",
+                    content,
+                    created_at: new Date().toISOString(),
                     ...(attachedFileName ? { fileName: attachedFileName } : {}),
                 };
-                setMessages((prev) => [...prev, enrichedMsg]);
+                setMessages((prev) => [...prev, tempUserMsg]);
             }
 
             const res = await fetch("/api/chat", {
@@ -156,56 +158,61 @@ export function useChat(
             if (!res.ok) {
                 const errData = await res.json().catch(() => ({}));
                 const errorText = errData?.error || "AI 응답 중 오류가 발생했습니다.";
-                const aiErrorMsg = await saveMessage(convId, "assistant", errorText);
 
-                if (aiErrorMsg) {
-                    setMessages((prev) => [...prev, aiErrorMsg as Message]);
+                if (isLoggedIn && currentConversationId) {
+                    const aiErrorMsg = await saveMessage(currentConversationId, "assistant", errorText);
+                    if (aiErrorMsg) setMessages((prev) => [...prev, aiErrorMsg as Message]);
+                } else {
+                    setMessages((prev) => [...prev, {
+                        id: crypto.randomUUID(),
+                        role: "assistant",
+                        content: errorText,
+                        created_at: new Date().toISOString(),
+                    }]);
                 }
-
                 setLoading(false);
                 return;
             }
 
             const data = await res.json().catch(() => null);
+            const aiContent = data?.reply?.trim() || "응답이 비어 있습니다.";
 
-            const aiContent =
-                data?.reply?.trim() || "응답이 비어 있습니다.";
-
-            const aiMsg = await saveMessage(convId, "assistant", aiContent);
-
-            if (aiMsg) {
-                setMessages((prev) => [...prev, aiMsg as Message]);
+            if (isLoggedIn && currentConversationId) {
+                const aiMsg = await saveMessage(currentConversationId, "assistant", aiContent);
+                if (aiMsg) setMessages((prev) => [...prev, aiMsg as Message]);
+            } else {
+                setMessages((prev) => [...prev, {
+                    id: crypto.randomUUID(),
+                    role: "assistant",
+                    content: aiContent,
+                    created_at: new Date().toISOString(),
+                }]);
             }
+
         } catch (error) {
             if (error instanceof DOMException && error.name === "AbortError") {
                 const partial = streamingText.trim();
-
-                if (partial && currentConversationId) {
-                    const convId = currentConversationId as string;
+                if (partial && isLoggedIn && currentConversationId) {
                     const partialMsg = await saveMessage(
-                        convId,
+                        currentConversationId,
                         "assistant",
                         partial + "\n\n_(응답이 중지되었습니다)_"
                     );
-
-                    if (partialMsg) {
-                        setMessages((prev) => [...prev, partialMsg as Message]);
-                    }
+                    if (partialMsg) setMessages((prev) => [...prev, partialMsg as Message]);
                 }
             } else {
                 console.error("handleSend 오류:", error);
-
-                if (currentConversationId) {
-                    const convId = currentConversationId as string;
-                    const aiErrorMsg = await saveMessage(
-                        convId,
-                        "assistant",
-                        "AI 응답 중 예기치 않은 오류가 발생했습니다."
-                    );
-
-                    if (aiErrorMsg) {
-                        setMessages((prev) => [...prev, aiErrorMsg as Message]);
-                    }
+                const errorText = "AI 응답 중 예기치 않은 오류가 발생했습니다.";
+                if (isLoggedIn && currentConversationId) {
+                    const aiErrorMsg = await saveMessage(currentConversationId, "assistant", errorText);
+                    if (aiErrorMsg) setMessages((prev) => [...prev, aiErrorMsg as Message]);
+                } else {
+                    setMessages((prev) => [...prev, {
+                        id: crypto.randomUUID(),
+                        role: "assistant",
+                        content: errorText,
+                        created_at: new Date().toISOString(),
+                    }]);
                 }
             }
         } finally {
