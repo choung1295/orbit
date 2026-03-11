@@ -1,14 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { Bot, Copy, Check, Pencil, RotateCcw, Paperclip } from "lucide-react"
+import { Copy, Check, Pencil, RotateCcw, Paperclip } from "lucide-react"
 import { Message } from "./useChat"
-
-interface MessageBubbleProps {
-    message: Message
-    onRetry?: (content: string) => void
-    onRegenerate?: () => void
-}
+import DelphiAvatar from "./DelphiAvatar"
 
 function renderContent(content: string) {
     return content.split('\n\n').map((para, i) => (
@@ -23,7 +18,11 @@ function renderContent(content: string) {
     ))
 }
 
-export default function MessageBubble({ message, onRetry, onRegenerate }: MessageBubbleProps) {
+export default function MessageBubble({ message, onRetry, onRegenerate }: {
+    message: Message
+    onRetry?: (content: string) => void
+    onRegenerate?: () => void
+}) {
     const isUser = message.role === "user"
     const [copied, setCopied] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
@@ -80,8 +79,8 @@ export default function MessageBubble({ message, onRetry, onRegenerate }: Messag
 
     return (
         <div className="flex gap-3.5 group">
-            <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center shrink-0 mt-1">
-                <Bot className="w-3.5 h-3.5 text-white" />
+            <div className="shrink-0 mt-1">
+                <DelphiAvatar size={32} />
             </div>
             <div className="flex-1 flex flex-col gap-2 min-w-0">
                 <div
