@@ -34,6 +34,7 @@ export default function OrbitAppPage() {
             </div>
 
             <div className="flex-1 flex flex-col min-w-0">
+                {/* 상단 헤더 */}
                 <div className="flex items-center gap-3 px-6 h-16 border-b border-[#2a2a35] shrink-0">
                     <button
                         onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -58,8 +59,11 @@ export default function OrbitAppPage() {
                     </div>
                 </div>
 
-                <div className="flex-1 min-h-0 px-4 py-4">
-                    <ChatWindow conversationId={activeChatId} onConversationCreated={setActiveChatId} />
+                {/* 채팅 영역 — 중앙 정렬, 최대 폭 제한 */}
+                <div className="flex-1 min-h-0 flex flex-col items-center py-4">
+                    <div className="w-full max-w-3xl h-full flex flex-col px-4">
+                        <ChatWindow conversationId={activeChatId} onConversationCreated={setActiveChatId} />
+                    </div>
                 </div>
             </div>
         </div>
