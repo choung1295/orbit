@@ -10,6 +10,19 @@ interface MessageBubbleProps {
     onRegenerate?: () => void
 }
 
+function renderContent(content: string) {
+    return content.split('\n\n').map((para, i) => (
+        <p key={i} className={i > 0 ? 'mt-3' : ''}>
+            {para.split('\n').map((line, j, arr) => (
+                <span key={j}>
+                    {line}
+                    {j < arr.length - 1 && <br />}
+                </span>
+            ))}
+        </p>
+    ))
+}
+
 export default function MessageBubble({ message, onRetry, onRegenerate }: MessageBubbleProps) {
     const isUser = message.role === "user"
     const [copied, setCopied] = useState(false)
@@ -29,8 +42,10 @@ export default function MessageBubble({ message, onRetry, onRegenerate }: Messag
     if (isUser) {
         return (
             <div className="flex flex-col items-end gap-1.5 group">
-                <div className="max-w-[65%] px-5 py-3.5 rounded-2xl rounded-tr-sm text-sm leading-[1.75] whitespace-pre-wrap break-words"
-                    style={{ backgroundColor: '#4338a8', color: '#ededf8' }}>
+                <div
+                    className="max-w-[65%] px-5 py-3.5 rounded-2xl rounded-tr-sm text-sm leading-[1.7] whitespace-pre-wrap break-words"
+                    style={{ backgroundColor: '#4338a8', color: '#ededf8' }}
+                >
                     {message.fileName && (
                         <div className="flex items-center gap-2 mb-2.5 px-3 py-1.5 rounded-lg bg-white/10 text-xs text-indigo-200">
                             <Paperclip className="w-3 h-3 shrink-0" />
@@ -39,7 +54,7 @@ export default function MessageBubble({ message, onRetry, onRegenerate }: Messag
                     )}
                     {isEditing ? (
                         <textarea
-                            className="w-full bg-transparent outline-none resize-none text-sm leading-[1.75]"
+                            className="w-full bg-transparent outline-none resize-none text-sm leading-[1.7]"
                             style={{ color: '#ededf8' }}
                             value={editValue}
                             onChange={(e) => setEditValue(e.target.value)}
@@ -70,14 +85,14 @@ export default function MessageBubble({ message, onRetry, onRegenerate }: Messag
             </div>
             <div className="flex-1 flex flex-col gap-2 min-w-0">
                 <div
-                    className="px-5 py-4 rounded-2xl rounded-tl-sm text-sm leading-[1.8] whitespace-pre-wrap break-words"
+                    className="px-5 py-4 rounded-2xl rounded-tl-sm text-sm leading-[1.7]"
                     style={{
                         backgroundColor: '#16161e',
                         border: '1px solid #22222e',
                         color: '#ceceda'
                     }}
                 >
-                    {message.content}
+                    {renderContent(message.content)}
                 </div>
                 <div className="flex items-center gap-0.5 pl-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onClick={handleCopy} className="p-1.5 rounded-lg text-[#404050] hover:text-[#a0a0b8] hover:bg-[#1e1e28] transition-colors">
