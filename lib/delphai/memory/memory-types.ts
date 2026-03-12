@@ -14,19 +14,63 @@ export type MemoryStatus =
     | "archived"
 
 export type MemoryScope =
-    | "session"    // 현재 대화에서만 유효
-    | "user"       // 사용자 장기 기억
-    | "project"    // 특정 프로젝트에 묶인 기억
-    | "summary"    // 요약된 압축 기억
+    | "session"
+    | "user"
+    | "project"
+    | "summary"
+
+export type MemorySource =
+    | "user_explicit"
+    | "user_implied"
+    | "assistant_inferred"
+    | "system_derived"
 
 export interface MemoryRecord {
     id: string
     user_id: string
+
     content: string
     type: MemoryType
     scope: MemoryScope
     status: MemoryStatus
-    project_id?: string    // scope가 project일 때만 사용
+    source: MemorySource
+
+    key?: string
+    version: number
+    project_id?: string
+
+    importance: number
+    confidence: number
+
+    tags?: string[]
+
     created_at: string
     updated_at: string
+    last_used_at?: string
+    expires_at?: string
+}
+
+export const SCOPE_PRIORITY: Record<MemoryScope, number> = {
+    session: 4,
+    project: 3,
+    user: 2,
+    summary: 1,
+}
+
+export function calculateRecallScore(
+    memory: MemoryRecord,
+    now: Date = new Date()
+): number {
+    const scopeScore = SCOPE_PRIORITY[memory.scope] * 10
+    const importanceScore = memory.importance * 10
+    const confidenceScore = memory.confidence * 10
+
+    let recencyScore = 0
+    if (memory.last_used_at) {
+        const diffMs = now.getTime() - new Date(memory.last_used_at).getTime()
+        const diffDays = diffMs / (1000 * 60 * 60 * 24)
+        recencyScore = Math.max(0, 10 - diffDays * 0.5)
+    }
+
+    return scopeScore + importanceScore + confidenceScore + recencyScore
 }

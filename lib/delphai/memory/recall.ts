@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client"
-import { MemoryRecord, MemoryScope } from "./memory-types"
+import { MemoryRecord, MemoryScope, SCOPE_PRIORITY } from "./memory-types"
 
 export async function recallMemory(
     userId: string,
@@ -7,62 +7,128 @@ export async function recallMemory(
     projectId?: string,
     scope?: MemoryScope,
 ): Promise<MemoryRecord[]> {
-
-    if (!userId || !message) return []
+    if (!userId || !message.trim()) return []
 
     try {
         const supabase = createClient()
+        const nowIso = new Date().toISOString()
 
-        let query = supabase
+        const sessionQuery = supabase
             .from("memories")
             .select("*")
             .eq("user_id", userId)
             .eq("status", "active")
-            .order("created_at", { ascending: false })
-            .limit(10)
+            .eq("scope", "session")
+            .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+            .order("updated_at", { ascending: false })
+            .limit(8)
 
-        // 프로젝트 필터
-        if (projectId) {
-            query = query.eq("project_id", projectId)
-        }
+        const projectQuery = projectId
+            ? supabase
+                .from("memories")
+                .select("*")
+                .eq("user_id", userId)
+                .eq("status", "active")
+                .eq("scope", "project")
+                .eq("project_id", projectId)
+                .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+                .order("importance", { ascending: false })
+                .limit(8)
+            : Promise.resolve({ data: [], error: null })
 
-        // 스코프 필터
-        if (scope) {
-            query = query.eq("scope", scope)
-        }
+        const userQuery = supabase
+            .from("memories")
+            .select("*")
+            .eq("user_id", userId)
+            .eq("status", "active")
+            .eq("scope", "user")
+            .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+            .order("importance", { ascending: false })
+            .limit(8)
 
-        const { data, error } = await query
+        const summaryQuery = supabase
+            .from("memories")
+            .select("*")
+            .eq("user_id", userId)
+            .eq("status", "active")
+            .eq("scope", "summary")
+            .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+            .order("updated_at", { ascending: false })
+            .limit(5)
 
-        if (error) {
-            console.error("[recallMemory] 오류:", error.message)
+        const [session, project, user, summary] = await Promise.all([
+            sessionQuery,
+            projectQuery,
+            userQuery,
+            summaryQuery,
+        ])
+
+        const errors = [session.error, project.error, user.error, summary.error].filter(Boolean)
+        if (errors.length > 0) {
+            console.error("[recallMemory] 조회 오류:", errors)
             return []
         }
 
-        if (!data || data.length === 0) return []
+        let all = [
+            ...(session.data ?? []),
+            ...(project.data ?? []),
+            ...(user.data ?? []),
+            ...(summary.data ?? []),
+        ] as MemoryRecord[]
 
-        // 메시지와 관련성 높은 기억만 필터링
-        const relevant = (data as MemoryRecord[]).filter(m =>
-            isRelevant(m.content, message)
-        )
+        if (scope) {
+            all = all.filter((m) => m.scope === scope)
+        }
+
+        if (all.length === 0) return []
+
+        const relevant = all
+            .filter((m) => isRelevant(m.content, message, m.tags))
+            .sort((a, b) => calculateRecallScore(b) - calculateRecallScore(a))
+            .slice(0, 10)
 
         return relevant
-
     } catch (error: unknown) {
         if (error instanceof Error) {
             console.error("[recallMemory] 오류:", error.message)
+        } else {
+            console.error("[recallMemory] 알 수 없는 오류")
         }
         return []
     }
 }
 
-// 단순 키워드 관련성 판단
-function isRelevant(content: string, message: string): boolean {
-    const messageWords = message
-        .toLowerCase()
-        .split(/\s+/)
-        .filter(w => w.length > 1)
+function calculateRecallScore(memory: MemoryRecord): number {
+    const scopeScore = (SCOPE_PRIORITY[memory.scope] ?? 0) * 10
+    const importanceScore = (memory.importance ?? 0.5) * 10
+    const confidenceScore = (memory.confidence ?? 0.5) * 10
 
-    return messageWords.some(word =>
-        content.toLowerCase().includes(word)
-    )
+    let recencyScore = 0
+    if (memory.last_used_at) {
+        const diffMs = Date.now() - new Date(memory.last_used_at).getTime()
+        const diffDays = diffMs / (1000 * 60 * 60 * 24)
+        recencyScore = Math.max(0, 10 - diffDays * 0.5)
+    }
+
+    return scopeScore + importanceScore + confidenceScore + recencyScore
+}
+
+function isRelevant(content: string, message: string, tags?: string[]): boolean {
+    const normalizedContent = content.toLowerCase()
+    const normalizedMessage = message.toLowerCase()
+    const normalizedTags = (tags ?? []).map((tag) => tag.toLowerCase())
+
+    const words = normalizedMessage
+        .split(/\s+/)
+        .map((w) => w.trim())
+        .filter((w) => w.length >= 2)
+
+    if (words.length === 0) return true
+
+    const contentMatchCount = words.filter((w) => normalizedContent.includes(w)).length
+    const tagMatchCount = words.filter((w) =>
+        normalizedTags.some((tag) => tag.includes(w))
+    ).length
+
+    return contentMatchCount >= 1 || tagMatchCount >= 1
 }
