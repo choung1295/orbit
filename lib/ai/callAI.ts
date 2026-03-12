@@ -21,7 +21,6 @@ export type AITask =
     | "video_gen"
     | "video_read"
 
-// 기본 라우팅 — 전부 openai로 통일 (안정 우선)
 const TASK_PROVIDER_MAP: Record<AITask, AIProvider> = {
     text: "openai",
     reasoning: "openai",
@@ -73,9 +72,18 @@ async function callOpenAICompatible(
         apiKey: API_KEY_MAP[provider],
         baseURL: BASE_URL_MAP[provider],
     })
+
+    // system prompt와 user 메시지 분리
+    const parts = prompt.split("## 사용자 메시지\n")
+    const systemPrompt = parts[0].trim()
+    const userMessage = parts[1]?.trim() ?? ""
+
     const response = await client.chat.completions.create({
         model: MODEL_MAP[provider][mode],
-        messages: [{ role: "system", content: prompt }],
+        messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userMessage },
+        ],
         temperature: mode === "deep" ? 0.7 : 0.3,
         max_tokens: mode === "deep" ? 2000 : 800,
     })
@@ -87,10 +95,16 @@ async function callAnthropic(
     mode: AIMode
 ): Promise<string> {
     const client = new Anthropic({ apiKey: API_KEY_MAP.anthropic })
+
+    const parts = prompt.split("## 사용자 메시지\n")
+    const systemPrompt = parts[0].trim()
+    const userMessage = parts[1]?.trim() ?? ""
+
     const response = await client.messages.create({
         model: MODEL_MAP.anthropic[mode],
         max_tokens: mode === "deep" ? 2000 : 800,
-        messages: [{ role: "user", content: prompt }],
+        system: systemPrompt,
+        messages: [{ role: "user", content: userMessage }],
     })
     return response.content[0].type === "text"
         ? response.content[0].text
