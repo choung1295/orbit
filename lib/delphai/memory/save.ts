@@ -1,4 +1,4 @@
-import { createClient } from "../supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import { MemoryType, MemoryScope } from "./memory-types"
 
 // 저장할 가치가 있는 내용인지 판단

@@ -1,4 +1,4 @@
-import { createClient } from "../supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import { MemoryRecord, MemoryScope } from "./memory-types"
 
 export async function recallMemory(

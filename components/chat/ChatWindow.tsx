@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Send, Plus, Paperclip, Image, X, Mic, Square } from "lucide-react"
+import { Send, Plus, Paperclip, ImageIcon, X, Mic, Square } from "lucide-react"
 import { useChat } from "./useChat"
 import MessageList from "./MessageList"
 
@@ -62,7 +62,6 @@ export default function ChatWindow({ conversationId, onConversationCreated }: Ch
         @keyframes voiceWave { 0% { height: 4px; } 100% { height: 16px; } }
       `}</style>
 
-            {/* 메시지 영역 */}
             <div className="flex-1 overflow-y-auto">
                 <MessageList
                     messages={messages}
@@ -73,7 +72,6 @@ export default function ChatWindow({ conversationId, onConversationCreated }: Ch
                 />
             </div>
 
-            {/* 입력 영역 */}
             <div className="shrink-0">
                 <div className="max-w-4xl mx-auto w-full px-6 pb-6 pt-4">
                     {selectedFile && (
@@ -103,7 +101,7 @@ export default function ChatWindow({ conversationId, onConversationCreated }: Ch
                                         onClick={() => { fileInputRef.current?.click(); setPlusMenuOpen(false) }}
                                         className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#c0c0c8] hover:bg-[#2a2a35] transition-colors"
                                     >
-                                        <Image className="w-4 h-4 text-indigo-400" />
+                                        <ImageIcon className="w-4 h-4 text-indigo-400" />
                                         사진 및 파일 추가
                                     </button>
                                 </div>

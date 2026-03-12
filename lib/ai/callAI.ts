@@ -125,14 +125,3 @@ export async function callAI(
         return "응답을 생성하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
     }
 }
-```
-
----
-
-## 크레딧 시스템 설계
-```
-Supabase users 테이블에 추가
-
-credits          int     ← 보유 크레딧
-credits_used     int     ← 누적 사용량
-plan             text    ← free | pro

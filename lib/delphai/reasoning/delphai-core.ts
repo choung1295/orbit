@@ -14,7 +14,6 @@ export interface DelphaiInput {
     plan?: UserPlan
     userLevel?: UserLevel
     projectId?: string
-    // 체험존 전용
     isPlayground?: boolean
     provider?: AIProvider
 }
@@ -27,20 +26,12 @@ export interface DelphaiOutput {
 }
 
 // 크레딧 확인 (Supabase 연동 — 추후 구현)
-async function checkCredits(userId: string): Promise<boolean> {
-    // TODO: Supabase에서 credits 조회
-    // const { data } = await supabase
-    //   .from("users")
-    //   .select("credits")
-    //   .eq("id", userId)
-    //   .single()
-    // return (data?.credits ?? 0) > 0
-    return true // 임시: 항상 통과
+async function checkCredits(): Promise<boolean> {
+    return true
 }
 
 // 크레딧 차감 (Supabase 연동 — 추후 구현)
 async function deductCredit(userId: string, provider: AIProvider): Promise<void> {
-    // TODO: Supabase credits - 1
     console.log(`[credit] ${userId} / ${provider} 크레딧 차감`)
 }
 
@@ -82,7 +73,7 @@ export async function runDelphai(input: DelphaiInput): Promise<DelphaiOutput> {
 
     // 2. 체험존 크레딧 확인
     if (isPlayground) {
-        const hasCredits = await checkCredits(userId)
+        const hasCredits = await checkCredits()
         if (!hasCredits) {
             return {
                 response: "크레딧이 부족합니다. 충전 후 이용해주세요.",
