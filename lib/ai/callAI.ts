@@ -4,9 +4,8 @@ import Anthropic from "@anthropic-ai/sdk"
 export type AIProvider =
     | "openai"
     | "deepseek"
-    | "ollama"
+    | "groq"
     | "mistral"
-    // 상용 AI 체험존
     | "anthropic"
     | "google"
     | "xai"
@@ -22,23 +21,21 @@ export type AITask =
     | "video_gen"
     | "video_read"
 
-// 오픈소스 기본 라우팅
+// 기본 라우팅 — 전부 openai로 통일 (안정 우선)
 const TASK_PROVIDER_MAP: Record<AITask, AIProvider> = {
-    text: "ollama",
-    reasoning: "deepseek",
-    image_gen: "ollama",
-    image_read: "ollama",
-    video_gen: "ollama",
-    video_read: "ollama",
+    text: "openai",
+    reasoning: "openai",
+    image_gen: "openai",
+    image_read: "openai",
+    video_gen: "openai",
+    video_read: "openai",
 }
 
 const MODEL_MAP: Record<AIProvider, Record<AIMode, string>> = {
-    // 오픈소스
     openai: { fast: "gpt-4o-mini", deep: "gpt-4o" },
     deepseek: { fast: "deepseek-chat", deep: "deepseek-reasoner" },
-    ollama: { fast: "llama3", deep: "llama3:70b" },
+    groq: { fast: "llama-3.1-8b-instant", deep: "llama-3.3-70b-versatile" },
     mistral: { fast: "mistral-small-latest", deep: "mistral-large-latest" },
-    // 상용 체험존
     anthropic: { fast: "claude-haiku-4-5-20251001", deep: "claude-sonnet-4-6" },
     google: { fast: "gemini-1.5-flash", deep: "gemini-1.5-pro" },
     xai: { fast: "grok-3-mini", deep: "grok-3" },
@@ -48,7 +45,7 @@ const MODEL_MAP: Record<AIProvider, Record<AIMode, string>> = {
 const BASE_URL_MAP: Record<AIProvider, string> = {
     openai: "https://api.openai.com/v1",
     deepseek: "https://api.deepseek.com/v1",
-    ollama: "http://localhost:11434/v1",
+    groq: "https://api.groq.com/openai/v1",
     mistral: "https://api.mistral.ai/v1",
     anthropic: "https://api.anthropic.com",
     google: "https://generativelanguage.googleapis.com/v1beta",
@@ -59,7 +56,7 @@ const BASE_URL_MAP: Record<AIProvider, string> = {
 const API_KEY_MAP: Record<AIProvider, string> = {
     openai: process.env.OPENAI_API_KEY ?? "",
     deepseek: process.env.DEEPSEEK_API_KEY ?? "",
-    ollama: "ollama",
+    groq: process.env.GROQ_API_KEY ?? "",
     mistral: process.env.MISTRAL_API_KEY ?? "",
     anthropic: process.env.ANTHROPIC_API_KEY ?? "",
     google: process.env.GOOGLE_API_KEY ?? "",
@@ -67,7 +64,6 @@ const API_KEY_MAP: Record<AIProvider, string> = {
     microsoft: process.env.OPENAI_API_KEY ?? "",
 }
 
-// 오픈소스 AI 호출 (OpenAI SDK 호환)
 async function callOpenAICompatible(
     prompt: string,
     provider: AIProvider,
@@ -86,7 +82,6 @@ async function callOpenAICompatible(
     return response.choices[0].message.content ?? ""
 }
 
-// Anthropic 전용 호출
 async function callAnthropic(
     prompt: string,
     mode: AIMode
@@ -102,12 +97,11 @@ async function callAnthropic(
         : ""
 }
 
-// 메인 호출 함수
 export async function callAI(
     prompt: string,
     mode: AIMode = "fast",
     task: AITask = "text",
-    provider?: AIProvider  // playground에서 직접 지정 가능
+    provider?: AIProvider
 ): Promise<string> {
 
     const resolvedProvider = provider ?? TASK_PROVIDER_MAP[task]
