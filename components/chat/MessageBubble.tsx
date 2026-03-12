@@ -2,21 +2,9 @@
 
 import { useState } from "react"
 import { Copy, Check, Pencil, RotateCcw, Paperclip } from "lucide-react"
+import ReactMarkdown from "react-markdown"
 import { Message } from "./useChat"
 import DelphaiAvatar from "./DelphaiAvatar"
-
-function renderContent(content: string) {
-    return content.split("\n\n").map((para, i) => (
-        <p key={i} className={i > 0 ? "mt-3" : ""}>
-            {para.split("\n").map((line, j, arr) => (
-                <span key={j}>
-                    {line}
-                    {j < arr.length - 1 && <br />}
-                </span>
-            ))}
-        </p>
-    ))
-}
 
 export default function MessageBubble({
     message,
@@ -117,14 +105,46 @@ export default function MessageBubble({
 
             <div className="w-full flex flex-col gap-2">
                 <div
-                    className="px-5 py-4 rounded-2xl rounded-tl-sm text-sm leading-[1.75]"
+                    className="px-5 py-4 rounded-2xl rounded-tl-sm text-sm leading-[1.75] prose prose-invert prose-sm max-w-none"
                     style={{
                         backgroundColor: "#16161e",
                         border: "1px solid #22222e",
                         color: "#ceceda",
                     }}
                 >
-                    {renderContent(message.content)}
+                    <ReactMarkdown
+                        components={{
+                            a: ({ href, children }) => (
+                                <a
+                                    href={href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ color: "#818cf8", textDecoration: "underline" }}
+                                >
+                                    {children}
+                                </a>
+                            ),
+                            p: ({ children }) => (
+                                <p className="mb-3 last:mb-0">{children}</p>
+                            ),
+                            ul: ({ children }) => (
+                                <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>
+                            ),
+                            ol: ({ children }) => (
+                                <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>
+                            ),
+                            code: ({ children }) => (
+                                <code className="px-1.5 py-0.5 rounded bg-[#1e1e2e] text-indigo-300 text-xs font-mono">
+                                    {children}
+                                </code>
+                            ),
+                            strong: ({ children }) => (
+                                <strong className="font-semibold text-[#e0e0ec]">{children}</strong>
+                            ),
+                        }}
+                    >
+                        {message.content}
+                    </ReactMarkdown>
                 </div>
 
                 <div className="flex items-center gap-0.5 pl-1 opacity-0 group-hover:opacity-100 transition-opacity">
