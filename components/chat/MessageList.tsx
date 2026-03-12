@@ -42,12 +42,12 @@ export default function MessageList({ messages, loading, streamingText, onRetry,
                     ))}
 
                     {loading && streamingText && (
-                        <div className="flex gap-3.5">
-                            <div className="shrink-0 mt-1">
+                        <div className="flex flex-col items-start gap-2.5 w-full">
+                            <div className="relative shrink-0 pt-1">
                                 <DelphaiAvatar size={32} />
                             </div>
                             <div
-                                className="flex-1 px-5 py-4 rounded-2xl rounded-tl-sm text-sm leading-[1.7] whitespace-pre-wrap break-words"
+                                className="w-full px-5 py-4 rounded-2xl rounded-tl-sm text-sm leading-[1.75] whitespace-pre-wrap break-words"
                                 style={{ backgroundColor: '#16161e', border: '1px solid #22222e', color: '#ceceda' }}
                             >
                                 {streamingText}
@@ -56,8 +56,8 @@ export default function MessageList({ messages, loading, streamingText, onRetry,
                     )}
 
                     {loading && !streamingText && (
-                        <div className="flex gap-3.5">
-                            <div className="shrink-0 mt-1">
+                        <div className="flex flex-col items-start gap-2.5 w-full">
+                            <div className="relative shrink-0 pt-1">
                                 <DelphaiAvatar size={40} />
                             </div>
                             <div
