@@ -21,7 +21,7 @@ export default function MessageList({ messages, loading, streamingText, onRetry,
     }, [messages, loading, streamingText])
 
     return (
-        <div className="max-w-3xl mx-auto w-full px-4 py-8">
+        <div className="max-w-3xl mx-auto w-full px-4 py-4">
             {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
                     <DelphaiAvatar size={64} />
@@ -31,7 +31,7 @@ export default function MessageList({ messages, loading, streamingText, onRetry,
                     </div>
                 </div>
             ) : (
-                <div className="space-y-5">
+                <div className="space-y-2">
                     {messages.map((msg, idx) => (
                         <MessageBubble
                             key={msg.id}

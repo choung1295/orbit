@@ -32,7 +32,7 @@ export default function MessageBubble({
 
     if (isUser) {
         return (
-            <div className="flex flex-col items-end gap-1.5 group">
+            <div className="flex flex-col items-end gap-1 group">
                 <div
                     className="max-w-[65%] px-5 py-3.5 rounded-2xl rounded-tr-sm text-sm leading-[1.7] whitespace-pre-wrap break-words"
                     style={{ backgroundColor: "#4338a8", color: "#ededf8" }}
@@ -89,12 +89,12 @@ export default function MessageBubble({
     }
 
     return (
-        <div className="flex flex-col items-start gap-2.5 w-full group">
+        <div className="flex flex-col items-start gap-1.5 w-full group">
 
             {/* AI Avatar */}
             <div className="relative shrink-0 pt-1">
                 <div className="transition-transform duration-300 group-hover:scale-105">
-                    <DelphaiAvatar size={45} />
+                    <DelphaiAvatar size={34} />
                 </div>
 
                 {/* thinking orbit animation */}
@@ -105,7 +105,7 @@ export default function MessageBubble({
 
             <div className="w-full flex flex-col gap-2">
                 <div
-                    className="px-5 py-4 rounded-2xl rounded-tl-sm text-sm leading-[1.75] prose prose-invert prose-sm max-w-none"
+                    className="px-4 py-3 rounded-2xl rounded-tl-sm text-sm leading-[1.7] prose prose-invert prose-sm max-w-none"
                     style={{
                         backgroundColor: "#16161e",
                         border: "1px solid #22222e",
@@ -125,7 +125,7 @@ export default function MessageBubble({
                                 </a>
                             ),
                             p: ({ children }) => (
-                                <p className="mb-3 last:mb-0">{children}</p>
+                                <p className="mb-2 last:mb-0">{children}</p>
                             ),
                             ul: ({ children }) => (
                                 <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>
