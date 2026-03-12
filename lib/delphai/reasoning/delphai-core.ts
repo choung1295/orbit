@@ -46,8 +46,13 @@ function detectTask(message: string): AITask {
 // 추론 깊이 자동 감지
 function detectMode(message: string): "fast" | "deep" {
     const deepKeywords = ["분석", "전략", "설계", "비교", "추론", "왜", "어떻게", "계획"]
+    // 잡담/일상 대화도 deep으로 — EXECUTION_RULES의 톤 적응 규칙이 필요하므로
+    const chatKeywords = ["안녕", "안녕하세요", "차", "커피", "밥", "날씨", "심심", "잘 자", "좋은 아침", "농담", "잡담", "얘기"]
+
     const isDeep = deepKeywords.some(k => message.includes(k))
-    return isDeep || message.length > 200 ? "deep" : "fast"
+    const isChat = chatKeywords.some(k => message.includes(k))
+
+    return isDeep || isChat || message.length > 200 ? "deep" : "fast"
 }
 
 export async function runDelphai(input: DelphaiInput): Promise<DelphaiOutput> {
