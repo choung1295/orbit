@@ -141,7 +141,7 @@ export default function ChatWindow({ conversationId, onConversationCreated }: Ch
                             {loading ? (
                                 <button
                                     onClick={handleStop}
-                                    className="h-9 w-9 rounded bg-[#22C55E] hover:bg-[#16A34A] active:bg-[#15803D] flex items-center justify-center transition-colors"
+                                    className="h-9 w-9 rounded bg-[#60A5FA] hover:bg-blue-400 active:bg-blue-600 flex items-center justify-center transition-colors"
                                 >
                                     <Square className="w-3.5 h-3.5 text-white fill-white" />
                                 </button>
@@ -149,7 +149,7 @@ export default function ChatWindow({ conversationId, onConversationCreated }: Ch
                                 <button
                                     onClick={() => handleSend()}
                                     disabled={!input.trim() && !selectedFile}
-                                    className="h-9 w-9 rounded-xl bg-[#22C55E] hover:bg-[#16A34A] active:bg-[#15803D] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+                                    className="h-9 w-9 rounded-xl bg-[#2DD4BF] hover:bg-teal-400 active:bg-teal-600 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
                                 >
                                     <Send className="w-4 h-4 text-white" />
                                 </button>
