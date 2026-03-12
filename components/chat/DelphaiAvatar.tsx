@@ -79,6 +79,14 @@ export default function DelphiAvatar({ size = 32 }: DelphiAvatarProps) {
                 <animateMotion dur="3s" repeatCount="indefinite" rotate="auto">
                     <mpath href={`#orbitPath-${s}`} />
                 </animateMotion>
+                <animate 
+                    attributeName="opacity" 
+                    values="1;0;1" 
+                    keyTimes="0;0.5;1" 
+                    calcMode="discrete" 
+                    dur="3s" 
+                    repeatCount="indefinite" 
+                />
             </circle>
         </svg>
     )
