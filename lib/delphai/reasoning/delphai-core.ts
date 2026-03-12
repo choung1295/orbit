@@ -4,6 +4,7 @@ import { buildPrompt } from "../prompt/build"
 import { callAI, AIProvider, AITask } from "../../ai/callAI"
 import { retrieveContext } from "../rag/retrieve-context"
 import { guardInput } from "../security/guard"
+import { buildContext } from "../../context"
 
 export type UserPlan = "free" | "pro"
 export type UserLevel = "beginner" | "default" | "expert"
@@ -107,6 +108,10 @@ export async function runDelphai(input: DelphaiInput): Promise<DelphaiOutput> {
         plan,
         mode,
     })
+
+    // 시스템 프롬프트 맨 위에 동적 컨텍스트(시간 등) 주입
+    const dynamicContext = buildContext()
+    prompt.system = `${dynamicContext}\n\n${prompt.system}`
 
     // 7. AI 호출
     let response = ""
