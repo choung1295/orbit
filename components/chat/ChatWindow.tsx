@@ -73,7 +73,7 @@ export default function ChatWindow({ conversationId, onConversationCreated }: Ch
             </div>
 
             <div className="shrink-0">
-                <div className="max-w-4xl mx-auto w-full px-6 pb-6 pt-4">
+                <div className="max-w-4xl mx-auto w-full px-3 md:px-6 pb-3 md:pb-6 pt-2 md:pt-4">
                     {selectedFile && (
                         <div className="flex items-center gap-2 mb-2 px-4 py-2 rounded-xl bg-[#1a1a1f] border border-[#2a2a35] text-sm text-[#a0a0b0]">
                             <Paperclip className="w-4 h-4 text-indigo-400 shrink-0" />
@@ -87,11 +87,11 @@ export default function ChatWindow({ conversationId, onConversationCreated }: Ch
                         </div>
                     )}
 
-                    <div className="flex items-end gap-3 px-4 py-3 rounded-2xl bg-[#18181f] border border-[#2e2e3a] focus-within:border-indigo-500/50 transition-colors">
+                    <div className="flex items-end gap-2 md:gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-[24px] bg-[#18181f] border border-[#2e2e3a] focus-within:border-indigo-500/50 transition-colors">
                         <div className="relative" ref={plusMenuRef}>
                             <button
                                 onClick={() => setPlusMenuOpen(!plusMenuOpen)}
-                                className="h-9 w-9 rounded-xl flex items-center justify-center text-[#606070] hover:text-[#f0f0f5] hover:bg-[#2a2a35] transition-colors shrink-0"
+                                className="h-9 w-9 rounded-full flex items-center justify-center text-[#606070] hover:text-[#f0f0f5] hover:bg-[#2a2a35] transition-colors shrink-0"
                             >
                                 <Plus className={`w-5 h-5 transition-transform duration-200 ${plusMenuOpen ? "rotate-45" : ""}`} />
                             </button>
@@ -127,10 +127,10 @@ export default function ChatWindow({ conversationId, onConversationCreated }: Ch
                             }}
                             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend() } }}
                             rows={1}
-                            className="flex-1 bg-transparent text-sm text-[#f0f0f5] placeholder:text-[#50505e] resize-none outline-none max-h-48 py-1.5 leading-relaxed"
+                            className="flex-1 bg-transparent text-[15px] md:text-sm text-[#f0f0f5] placeholder:text-[#50505e] resize-none outline-none max-h-48 py-2 md:py-1.5 leading-relaxed"
                         />
 
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
                             <button
                                 onClick={toggleRecording}
                                 className={`h-9 w-9 rounded-full flex items-center justify-center transition-all duration-300 ${isRecording ? "bg-emerald-500 shadow-[0_0_16px_rgba(34,197,94,0.4)] scale-105" : "text-[#606070] hover:text-[#f0f0f5] hover:bg-[#2a2a35]"}`}
@@ -149,7 +149,7 @@ export default function ChatWindow({ conversationId, onConversationCreated }: Ch
                                 <button
                                     onClick={() => handleSend()}
                                     disabled={!input.trim() && !selectedFile}
-                                    className="h-9 w-9 rounded-xl bg-[#2DD4BF] hover:bg-teal-400 active:bg-teal-600 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+                                    className="h-9 w-9 rounded-full bg-[#2DD4BF] hover:bg-teal-400 active:bg-teal-600 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
                                 >
                                     <Send className="w-4 h-4 text-white" />
                                 </button>
@@ -157,7 +157,7 @@ export default function ChatWindow({ conversationId, onConversationCreated }: Ch
                         </div>
                     </div>
 
-                    <p className="text-center text-xs text-[#404050] mt-3">
+                    <p className="hidden md:block text-center text-xs text-[#404050] mt-3">
                         Orbit AI는 실수를 할 수 있습니다. 중요한 내용은 직접 확인하세요.
                     </p>
                 </div>
