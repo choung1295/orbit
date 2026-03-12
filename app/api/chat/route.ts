@@ -1,31 +1,78 @@
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"
 
-import { v4 as uuidv4 } from "uuid";
-import { runDelphai } from "@/lib/delphai";
+import { createClient } from "@/lib/supabase/server"
+import { runDelphai } from "@/lib/delphai/reasoning/delphai-core"
+import { AIProvider } from "@/lib/ai/callAI"
 
 export async function POST(req: Request) {
     try {
-        const body = await req.json();
+        const body = await req.json()
 
-        const message = body?.message || "";
-        const session_id = body?.session_id || uuidv4();
+        const message = body?.message ?? ""
+        const projectId = body?.project_id ?? undefined
+        const isPlayground = body?.playground ?? false
+        const provider = body?.provider as AIProvider | undefined
 
+        // 1. 입력 검증
         if (!message || typeof message !== "string") {
-            return new Response(
-                JSON.stringify({ error: "message가 없습니다." }),
+            return Response.json(
+                { error: "message가 없습니다." },
                 { status: 400 }
-            );
+            )
         }
 
-        const reply = await runDelphai(session_id, message);
+        // 2. Supabase 인증 확인
+        const supabase = createClient()
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-        return Response.json({ reply, session_id });
+        if (authError || !user) {
+            return Response.json(
+                { error: "로그인이 필요합니다." },
+                { status: 401 }
+            )
+        }
 
-    } catch (error) {
-        console.error(error);
-        return new Response(
-            JSON.stringify({ error: "server error" }),
+        // 3. 플랜 확인
+        const { data: profile } = await supabase
+            .from("users")
+            .select("plan, user_level")
+            .eq("id", user.id)
+            .single()
+
+        const plan = profile?.plan ?? "free"
+        const userLevel = profile?.user_level ?? "default"
+
+        // 4. Delphai 실행
+        const result = await runDelphai({
+            userId: user.id,
+            message,
+            plan,
+            userLevel,
+            projectId,
+            isPlayground,
+            provider,
+        })
+
+        // 5. 에러 응답
+        if (result.error) {
+            return Response.json(
+                { error: result.error },
+                { status: 400 }
+            )
+        }
+
+        return Response.json({
+            reply: result.response,
+            provider: result.provider,
+            mode: result.mode,
+        })
+
+    } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : "server error"
+        console.error("[route] 오류:", msg)
+        return Response.json(
+            { error: "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요." },
             { status: 500 }
-        );
+        )
     }
 }

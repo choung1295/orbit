@@ -1,1 +1,1 @@
-export { runDelphai } from "./delphai-core"
+export { runDelphai } from "./reasoning/delphai-core"
