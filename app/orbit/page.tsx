@@ -1,13 +1,48 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import ChatSidebar from '@/components/chat/ChatSidebar'
 import ChatWindow from '@/components/chat/ChatWindow'
-import { PanelLeft } from 'lucide-react'
+import { PanelLeft, User, Settings, LogOut } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 export default function OrbitAppPage() {
     const [activeChatId, setActiveChatId] = useState<string | null>(null)
     const [sidebarOpen, setSidebarOpen] = useState(true)
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+    const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+    const router = useRouter()
+    const supabase = createClient()
+    const dropdownRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        const checkUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user) {
+                setIsLoggedIn(true)
+            } else {
+                setIsLoggedIn(false)
+            }
+        }
+        checkUser()
+    }, [supabase.auth])
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsDropdownOpen(false)
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+    }, [])
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut()
+        router.push("/auth/login")
+    }
 
     const handleNewChat = () => {
         setActiveChatId(null)
@@ -50,12 +85,49 @@ export default function OrbitAppPage() {
                         <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-600/15 text-indigo-300 border border-indigo-500/20">
                             Orbit 0.1
                         </span>
-                        <button
-                            className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold select-none"
-                            style={{ background: "conic-gradient(from 180deg, #6366f1, #8b5cf6, #ec4899, #f59e0b, #6366f1)" }}
-                        >
-                            파이
-                        </button>
+                        
+                        {isLoggedIn ? (
+                            <div className="relative" ref={dropdownRef}>
+                                <button
+                                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                    className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold select-none hover:opacity-90 transition-opacity"
+                                    style={{ background: "conic-gradient(from 180deg, #6366f1, #8b5cf6, #ec4899, #f59e0b, #6366f1)" }}
+                                >
+                                    파이
+                                </button>
+                                
+                                {isDropdownOpen && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-[#18181f] border border-[#2a2a35] rounded-xl shadow-lg z-50 overflow-hidden py-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                                        <div className="px-4 py-2 border-b border-[#2a2a35] mb-1">
+                                            <p className="text-sm font-medium text-[#f0f0f5]">Orbit 0.1</p>
+                                        </div>
+                                        <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-[#a0a0b0] hover:bg-[#22222a] hover:text-[#f0f0f5] transition-colors">
+                                            <User className="w-4 h-4 shrink-0" />
+                                            내 프로필
+                                        </button>
+                                        <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-[#a0a0b0] hover:bg-[#22222a] hover:text-[#f0f0f5] transition-colors">
+                                            <Settings className="w-4 h-4 shrink-0" />
+                                            설정
+                                        </button>
+                                        <div className="h-px bg-[#2a2a35] my-1" />
+                                        <button
+                                            onClick={handleLogout}
+                                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-rose-400/80 hover:bg-rose-500/10 hover:text-rose-400 transition-colors"
+                                        >
+                                            <LogOut className="w-4 h-4 shrink-0" />
+                                            로그아웃
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => router.push('/auth/login')}
+                                className="px-4 py-1.5 rounded-lg text-sm font-medium bg-[#f0f0f5] text-[#111116] hover:bg-white transition-colors"
+                            >
+                                로그인
+                            </button>
+                        )}
                     </div>
                 </div>
 

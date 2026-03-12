@@ -2,18 +2,17 @@
 
 import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+
 import {
     Plus,
     MessageSquare,
     Search,
     Settings,
-    LogOut,
     ChevronDown,
     Menu,
     X,
 } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
+
 import { getConversations } from "@/lib/supabase/queries/conversations"
 
 interface Conversation {
@@ -38,8 +37,7 @@ export default function ChatSidebar({
     const [isLoading, setIsLoading] = useState(true)
     const [mobileOpen, setMobileOpen] = useState(false)
 
-    const router = useRouter()
-    const supabase = createClient()
+
 
     useEffect(() => {
         const fetchConversations = async () => {
@@ -63,10 +61,7 @@ export default function ChatSidebar({
         )
     }, [conversations, search])
 
-    const handleLogout = async () => {
-        await supabase.auth.signOut()
-        router.push("/auth/login")
-    }
+
 
     const SidebarContent = ({ onClose }: { onClose?: () => void }) => (
         <aside className="flex flex-col w-64 bg-[#111116] border-r border-[#1e1e28] h-full">
@@ -180,14 +175,6 @@ export default function ChatSidebar({
                 <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[#606070] hover:bg-[#18181f] hover:text-[#c0c0c8] transition-colors text-xs">
                     <Settings className="w-3.5 h-3.5 shrink-0" />
                     Settings
-                </button>
-
-                <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-rose-400/70 hover:bg-rose-500/10 hover:text-rose-400 transition-colors text-xs"
-                >
-                    <LogOut className="w-3.5 h-3.5 shrink-0" />
-                    Log out
                 </button>
             </div>
         </aside>
