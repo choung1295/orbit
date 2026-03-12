@@ -14,7 +14,7 @@ export default function OrbitAppPage() {
     }
 
     return (
-        <div className="flex h-screen bg-[#0f0f11] overflow-hidden">
+        <div className="flex h-[100dvh] w-full bg-[#0f0f11] overflow-hidden pb-[env(safe-area-inset-bottom)]">
             {/* 데스크탑 사이드바 */}
             <div className={`hidden md:block shrink-0 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-0 overflow-hidden'}`}>
                 <ChatSidebar
@@ -35,7 +35,7 @@ export default function OrbitAppPage() {
 
             <div className="flex-1 flex flex-col min-w-0">
                 {/* 상단 헤더 */}
-                <div className="flex items-center gap-3 px-6 h-16 border-b border-[#2a2a35] shrink-0">
+                <div className="flex items-center gap-3 pl-16 pr-6 md:px-6 h-16 border-b border-[#2a2a35] shrink-0">
                     <button
                         onClick={() => setSidebarOpen(!sidebarOpen)}
                         className="hidden md:flex p-2 rounded-lg text-[#606070] hover:text-[#f0f0f5] hover:bg-[#222222]"
