@@ -64,7 +64,8 @@ const API_KEY_MAP: Record<AIProvider, string> = {
 }
 
 async function callOpenAICompatible(
-    prompt: string,
+    system: string,
+    user: string,
     provider: AIProvider,
     mode: AIMode
 ): Promise<string> {
@@ -73,16 +74,11 @@ async function callOpenAICompatible(
         baseURL: BASE_URL_MAP[provider],
     })
 
-    // system prompt와 user 메시지 분리
-    const parts = prompt.split("## 사용자 메시지\n")
-    const systemPrompt = parts[0].trim()
-    const userMessage = parts[1]?.trim() ?? ""
-
     const response = await client.chat.completions.create({
         model: MODEL_MAP[provider][mode],
         messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userMessage },
+            { role: "system", content: system },
+            { role: "user", content: user },
         ],
         temperature: mode === "deep" ? 0.7 : 0.3,
         max_tokens: mode === "deep" ? 2000 : 800,
@@ -91,28 +87,30 @@ async function callOpenAICompatible(
 }
 
 async function callAnthropic(
-    prompt: string,
+    system: string,
+    user: string,
     mode: AIMode
 ): Promise<string> {
     const client = new Anthropic({ apiKey: API_KEY_MAP.anthropic })
 
-    const parts = prompt.split("## 사용자 메시지\n")
-    const systemPrompt = parts[0].trim()
-    const userMessage = parts[1]?.trim() ?? ""
-
     const response = await client.messages.create({
         model: MODEL_MAP.anthropic[mode],
         max_tokens: mode === "deep" ? 2000 : 800,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userMessage }],
+        system: system,
+        messages: [{ role: "user", content: user }],
     })
     return response.content[0].type === "text"
         ? response.content[0].text
         : ""
 }
 
+export interface PromptInput {
+    system: string
+    user: string
+}
+
 export async function callAI(
-    prompt: string,
+    prompt: PromptInput,
     mode: AIMode = "fast",
     task: AITask = "text",
     provider?: AIProvider
@@ -122,9 +120,9 @@ export async function callAI(
 
     try {
         if (resolvedProvider === "anthropic") {
-            return await callAnthropic(prompt, mode)
+            return await callAnthropic(prompt.system, prompt.user, mode)
         }
-        return await callOpenAICompatible(prompt, resolvedProvider, mode)
+        return await callOpenAICompatible(prompt.system, prompt.user, resolvedProvider, mode)
 
     } catch (error: unknown) {
         if (error instanceof Error) {

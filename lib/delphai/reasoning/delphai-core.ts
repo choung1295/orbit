@@ -94,18 +94,19 @@ export async function runDelphai(input: DelphaiInput): Promise<DelphaiOutput> {
         ? await retrieveContext(message).catch(() => "")
         : ""
 
-    // 5. 프롬프트 합성
+    // 5. 추론 깊이 및 모델 라우팅
+    const task = detectTask(message)
+    const mode = detectMode(message)
+
+    // 6. 프롬프트 합성
     const prompt = buildPrompt({
         message,
         memories,
         ragContext,
         userLevel,
         plan,
+        mode,
     })
-
-    // 6. 모델 라우팅
-    const task = detectTask(message)
-    const mode = detectMode(message)
 
     // 7. AI 호출
     let response = ""
