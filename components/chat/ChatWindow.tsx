@@ -141,7 +141,7 @@ export default function ChatWindow({ conversationId, onConversationCreated }: Ch
                             {loading ? (
                                 <button
                                     onClick={handleStop}
-                                    className="h-9 w-9 rounded-xl bg-red-600/80 hover:bg-red-500 flex items-center justify-center transition-colors"
+                                    className="h-9 w-9 rounded bg-[#22C55E] hover:bg-[#16A34A] active:bg-[#15803D] flex items-center justify-center transition-colors"
                                 >
                                     <Square className="w-3.5 h-3.5 text-white fill-white" />
                                 </button>
