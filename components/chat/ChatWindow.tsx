@@ -127,7 +127,7 @@ export default function ChatWindow({ conversationId, onConversationCreated }: Ch
                             }}
                             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend() } }}
                             rows={1}
-                            className="flex-1 bg-transparent text-[15px] md:text-sm text-[#f0f0f5] placeholder:text-[#50505e] resize-none outline-none max-h-48 py-2 md:py-1.5 leading-relaxed"
+                            className="flex-1 min-w-0 bg-transparent text-[15px] md:text-sm text-[#f0f0f5] placeholder:text-[#50505e] resize-none outline-none max-h-48 py-2 md:py-1.5 leading-relaxed [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                         />
 
                         <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
