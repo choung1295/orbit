@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import SplashIntro from '@/components/SplashIntro'
 
 export const viewport: Viewport = {
   themeColor: '#0f0f11',
@@ -55,7 +56,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body>{children}</body>
+      <body>
+        <SplashIntro />
+        {children}
+      </body>
     </html>
   )
 }
