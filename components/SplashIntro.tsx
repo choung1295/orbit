@@ -94,7 +94,7 @@ export default function SplashIntro({
             {/* 텍스트 */}
             <div
                 style={{
-                    marginTop: "18px",
+                    marginTop: "20px",
                     overflow: "hidden",
                     lineHeight: 1,
                 }}
@@ -104,10 +104,10 @@ export default function SplashIntro({
                         display: "block",
                         fontFamily: "'Pretendard Variable', 'Pretendard', -apple-system, 'Apple SD Gothic Neo', sans-serif",
                         fontWeight: 600,
-                        fontSize: "clamp(20px, 5vw, 26px)",
+                        fontSize: "clamp(36px, 8vw, 47px)",
                         letterSpacing: "0.12em",
                         color: "#e2f0e8",
-                        animation: "splash-text-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.22s forwards",
+                        animation: "splash-text-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0s forwards",
                         opacity: 0,
                         transform: "translateX(-14px)",
                         willChange: "transform, opacity",
