@@ -89,7 +89,7 @@ export default function MessageBubble({
     }
 
     return (
-        <div className="flex flex-row items-start gap-2 w-full group">
+        <div className="flex flex-row items-start gap-2 w-full group -mt-2">
 
             {/* AI Avatar — 왼쪽 인라인 */}
             <div className="relative shrink-0 mt-1">

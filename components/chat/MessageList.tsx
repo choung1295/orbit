@@ -31,14 +31,15 @@ export default function MessageList({ messages, loading, streamingText, onRetry,
                     </div>
                 </div>
             ) : (
-                <div className="space-y-2">
+                <div className="flex flex-col gap-2">
                     {messages.map((msg, idx) => (
-                        <MessageBubble
-                            key={msg.id}
-                            message={msg}
-                            onRetry={onRetry}
-                            onRegenerate={() => onRegenerate(idx)}
-                        />
+                        <div key={msg.id} className={msg.role === "assistant" ? "-mt-2 relative z-0" : "relative z-10"}>
+                            <MessageBubble
+                                message={msg}
+                                onRetry={onRetry}
+                                onRegenerate={() => onRegenerate(idx)}
+                            />
+                        </div>
                     ))}
 
                     {loading && streamingText && (
