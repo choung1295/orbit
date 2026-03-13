@@ -4,7 +4,6 @@ import { useState } from "react"
 import { Copy, Check, Pencil, RotateCcw, Paperclip } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import { Message } from "./useChat"
-import DelphaiAvatar from "./DelphaiAvatar"
 
 export default function MessageBubble({
     message,
