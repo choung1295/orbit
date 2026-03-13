@@ -25,11 +25,11 @@ export async function runTools(ctx: ToolContext): Promise<string> {
     // 부동산 감지
     if (/실거래|거래가|매매가|시세|아파트 가격|분양가/.test(message)) {
         const yearMonth = getCurrentYearMonth()
-        tasks.push(getRealEstate("41220", yearMonth)) // 기본 평택
+        tasks.push(getRealEstate("41220", yearMonth))
     }
 
     // 검색 감지 (뉴스, 최신 정보, 일반 검색)
-    if (/최신|뉴스|검색|알려줘|요즘|최근|지금|어때/.test(message)) {
+    if (/최신|뉴스|검색|알려줘|찾아|찾아봐|요즘|최근|지금|어때|어떤|궁금|정보/.test(message)) {
         tasks.push(searchWeb(message))
     }
 
