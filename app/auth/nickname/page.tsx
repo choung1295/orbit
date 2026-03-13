@@ -12,6 +12,10 @@ export default function NicknamePage() {
     const router = useRouter()
     const supabase = createClient()
 
+    const handleSkip = () => {
+        router.push("/orbit")
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
@@ -86,6 +90,16 @@ export default function NicknamePage() {
                                 "시작하기"
                             )}
                         </button>
+
+                        <div className="text-center">
+                            <button
+                                type="button"
+                                onClick={handleSkip}
+                                className="text-[#606070] hover:text-[#a0a0b0] text-sm underline transition-colors"
+                            >
+                                다음에 하기
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
