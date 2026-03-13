@@ -7,9 +7,6 @@ export async function getRealEstate(regionCode: string, yearMonth: string): Prom
     const apiKey = process.env.MOLIT_API_KEY
     if (!apiKey) return ""
 
-    // regionCode 예: "41220" (평택시)
-    // yearMonth 예: "202502"
-
     try {
         const url = new URL("https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev")
         url.searchParams.set("serviceKey", apiKey)
@@ -21,13 +18,13 @@ export async function getRealEstate(regionCode: string, yearMonth: string): Prom
         const res = await fetch(url.toString())
         const text = await res.text()
 
-        // XML 파싱 (간단하게 정규식 사용)
-        const matches = text.matchAll(/<item>([\s\S]*?)<\/item>/g)
-        const results = []
+        const itemRegex = /<item>([\s\S]*?)<\/item>/g
+        const results: string[] = []
+        let match: RegExpExecArray | null
 
-        for (const match of matches) {
+        while ((match = itemRegex.exec(text)) !== null) {
             const item = match[1]
-            const get = (tag: string) => item.match(new RegExp(`<${tag}>(.*?)<\/${tag}>`))?.[1]?.trim() ?? ""
+            const get = (tag: string) => item.match(new RegExp(`<${tag}>(.*?)<\\/${tag}>`))?.[1]?.trim() ?? ""
 
             results.push(
                 `• ${get("아파트")} ${get("전용면적")}㎡ — ${get("거래금액")}만원 (${get("년")}년 ${get("월")}월, ${get("법정동")})`
