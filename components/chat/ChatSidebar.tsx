@@ -82,7 +82,7 @@ function MenuItem({
 // ─── 점세개 드롭다운 ──────────────────────────────────────────────────────────
 
 function ConversationMenu({
-    chat, onRename, onDelete, onShare, projects, onMoveToProject,
+    chat: _chat, onRename, onDelete, onShare, projects, onMoveToProject,
 }: {
     chat: Conversation
     onRename: () => void
