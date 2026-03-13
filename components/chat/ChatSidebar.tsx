@@ -69,8 +69,8 @@ function MenuItem({
         <button
             onClick={onClick}
             className={`w-full flex items-center gap-2.5 px-3 py-2 transition-colors text-xs ${danger
-                ? "text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                : "text-[#909098] hover:text-[#e0e0e8] hover:bg-[#22222e]"
+                    ? "text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                    : "text-[#909098] hover:text-[#e0e0e8] hover:bg-[#22222e]"
                 }`}
         >
             {icon}
@@ -82,9 +82,9 @@ function MenuItem({
 // ─── 점세개 드롭다운 ──────────────────────────────────────────────────────────
 
 function ConversationMenu({
-    chat: _chat, onRename, onDelete, onShare, projects, onMoveToProject,
+    onRename, onDelete, onShare, projects, onMoveToProject,
 }: {
-    chat: Conversation
+    chat?: Conversation
     onRename: () => void
     onDelete: () => void
     onShare: () => void
@@ -205,7 +205,7 @@ function ConversationItem({
     onSelect, onRenameStart, onRenameSave, onRenameCancel,
     onDelete, onShare, projects, onMoveToProject,
 }: {
-    chat: Conversation
+    chat?: Conversation
     isActive: boolean
     isRenaming: boolean
     onSelect: () => void
