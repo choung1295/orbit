@@ -11,14 +11,12 @@ export function buildPrompt({
     memories = [],
     ragContext = "",
     userLevel = "default",
-    plan = "free",
     mode = "fast",
 }: {
     message: string
     memories: MemoryRecord[]
     ragContext?: string
     userLevel?: "beginner" | "default" | "expert"
-    plan?: "free" | "pro"
     mode?: "fast" | "deep"
 }): PromptParts {
 

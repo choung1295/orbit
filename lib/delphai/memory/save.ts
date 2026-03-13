@@ -1,27 +1,10 @@
 import { createClient } from "@/lib/supabase/client"
 import { MemoryType, MemoryScope, MemorySource } from "./memory-types"
 
-// 저장할 가치가 있는지 판단
-function shouldSave(message: string, response: string): boolean {
-    const saveKeywords = [
-        "기억해",
-        "저장해",
-        "중요해",
-        "결정했어",
-        "선택했어",
-        "앞으로",
-        "방향",
-        "원칙",
-        "계획",
-        "프로젝트",
-        "고정",
-        "확정",
-        "메모리",
-        "기억",
-    ]
-
-    const combined = `${message} ${response}`
-    return saveKeywords.some((k) => combined.includes(k)) || message.length > 50
+// 모든 대화 저장 (키워드/길이 제한 없음)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function shouldSave(_message: string, _response: string): boolean {
+    return true
 }
 
 // 메시지 유형 감지

@@ -109,7 +109,6 @@ export async function runDelphai(input: DelphaiInput): Promise<DelphaiOutput> {
         memories,
         ragContext,
         userLevel,
-        plan,
         mode,
     })
 
