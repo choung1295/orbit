@@ -12,6 +12,7 @@ export async function POST(req: Request) {
         const projectId = body?.project_id ?? undefined
         const isPlayground = body?.playground ?? false
         const provider = body?.provider as AIProvider | undefined
+        const history: { role: "user" | "assistant"; content: string }[] = body?.history ?? []
 
         if (!message || typeof message !== "string") {
             return Response.json(
@@ -47,6 +48,7 @@ export async function POST(req: Request) {
             projectId,
             isPlayground,
             provider,
+            history,
         })
 
         if (result.error) {

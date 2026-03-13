@@ -10,6 +10,11 @@ import { runTools } from "../tools"          // ← 추가
 export type UserPlan = "free" | "pro"
 export type UserLevel = "beginner" | "default" | "expert"
 
+export interface ChatMessage {
+    role: "user" | "assistant"
+    content: string
+}
+
 export interface DelphaiInput {
     userId: string
     message: string
@@ -18,7 +23,8 @@ export interface DelphaiInput {
     projectId?: string
     isPlayground?: boolean
     provider?: AIProvider
-    location?: string                        // ← 추가
+    location?: string
+    history?: ChatMessage[]
 }
 
 export interface DelphaiOutput {
@@ -61,7 +67,8 @@ export async function runDelphai(input: DelphaiInput): Promise<DelphaiOutput> {
         projectId,
         isPlayground = false,
         provider,
-        location,                            // ← 추가
+        location,
+        history = [],
     } = input
 
     // 1. 인젝션 차단
@@ -120,7 +127,7 @@ export async function runDelphai(input: DelphaiInput): Promise<DelphaiOutput> {
     // 9. AI 호출
     let response = ""
     try {
-        response = await callAI(prompt, mode, task, provider)
+        response = await callAI(prompt, mode, task, provider, history)
     } catch (error: unknown) {
         const msg = error instanceof Error ? error.message : "알 수 없는 오류"
         console.error("[runDelphai] callAI 오류:", msg)

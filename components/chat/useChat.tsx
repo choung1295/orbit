@@ -148,10 +148,14 @@ export function useChat(
                 setMessages((prev) => [...prev, tempUserMsg]);
             }
 
+            const history = messages
+                .slice(-10)
+                .map((m) => ({ role: m.role, content: m.content }))
+
             const res = await fetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: content }),
+                body: JSON.stringify({ message: content, history }),
                 signal: controller.signal,
             });
 

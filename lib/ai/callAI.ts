@@ -67,7 +67,8 @@ async function callOpenAICompatible(
     system: string,
     user: string,
     provider: AIProvider,
-    mode: AIMode
+    mode: AIMode,
+    history: { role: "user" | "assistant"; content: string }[] = []
 ): Promise<string> {
     const client = new OpenAI({
         apiKey: API_KEY_MAP[provider],
@@ -78,6 +79,7 @@ async function callOpenAICompatible(
         model: MODEL_MAP[provider][mode],
         messages: [
             { role: "system", content: system },
+            ...history,
             { role: "user", content: user },
         ],
         temperature: mode === "deep" ? 0.7 : 0.3,
@@ -89,7 +91,8 @@ async function callOpenAICompatible(
 async function callAnthropic(
     system: string,
     user: string,
-    mode: AIMode
+    mode: AIMode,
+    history: { role: "user" | "assistant"; content: string }[] = []
 ): Promise<string> {
     const client = new Anthropic({ apiKey: API_KEY_MAP.anthropic })
 
@@ -97,7 +100,10 @@ async function callAnthropic(
         model: MODEL_MAP.anthropic[mode],
         max_tokens: mode === "deep" ? 2000 : 800,
         system: system,
-        messages: [{ role: "user", content: user }],
+        messages: [
+            ...history,
+            { role: "user", content: user },
+        ],
     })
     return response.content[0].type === "text"
         ? response.content[0].text
@@ -113,16 +119,17 @@ export async function callAI(
     prompt: PromptInput,
     mode: AIMode = "fast",
     task: AITask = "text",
-    provider?: AIProvider
+    provider?: AIProvider,
+    history: { role: "user" | "assistant"; content: string }[] = []
 ): Promise<string> {
 
     const resolvedProvider = provider ?? TASK_PROVIDER_MAP[task]
 
     try {
         if (resolvedProvider === "anthropic") {
-            return await callAnthropic(prompt.system, prompt.user, mode)
+            return await callAnthropic(prompt.system, prompt.user, mode, history)
         }
-        return await callOpenAICompatible(prompt.system, prompt.user, resolvedProvider, mode)
+        return await callOpenAICompatible(prompt.system, prompt.user, resolvedProvider, mode, history)
 
     } catch (error: unknown) {
         if (error instanceof Error) {
