@@ -5,6 +5,7 @@ import { callAI, AIProvider, AITask } from "../../ai/callAI"
 import { retrieveContext } from "../rag/retrieve-context"
 import { guardInput } from "../security/guard"
 import { buildContext } from "../../context"
+import { runTools } from "../tools"          // ← 추가
 
 export type UserPlan = "free" | "pro"
 export type UserLevel = "beginner" | "default" | "expert"
@@ -17,6 +18,7 @@ export interface DelphaiInput {
     projectId?: string
     isPlayground?: boolean
     provider?: AIProvider
+    location?: string                        // ← 추가
 }
 
 export interface DelphaiOutput {
@@ -26,27 +28,22 @@ export interface DelphaiOutput {
     error?: string
 }
 
-// 크레딧 확인 (Supabase 연동 — 추후 구현)
 async function checkCredits(): Promise<boolean> {
     return true
 }
 
-// 크레딧 차감 (Supabase 연동 — 추후 구현)
 async function deductCredit(userId: string, provider: AIProvider): Promise<void> {
     console.log(`[credit] ${userId} / ${provider} 크레딧 차감`)
 }
 
-// 메시지 유형 자동 감지
 function detectTask(message: string): AITask {
     if (/이미지|사진|그려|생성해/.test(message)) return "image_gen"
     if (/영상|비디오|동영상/.test(message)) return "video_gen"
     return "text"
 }
 
-// 추론 깊이 자동 감지
 function detectMode(message: string): "fast" | "deep" {
     const deepKeywords = ["분석", "전략", "설계", "비교", "추론", "왜", "어떻게", "계획"]
-    // 잡담/일상 대화도 deep으로 — EXECUTION_RULES의 톤 적응 규칙이 필요하므로
     const chatKeywords = ["안녕", "안녕하세요", "차", "커피", "밥", "날씨", "심심", "잘 자", "좋은 아침", "농담", "잡담", "얘기"]
 
     const isDeep = deepKeywords.some(k => message.includes(k))
@@ -64,6 +61,7 @@ export async function runDelphai(input: DelphaiInput): Promise<DelphaiOutput> {
         projectId,
         isPlayground = false,
         provider,
+        location,                            // ← 추가
     } = input
 
     // 1. 인젝션 차단
@@ -100,11 +98,14 @@ export async function runDelphai(input: DelphaiInput): Promise<DelphaiOutput> {
         ? await retrieveContext(message).catch(() => "")
         : ""
 
-    // 5. 추론 깊이 및 모델 라우팅
+    // 5. Tool 호출 (날씨, 검색, 부동산) ← 추가
+    const toolContext = await runTools({ message, location }).catch(() => "")
+
+    // 6. 추론 깊이 및 모델 라우팅
     const task = detectTask(message)
     const mode = detectMode(message)
 
-    // 6. 프롬프트 합성
+    // 7. 프롬프트 합성
     const prompt = buildPrompt({
         message,
         memories,
@@ -114,11 +115,12 @@ export async function runDelphai(input: DelphaiInput): Promise<DelphaiOutput> {
         mode,
     })
 
-    // 시스템 프롬프트 맨 위에 동적 컨텍스트(시간 등) 주입
+    // 8. 동적 컨텍스트 + tool 결과 주입 ← 수정
     const dynamicContext = buildContext()
-    prompt.system = `${dynamicContext}\n\n${prompt.system}`
+    const toolSection = toolContext ? `\n\n[실시간 정보]\n${toolContext}` : ""
+    prompt.system = `${dynamicContext}${toolSection}\n\n${prompt.system}`
 
-    // 7. AI 호출
+    // 9. AI 호출
     let response = ""
     try {
         response = await callAI(prompt, mode, task, provider)
@@ -133,14 +135,14 @@ export async function runDelphai(input: DelphaiInput): Promise<DelphaiOutput> {
         }
     }
 
-    // 8. 메모리 저장 (pro만, 체험존 제외)
+    // 10. 메모리 저장 (pro만, 체험존 제외)
     if (plan === "pro" && !isPlayground) {
         await saveMemory(userId, message, response, projectId).catch(err => {
             console.error("[runDelphai] saveMemory 오류:", err)
         })
     }
 
-    // 9. 체험존 크레딧 차감
+    // 11. 체험존 크레딧 차감
     if (isPlayground && provider) {
         await deductCredit(userId, provider).catch(err => {
             console.error("[runDelphai] deductCredit 오류:", err)
