@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic"
 
 import { createClient } from "@/lib/supabase/server"
-import { runDelphai } from "@/lib/delphai"
+import { runDelphai } from "@/lib/delphai/reasoning/delphai-core"
 import { AIProvider } from "@/lib/ai/callAI"
 
 export async function POST(req: Request) {
@@ -20,7 +20,6 @@ export async function POST(req: Request) {
             )
         }
 
-        // await 추가
         const supabase = await createClient()
         const { data: { user }, error: authError } = await supabase.auth.getUser()
 
