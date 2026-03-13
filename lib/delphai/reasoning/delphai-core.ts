@@ -88,10 +88,8 @@ export async function runDelphai(input: DelphaiInput): Promise<DelphaiOutput> {
         }
     }
 
-    // 3. 메모리 recall (pro만)
-    const memories = plan === "pro"
-        ? await recallMemory(userId, message, projectId).catch(() => [])
-        : []
+    // 3. 메모리 recall
+    const memories = await recallMemory(userId, message, projectId).catch(() => [])
 
     // 4. RAG 컨텍스트 (pro만, 체험존 제외)
     const ragContext = plan === "pro" && !isPlayground
@@ -135,8 +133,8 @@ export async function runDelphai(input: DelphaiInput): Promise<DelphaiOutput> {
         }
     }
 
-    // 10. 메모리 저장 (pro만, 체험존 제외)
-    if (plan === "pro" && !isPlayground) {
+    // 10. 메모리 저장 (체험존 제외)
+    if (!isPlayground) {
         await saveMemory(userId, message, response, projectId).catch(err => {
             console.error("[runDelphai] saveMemory 오류:", err)
         })

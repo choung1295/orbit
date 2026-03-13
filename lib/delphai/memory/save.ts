@@ -16,10 +16,12 @@ function shouldSave(message: string, response: string): boolean {
         "프로젝트",
         "고정",
         "확정",
+        "메모리",
+        "기억",
     ]
 
     const combined = `${message} ${response}`
-    return saveKeywords.some((k) => combined.includes(k)) || message.length > 100
+    return saveKeywords.some((k) => combined.includes(k)) || message.length > 50
 }
 
 // 메시지 유형 감지

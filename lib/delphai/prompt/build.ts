@@ -30,11 +30,7 @@ export function buildPrompt({
             userLevel === "expert" ? "\n사용자는 전문가입니다. 핵심 위주로 간결하게 답하세요." :
                 ""
 
-    const planNote = plan === "free"
-        ? "\n이 사용자는 Free 플랜입니다. 메모리 저장 및 RAG 기능은 비활성화됩니다."
-        : ""
-
-    const system = `${systemBase}${levelNote}${planNote}`.trim()
+    const system = `${systemBase}${levelNote}`.trim()
 
     // 사용자 메시지 조립 (메모리 + RAG + 메시지)
     const parts: string[] = []
