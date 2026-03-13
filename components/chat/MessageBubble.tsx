@@ -91,17 +91,18 @@ export default function MessageBubble({
     return (
         <div className="flex flex-row items-start gap-2 w-full group -mt-2">
 
-            {/* AI Avatar — 왼쪽 인라인 */}
+            {/* AI Avatar 임시 숨김
             <div className="relative shrink-0 mt-1">
                 <div className="transition-transform duration-300 group-hover:scale-105">
                     <DelphaiAvatar size={30} />
                 </div>
 
-                {/* thinking orbit animation */}
+                thinking orbit animation
                 <div className="absolute inset-0 animate-spin-slow opacity-40">
                     <div className="absolute w-2 h-2 bg-violet-400 rounded-full top-0 left-1/2 -translate-x-1/2 blur-[1px]" />
                 </div>
             </div>
+            */}
 
             <div className="flex-1 flex flex-col gap-1.5">
                 <div
