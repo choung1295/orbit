@@ -84,7 +84,6 @@ function MenuItem({
 function ConversationMenu({
     onRename, onDelete, onShare, projects, onMoveToProject,
 }: {
-    chat?: Conversation
     onRename: () => void
     onDelete: () => void
     onShare: () => void
@@ -205,7 +204,7 @@ function ConversationItem({
     onSelect, onRenameStart, onRenameSave, onRenameCancel,
     onDelete, onShare, projects, onMoveToProject,
 }: {
-    chat?: Conversation
+    chat: Conversation
     isActive: boolean
     isRenaming: boolean
     onSelect: () => void
@@ -231,7 +230,6 @@ function ConversationItem({
             )}
             {!isRenaming && (
                 <ConversationMenu
-                    chat={chat}
                     onRename={onRenameStart}
                     onDelete={onDelete}
                     onShare={onShare}
