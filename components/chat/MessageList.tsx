@@ -33,7 +33,7 @@ export default function MessageList({ messages, loading, streamingText, onRetry,
             ) : (
                 <div className="flex flex-col gap-2">
                     {messages.map((msg, idx) => (
-                        <div key={msg.id} className={msg.role === "assistant" ? "-mt-2 relative z-0" : "relative z-10"}>
+                        <div key={msg.id}>
                             <MessageBubble
                                 message={msg}
                                 onRetry={onRetry}
