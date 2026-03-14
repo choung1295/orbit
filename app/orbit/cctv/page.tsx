@@ -1,9 +1,4 @@
-import dynamic from "next/dynamic"
-
-const CctvMap = dynamic(() => import("@/components/CctvMap"), {
-  ssr: false,
-  loading: () => <div className="h-[600px] w-full flex items-center justify-center bg-gray-900 text-white">지도를 불러오는 중...</div>
-})
+import CctvMap from "@/components/ui/CctvMap"
 
 export default function CctvPage() {
   return (
