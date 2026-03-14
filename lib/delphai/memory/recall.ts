@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/server"
 import { MemoryRecord, MemoryScope, SCOPE_PRIORITY } from "./memory-types"
 
 export async function recallMemory(
@@ -10,7 +10,7 @@ export async function recallMemory(
     if (!userId || !message.trim()) return []
 
     try {
-        const supabase = createClient()
+        const supabase = await createClient()
         const nowIso = new Date().toISOString()
 
         const sessionQuery = supabase
@@ -82,11 +82,24 @@ export async function recallMemory(
 
         if (all.length === 0) return []
 
+        // user/project scope 기억은 항상 포함 (명시적으로 저장된 중요 기억)
+        // session/summary scope는 keyword 관련성 필터 적용
         const relevant = all
-            .filter((m) => isRelevant(m.content, message, m.tags))
+            .filter((m) => {
+                if (m.scope === "user" || m.scope === "project") return true
+                return isRelevant(m.content, message, m.tags)
+            })
             .sort((a, b) => calculateRecallScore(b) - calculateRecallScore(a))
             .slice(0, 10)
 
+        // last_used_at 업데이트 (비동기, 실패해도 무관)
+        if (relevant.length > 0) {
+            const ids = relevant.map((m) => m.id)
+            void supabase
+                .from("memories")
+                .update({ last_used_at: new Date().toISOString() })
+                .in("id", ids)
+        }
         return relevant
     } catch (error: unknown) {
         if (error instanceof Error) {

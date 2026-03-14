@@ -1,10 +1,24 @@
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/server"
 import { MemoryType, MemoryScope, MemorySource } from "./memory-types"
 
-// 모든 대화 저장 (키워드/길이 제한 없음)
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function shouldSave(_message: string, _response: string): boolean {
-    return true
+// 저장할 가치가 있는 메시지인지 판단
+function shouldSave(message: string): boolean {
+    // 명시적 저장 트리거
+    const explicitTriggers = /기억해|저장해|앞으로|이건\s*중요|반드시|원칙|규칙|정책|내\s*스타일|내가\s*원하는|선호|싫어|좋아해|제발|절대/
+    if (explicitTriggers.test(message)) return true
+
+    // 결정/선택/규칙 유형
+    const decisionKeywords = /결정했어|선택했어|확정|기준|이렇게\s*해줘|이렇게\s*해/
+    if (decisionKeywords.test(message)) return true
+
+    // 너무 짧은 문장은 잡담으로 간주
+    if (message.trim().length < 15) return false
+
+    // 일반 잡담 제외
+    const chitchat = /^(안녕|안녕하세요|고마워|감사|ㅇㅇ|ㄴㄴ|ㅋㅋ|ㅎㅎ|네|아니|맞아|그래|오케|ok|응|좋아|알겠어?$)/i
+    if (chitchat.test(message.trim())) return false
+
+    return false
 }
 
 // 메시지 유형 감지
@@ -156,10 +170,10 @@ export async function saveMemory(
     scope?: MemoryScope
 ): Promise<void> {
     if (!userId || !message.trim() || !response.trim()) return
-    if (!shouldSave(message, response)) return
+    if (!shouldSave(message)) return
 
     try {
-        const supabase = createClient()
+        const supabase = await createClient()
 
         const type = detectType(message)
         const resolvedScope = scope ?? detectScope(message, projectId)
