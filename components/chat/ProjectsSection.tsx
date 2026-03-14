@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { FolderOpen, Plus, MoreHorizontal, Trash2 } from "lucide-react"
+import { FolderOpen, Plus, Trash2 } from "lucide-react"
 import type { Project } from "@/lib/supabase/queries/projects"
 import { createProject, deleteProject } from "@/lib/supabase/queries/projects"
 import ProjectCreateInput from "@/components/chat/ProjectCreateInput"

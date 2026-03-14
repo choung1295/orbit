@@ -13,7 +13,6 @@ import {
     updateConversationTitle,
     deleteConversation,
     moveConversationToProject,
-    removeConversationFromProject,
 } from "@/lib/supabase/queries/conversations"
 
 import { getProjects, type Project } from "@/lib/supabase/queries/projects"
