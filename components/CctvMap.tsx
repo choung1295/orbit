@@ -44,7 +44,7 @@ function getUrl(item: CctvItem): string {
 
 export default function CctvMap() {
   const mapRef = useRef<HTMLDivElement>(null)
-  const mapInstanceRef = useRef<any>(null)
+  const mapInstanceRef = useRef<object | null>(null)
   const [selected, setSelected] = useState<CctvItem | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -124,7 +124,7 @@ export default function CctvMap() {
       mapInstanceRef.current = map
 
       map.on('click', (evt) => {
-        const feature = map.forEachFeatureAtPixel(evt.pixel, (f: any) => f)
+        const feature = map.forEachFeatureAtPixel(evt.pixel, (f: unknown) => f)
         if (feature) {
           setSelected(feature.get('data') as CctvItem)
         } else {
