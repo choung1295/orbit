@@ -23,7 +23,7 @@ export async function getConversations(): Promise<Conversation[]> {
     return data ?? []
 }
 
-export async function createConversation(title: string = "새 대화"): Promise<Conversation> {
+export async function createConversation(title = "새 대화"): Promise<Conversation> {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error("로그인이 필요합니다.")
@@ -45,7 +45,7 @@ export async function updateConversationTitle(id: string, title: string): Promis
         .update({ title, updated_at: new Date().toISOString() })
         .eq("id", id)
 
-    if (error) throw error
+    if (error) throw new Error(`제목 변경 실패: ${error.message}`)
 }
 
 export async function deleteConversation(id: string): Promise<void> {
@@ -55,7 +55,7 @@ export async function deleteConversation(id: string): Promise<void> {
         .delete()
         .eq("id", id)
 
-    if (error) throw error
+    if (error) throw new Error(`삭제 실패: ${error.message}`)
 }
 
 export async function moveConversationToProject(

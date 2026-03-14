@@ -20,10 +20,7 @@ export async function getProjects(): Promise<Project[]> {
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
 
-    if (error) {
-        console.warn("projects 조회 실패:", error.message)
-        return []
-    }
+    if (error) { console.warn("projects 조회 실패:", error.message); return [] }
     return data ?? []
 }
 
@@ -51,11 +48,7 @@ export async function deleteProject(id: string): Promise<void> {
         .update({ project_id: null, storage_type: "recent" })
         .eq("project_id", id)
 
-    const { error } = await supabase
-        .from("projects")
-        .delete()
-        .eq("id", id)
-
+    const { error } = await supabase.from("projects").delete().eq("id", id)
     if (error) throw error
 }
 
