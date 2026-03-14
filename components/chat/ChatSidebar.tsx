@@ -5,7 +5,7 @@ import Link from "next/link"
 import {
     Plus, MessageSquare, Settings, ChevronDown,
     Menu, X, MoreHorizontal, Pencil, Share2,
-    FolderInput, Trash2, ChevronRight, Archive,
+    FolderInput, Trash2, Archive,
 } from "lucide-react"
 
 import {
@@ -29,8 +29,6 @@ interface ChatSidebarProps {
     onSelectChat?: (id: string) => void
     onNewChat?: () => void
 }
-
-// ─── 날짜 분류 ────────────────────────────────────────────────────────────────
 
 const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000
 
@@ -66,8 +64,9 @@ function InlineRenameInput({
                 if (e.key === "Escape") { e.preventDefault(); onCancel() }
             }}
             onBlur={save}
-            className="flex-1 min-w-0 bg-[#22222e] border border-indigo-500/60 rounded-md px-2 py-0.5 text-xs text-white outline-none focus:border-indigo-400 transition-colors"
+            className="flex-1 min-w-0 bg-white/5 border border-indigo-500/60 rounded-md px-2 py-0.5 text-xs text-white outline-none focus:border-indigo-400 transition-colors"
             onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
         />
     )
 }
@@ -78,10 +77,12 @@ function MenuItem({ icon, label, onClick, danger = false }: {
     icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean
 }) {
     return (
-        <button onClick={onClick}
+        <button
+            onClick={onClick}
+            onMouseDown={(e) => e.stopPropagation()}
             className={`w-full flex items-center gap-2.5 px-3 py-2 transition-colors text-xs ${danger
                     ? "text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                    : "text-zinc-300 hover:text-white hover:bg-[#22222e]"
+                    : "text-zinc-300 hover:text-white hover:bg-white/5"
                 }`}
         >
             {icon}<span>{label}</span>
@@ -89,7 +90,7 @@ function MenuItem({ icon, label, onClick, danger = false }: {
     )
 }
 
-// ─── 점세개 메뉴 (Recent/Archive용) ──────────────────────────────────────────
+// ─── 점세개 메뉴 — click 기반 서브패널 ───────────────────────────────────────
 
 function ConversationMenu({
     onRename, onDelete, onShare, projects, currentProjectId,
@@ -104,7 +105,8 @@ function ConversationMenu({
     onProjectCreated: (project: Project) => void
 }) {
     const [open, setOpen] = useState(false)
-    const [projectSubOpen, setProjectSubOpen] = useState(false)
+    // "main" | "project" — 서브메뉴를 같은 패널에서 전환
+    const [panel, setPanel] = useState<"main" | "project">("main")
     const menuRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
@@ -112,12 +114,14 @@ function ConversationMenu({
         const handler = (e: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
                 setOpen(false)
-                setProjectSubOpen(false)
+                setPanel("main")
             }
         }
         document.addEventListener("mousedown", handler)
         return () => document.removeEventListener("mousedown", handler)
     }, [open])
+
+    const close = () => { setOpen(false); setPanel("main") }
 
     return (
         <div
@@ -127,53 +131,61 @@ function ConversationMenu({
             onMouseDown={(e) => e.stopPropagation()}
         >
             <button
-                onClick={() => { setOpen((v) => !v); setProjectSubOpen(false) }}
-                className="p-1 rounded-md text-zinc-600 hover:text-zinc-300 hover:bg-[#2a2a38] transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                onClick={() => { setOpen((v) => !v); setPanel("main") }}
+                className="p-1 rounded-md text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                 aria-label="메뉴"
             >
                 <MoreHorizontal className="w-3.5 h-3.5" />
             </button>
 
             {open && (
-                <div className="absolute right-0 top-7 z-50 w-44 rounded-xl bg-[#1a1a24] border border-[#2a2a38] shadow-xl shadow-black/40 py-1 text-xs">
-                    <MenuItem icon={<Share2 className="w-3.5 h-3.5" />} label="공유"
-                        onClick={() => { onShare(); setOpen(false) }} />
-                    <MenuItem icon={<Pencil className="w-3.5 h-3.5" />} label="이름 변경"
-                        onClick={() => { onRename(); setOpen(false) }} />
+                <div className="absolute right-0 top-7 z-50 w-48 rounded-xl bg-[#1a1a24] border border-white/10 shadow-xl shadow-black/50 py-1 text-xs">
+                    {panel === "main" ? (
+                        <>
+                            <MenuItem icon={<Share2 className="w-3.5 h-3.5" />} label="공유"
+                                onClick={() => { onShare(); close() }} />
+                            <MenuItem icon={<Pencil className="w-3.5 h-3.5" />} label="이름 변경"
+                                onClick={() => { onRename(); close() }} />
 
-                    {/* 프로젝트로 이동 서브메뉴 */}
-                    <div
-                        className="relative"
-                        onMouseEnter={() => setProjectSubOpen(true)}
-                        onMouseLeave={() => setProjectSubOpen(false)}
-                    >
-                        <button className="w-full flex items-center gap-2.5 px-3 py-2 text-zinc-300 hover:text-white hover:bg-[#22222e] transition-colors text-xs">
-                            <FolderInput className="w-3.5 h-3.5" />
-                            <span className="flex-1 text-left">프로젝트로 이동</span>
-                            <ChevronRight className="w-3 h-3 text-zinc-500" />
-                        </button>
-                        {projectSubOpen && (
-                            <div
-                                className="absolute left-full top-0 ml-1 w-48 rounded-xl bg-[#1a1a24] border border-[#2a2a38] shadow-xl shadow-black/40 py-1"
+                            {/* 프로젝트로 이동 — click으로 패널 전환 */}
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setPanel("project") }}
                                 onMouseDown={(e) => e.stopPropagation()}
+                                className="w-full flex items-center gap-2.5 px-3 py-2 text-zinc-300 hover:text-white hover:bg-white/5 transition-colors text-xs"
                             >
-                                <ProjectMoveMenu
-                                    projects={projects}
-                                    currentProjectId={currentProjectId}
-                                    onMove={async (projectId) => {
-                                        await onMoveToProject(projectId)
-                                        setOpen(false)
-                                        setProjectSubOpen(false)
-                                    }}
-                                    onProjectCreated={onProjectCreated}
-                                />
-                            </div>
-                        )}
-                    </div>
+                                <FolderInput className="w-3.5 h-3.5" />
+                                <span className="flex-1 text-left">프로젝트로 이동</span>
+                                <span className="text-zinc-600 text-[10px]">▶</span>
+                            </button>
 
-                    <div className="border-t border-[#2a2a38] my-1" />
-                    <MenuItem icon={<Trash2 className="w-3.5 h-3.5" />} label="삭제" danger
-                        onClick={() => { onDelete(); setOpen(false) }} />
+                            <div className="border-t border-white/5 my-1" />
+                            <MenuItem icon={<Trash2 className="w-3.5 h-3.5" />} label="삭제" danger
+                                onClick={() => { onDelete(); close() }} />
+                        </>
+                    ) : (
+                        <>
+                            {/* 프로젝트 목록 패널 */}
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setPanel("main") }}
+                                onMouseDown={(e) => e.stopPropagation()}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-colors text-xs border-b border-white/5 mb-1"
+                            >
+                                <span className="text-[10px]">◀</span>
+                                <span>프로젝트 선택</span>
+                            </button>
+                            <ProjectMoveMenu
+                                projects={projects}
+                                currentProjectId={currentProjectId}
+                                onMove={async (projectId) => {
+                                    await onMoveToProject(projectId)
+                                    close()
+                                }}
+                                onProjectCreated={(project) => {
+                                    onProjectCreated(project)
+                                }}
+                            />
+                        </>
+                    )}
                 </div>
             )}
         </div>
@@ -211,7 +223,7 @@ function ConversationItem({
                 setIsDragging(true)
             }}
             onDragEnd={() => setIsDragging(false)}
-            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all group cursor-grab active:cursor-grabbing ${isActive ? "bg-[#1e1e2e]" : "hover:bg-[#18181f]"
+            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all group cursor-grab active:cursor-grabbing select-none ${isActive ? "bg-[#1e1e2e]" : "hover:bg-white/[0.04]"
                 } ${isDragging ? "opacity-40" : ""}`}
         >
             <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${isActive ? "bg-violet-400" : "bg-zinc-600 group-hover:bg-zinc-500"
@@ -225,9 +237,7 @@ function ConversationItem({
                 />
             ) : (
                 <button className="flex-1 min-w-0 text-left" onClick={onSelect} title={chat.title}>
-                    <span className={`text-xs truncate block transition-colors ${isActive
-                            ? "text-zinc-100 font-medium"
-                            : "text-zinc-400 group-hover:text-zinc-200"
+                    <span className={`text-xs truncate block transition-colors ${isActive ? "text-zinc-100 font-medium" : "text-zinc-400 group-hover:text-zinc-200"
                         }`}>
                         {chat.title}
                     </span>
@@ -311,12 +321,10 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
         setIsSearching(false)
     }, [])
 
-    // ─── 프로젝트 이동 — optimistic update ───────────────────────────────────
     const handleMoveToProject = useCallback(async (chatId: string, projectId: string) => {
+        // optimistic update
         setConversations((prev) => prev.map((c) =>
-            c.id === chatId
-                ? { ...c, project_id: projectId, storage_type: "project" }
-                : c
+            c.id === chatId ? { ...c, project_id: projectId, storage_type: "project" } : c
         ))
         try {
             await moveConversationToProject(chatId, projectId)
@@ -382,7 +390,6 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
 
     const SidebarContent = ({ onClose }: { onClose?: () => void }) => (
         <aside className="flex flex-col w-64 bg-[#111116] border-r border-[#1e1e28] h-full">
-            {/* 헤더 */}
             <div className="px-4 pt-5 pb-3">
                 <div className="flex items-center justify-between mb-4">
                     <Link href="/orbit" className="flex items-center gap-2 group">
@@ -395,7 +402,7 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                         <ChevronDown className="w-4 h-4 text-zinc-600" />
                         {onClose && (
                             <button onClick={onClose}
-                                className="p-1 rounded-md text-zinc-600 hover:text-zinc-200 hover:bg-[#1e1e28] transition-colors">
+                                className="p-1 rounded-md text-zinc-600 hover:text-zinc-200 hover:bg-white/5 transition-colors">
                                 <X className="w-4 h-4" />
                             </button>
                         )}
@@ -410,12 +417,10 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                 </button>
             </div>
 
-            {/* 검색창 */}
-            <div className="px-4 pb-3 relative">
+            <div className="px-4 pb-3">
                 <SearchBar onSearch={handleSearch} onClear={handleSearchClear} />
             </div>
 
-            {/* 리스트 */}
             <div className="flex-1 overflow-y-auto px-3 pb-2 custom-scrollbar">
                 {searchKeyword.length >= 2 ? (
                     <SearchResults
@@ -429,7 +434,6 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                     <p className="px-2 py-2 text-xs text-zinc-500 animate-pulse italic">Thinking...</p>
                 ) : (
                     <>
-                        {/* Projects */}
                         <ProjectsSection
                             projects={projects}
                             conversations={conversations}
@@ -440,7 +444,6 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                             onSelectChat={(id) => handleSelectChat(id, onClose)}
                         />
 
-                        {/* Recent */}
                         {recentConvs.length > 0 && (
                             <>
                                 <SectionHeader label="Recent" />
@@ -448,7 +451,6 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                             </>
                         )}
 
-                        {/* Archive */}
                         {archiveConvs.length > 0 && (
                             <>
                                 <SectionHeader icon={<Archive className="w-3 h-3" />} label="Archive" />
@@ -463,13 +465,12 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                 )}
             </div>
 
-            {/* 하단 */}
             <div className="px-3 py-3 border-t border-[#1e1e28] space-y-0.5">
-                <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-500 hover:bg-[#18181f] hover:text-zinc-200 transition-colors text-xs">
+                <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-200 transition-colors text-xs">
                     <MessageSquare className="w-3.5 h-3.5 shrink-0" />
                     제안하기
                 </button>
-                <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-500 hover:bg-[#18181f] hover:text-zinc-200 transition-colors text-xs">
+                <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-200 transition-colors text-xs">
                     <Settings className="w-3.5 h-3.5 shrink-0" />
                     Settings
                 </button>
@@ -481,7 +482,7 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
         <>
             <button
                 onClick={() => setMobileOpen(!mobileOpen)}
-                className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-xl bg-[#1e1e26] border border-[#2a2a35] text-zinc-400 hover:text-white transition-colors shadow-lg"
+                className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-xl bg-[#1e1e26] border border-white/10 text-zinc-400 hover:text-white transition-colors shadow-lg"
             >
                 {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>

@@ -6,7 +6,7 @@ import {
     MoreHorizontal, Pencil, Share2, Trash,
 } from "lucide-react"
 import type { Project } from "@/lib/supabase/queries/projects"
-import { createProject, deleteProject } from "@/lib/supabase/queries/projects"
+import { createProject, deleteProject, updateProjectName } from "@/lib/supabase/queries/projects"
 import {
     moveConversationToProject,
     updateConversationTitle,
@@ -25,7 +25,7 @@ interface ProjectsSectionProps {
     onSelectChat: (id: string) => void
 }
 
-// ─── 인라인 이름변경 (프로젝트 내부용) ───────────────────────────────────────
+// ─── 인라인 이름변경 ──────────────────────────────────────────────────────────
 
 function InlineRename({
     initialValue, onSave, onCancel,
@@ -52,7 +52,8 @@ function InlineRename({
             }}
             onBlur={save}
             onClick={(e) => e.stopPropagation()}
-            className="flex-1 min-w-0 bg-[#22222e] border border-indigo-500/60 rounded-md px-2 py-0.5 text-xs text-white outline-none focus:border-indigo-400 transition-colors"
+            onMouseDown={(e) => e.stopPropagation()}
+            className="flex-1 min-w-0 bg-white/5 border border-indigo-500/60 rounded-md px-2 py-0.5 text-xs text-white outline-none focus:border-indigo-400 transition-colors"
         />
     )
 }
@@ -61,11 +62,7 @@ function InlineRename({
 
 function ProjectItemMenu({
     onShare, onRename, onDelete,
-}: {
-    onShare: () => void
-    onRename: () => void
-    onDelete: () => void
-}) {
+}: { onShare: () => void; onRename: () => void; onDelete: () => void }) {
     const [open, setOpen] = useState(false)
     const ref = useRef<HTMLDivElement>(null)
 
@@ -79,40 +76,75 @@ function ProjectItemMenu({
     }, [open])
 
     return (
-        <div
-            ref={ref}
-            className="relative shrink-0"
+        <div ref={ref} className="relative shrink-0"
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
         >
             <button
                 onClick={() => setOpen((v) => !v)}
-                className="p-1 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-[#2a2a38] transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
-                aria-label="메뉴"
+                className="p-1 rounded-md text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
             >
                 <MoreHorizontal className="w-3.5 h-3.5" />
             </button>
-
             {open && (
-                <div className="absolute right-0 top-7 z-50 w-40 rounded-xl bg-[#1a1a24] border border-[#2a2a38] shadow-xl shadow-black/40 py-1 text-xs">
-                    <button
-                        onClick={() => { onShare(); setOpen(false) }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-zinc-300 hover:text-white hover:bg-[#22222e] transition-colors"
-                    >
+                <div className="absolute right-0 top-7 z-50 w-36 rounded-xl bg-[#1a1a24] border border-white/10 shadow-xl shadow-black/40 py-1 text-xs">
+                    <button onClick={() => { onShare(); setOpen(false) }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-zinc-300 hover:text-white hover:bg-white/5 transition-colors">
                         <Share2 className="w-3.5 h-3.5" /><span>공유</span>
                     </button>
-                    <button
-                        onClick={() => { onRename(); setOpen(false) }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-zinc-300 hover:text-white hover:bg-[#22222e] transition-colors"
-                    >
+                    <button onClick={() => { onRename(); setOpen(false) }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-zinc-300 hover:text-white hover:bg-white/5 transition-colors">
                         <Pencil className="w-3.5 h-3.5" /><span>이름 변경</span>
                     </button>
-                    <div className="border-t border-[#2a2a38] my-1" />
-                    <button
-                        onClick={() => { onDelete(); setOpen(false) }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
-                    >
+                    <div className="border-t border-white/5 my-1" />
+                    <button onClick={() => { onDelete(); setOpen(false) }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors">
                         <Trash className="w-3.5 h-3.5" /><span>삭제</span>
+                    </button>
+                </div>
+            )}
+        </div>
+    )
+}
+
+// ─── 프로젝트 헤더 점세개 메뉴 ───────────────────────────────────────────────
+
+function ProjectHeaderMenu({
+    onRename, onDelete,
+}: { onRename: () => void; onDelete: () => void }) {
+    const [open, setOpen] = useState(false)
+    const ref = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (!open) return
+        const handler = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+        }
+        document.addEventListener("mousedown", handler)
+        return () => document.removeEventListener("mousedown", handler)
+    }, [open])
+
+    return (
+        <div ref={ref} className="relative shrink-0"
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+        >
+            <button
+                onClick={() => setOpen((v) => !v)}
+                className="p-0.5 rounded text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-colors opacity-0 group-hover/proj:opacity-100 focus:opacity-100"
+            >
+                <MoreHorizontal className="w-3.5 h-3.5" />
+            </button>
+            {open && (
+                <div className="absolute right-0 top-6 z-50 w-36 rounded-xl bg-[#1a1a24] border border-white/10 shadow-xl shadow-black/40 py-1 text-xs">
+                    <button onClick={() => { onRename(); setOpen(false) }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-zinc-300 hover:text-white hover:bg-white/5 transition-colors">
+                        <Pencil className="w-3.5 h-3.5" /><span>이름 변경</span>
+                    </button>
+                    <div className="border-t border-white/5 my-1" />
+                    <button onClick={() => { onDelete(); setOpen(false) }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors">
+                        <Trash2 className="w-3.5 h-3.5" /><span>삭제</span>
                     </button>
                 </div>
             )}
@@ -123,28 +155,29 @@ function ProjectItemMenu({
 // ─── 메인 ─────────────────────────────────────────────────────────────────────
 
 export default function ProjectsSection({
-    projects,
-    conversations,
-    activeChatId,
-    onProjectsChange,
-    onConversationsChange,
-    onConversationMove,
-    onSelectChat,
+    projects, conversations, activeChatId,
+    onProjectsChange, onConversationsChange, onConversationMove, onSelectChat,
 }: ProjectsSectionProps) {
     const [creating, setCreating] = useState(false)
     const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set())
     const [dragOverProjectId, setDragOverProjectId] = useState<string | null>(null)
-    const [renamingId, setRenamingId] = useState<string | null>(null)
+    const [renamingConvId, setRenamingConvId] = useState<string | null>(null)
+    const [renamingProjectId, setRenamingProjectId] = useState<string | null>(null)
 
-    const handleCreate = async (name: string) => {
+    const handleCreateProject = async (name: string) => {
         try {
             const project = await createProject(name)
             if (project) onProjectsChange([project, ...projects])
-        } catch (e) {
-            console.error("프로젝트 생성 실패:", e)
-        } finally {
-            setCreating(false)
-        }
+        } catch (e) { console.error("프로젝트 생성 실패:", e) }
+        finally { setCreating(false) }
+    }
+
+    const handleRenameProject = async (projectId: string, newName: string) => {
+        try {
+            await updateProjectName(projectId, newName)
+            onProjectsChange(projects.map((p) => p.id === projectId ? { ...p, name: newName } : p))
+        } catch (e) { console.error("프로젝트 이름 변경 실패:", e) }
+        finally { setRenamingProjectId(null) }
     }
 
     const handleDeleteProject = async (projectId: string) => {
@@ -152,26 +185,18 @@ export default function ProjectsSection({
         try {
             await deleteProject(projectId)
             onProjectsChange(projects.filter((p) => p.id !== projectId))
-            // 해당 프로젝트 소속 대화를 recent로 복원
             onConversationsChange(conversations.map((c) =>
-                c.project_id === projectId
-                    ? { ...c, project_id: null, storage_type: "recent" }
-                    : c
+                c.project_id === projectId ? { ...c, project_id: null, storage_type: "recent" } : c
             ))
-        } catch (e) {
-            console.error("프로젝트 삭제 실패:", e)
-        }
+        } catch (e) { console.error("프로젝트 삭제 실패:", e) }
     }
 
     const handleRenameConversation = async (id: string, newTitle: string) => {
         try {
             await updateConversationTitle(id, newTitle)
             onConversationsChange(conversations.map((c) => c.id === id ? { ...c, title: newTitle } : c))
-        } catch (e) {
-            console.error("이름 변경 실패:", e)
-        } finally {
-            setRenamingId(null)
-        }
+        } catch (e) { console.error("이름 변경 실패:", e) }
+        finally { setRenamingConvId(null) }
     }
 
     const handleDeleteConversation = async (id: string) => {
@@ -179,9 +204,7 @@ export default function ProjectsSection({
         try {
             await deleteConversation(id)
             onConversationsChange(conversations.filter((c) => c.id !== id))
-        } catch (e) {
-            console.error("대화 삭제 실패:", e)
-        }
+        } catch (e) { console.error("대화 삭제 실패:", e) }
     }
 
     const handleShare = (chatId: string) => {
@@ -216,9 +239,7 @@ export default function ProjectsSection({
         try {
             await moveConversationToProject(conversationId, projectId)
             onConversationMove(conversationId, projectId)
-        } catch (e) {
-            console.error("드롭 이동 실패:", e)
-        }
+        } catch (e) { console.error("드롭 이동 실패:", e) }
     }
 
     return (
@@ -227,122 +248,127 @@ export default function ProjectsSection({
             <div className="flex items-center justify-between px-2 py-1.5 group/header">
                 <div className="flex items-center gap-1.5">
                     <FolderOpen className="w-3 h-3 text-zinc-500" />
-                    <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">
-                        Projects
-                    </p>
+                    <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">Projects</p>
                 </div>
                 <button
                     onClick={() => setCreating(true)}
-                    className="p-0.5 rounded text-zinc-500 hover:text-zinc-200 hover:bg-[#2a2a38] transition-colors opacity-0 group-hover/header:opacity-100"
-                    aria-label="새 프로젝트"
+                    className="p-0.5 rounded text-zinc-500 hover:text-zinc-200 hover:bg-white/5 transition-colors opacity-0 group-hover/header:opacity-100"
                 >
                     <Plus className="w-3.5 h-3.5" />
                 </button>
             </div>
 
             {creating && (
-                <ProjectCreateInput onSave={handleCreate} onCancel={() => setCreating(false)} />
+                <ProjectCreateInput onSave={handleCreateProject} onCancel={() => setCreating(false)} />
             )}
 
             {projects.length === 0 && !creating ? (
-                <p className="px-3 py-1 text-[11px] text-zinc-500 italic">프로젝트 없음</p>
+                <p className="px-3 py-1 text-[11px] text-zinc-600 italic">프로젝트 없음</p>
             ) : (
                 <div className="space-y-0.5">
                     {projects.map((project) => {
                         const projectChats = conversations.filter((c) => c.project_id === project.id)
                         const isCollapsed = collapsedProjects.has(project.id)
                         const isDragOver = dragOverProjectId === project.id
+                        const isRenamingProject = renamingProjectId === project.id
 
                         return (
                             <div key={project.id}>
-                                {/* 프로젝트 행 — drop target */}
+                                {/* 프로젝트 행 */}
                                 <div
                                     onDragOver={(e) => handleDragOver(e, project.id)}
                                     onDragLeave={() => setDragOverProjectId(null)}
                                     onDrop={(e) => handleDrop(e, project.id)}
                                     className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-all group/proj ${isDragOver
-                                            ? "bg-indigo-500/20 ring-1 ring-indigo-500/60"
-                                            : "hover:bg-[#18181f]"
+                                            ? "bg-indigo-500/20 ring-1 ring-indigo-500/50"
+                                            : "hover:bg-white/[0.04]"
                                         }`}
                                 >
                                     <button
-                                        onClick={() => toggleCollapse(project.id)}
+                                        onClick={() => !isRenamingProject && toggleCollapse(project.id)}
                                         className="flex items-center gap-1.5 flex-1 min-w-0 text-left"
                                     >
-                                        {isCollapsed ? (
-                                            <ChevronRight className="w-3 h-3 text-zinc-500 shrink-0" />
+                                        {isCollapsed
+                                            ? <ChevronRight className="w-3 h-3 text-zinc-500 shrink-0" />
+                                            : <ChevronDown className="w-3 h-3 text-zinc-500 shrink-0" />
+                                        }
+                                        {isRenamingProject ? (
+                                            <InlineRename
+                                                initialValue={project.name}
+                                                onSave={(v) => handleRenameProject(project.id, v)}
+                                                onCancel={() => setRenamingProjectId(null)}
+                                            />
                                         ) : (
-                                            <ChevronDown className="w-3 h-3 text-zinc-500 shrink-0" />
-                                        )}
-                                        <span className="text-xs text-zinc-300 group-hover/proj:text-zinc-100 truncate transition-colors font-medium">
-                                            {project.name}
-                                        </span>
-                                        {projectChats.length > 0 && (
-                                            <span className="text-[10px] text-zinc-500 ml-auto shrink-0 tabular-nums">
-                                                {projectChats.length}
-                                            </span>
+                                            <>
+                                                <span className="text-xs text-zinc-300 group-hover/proj:text-zinc-100 truncate transition-colors font-medium">
+                                                    {project.name}
+                                                </span>
+                                                {projectChats.length > 0 && (
+                                                    <span className="text-[10px] text-zinc-600 ml-auto shrink-0 tabular-nums">
+                                                        {projectChats.length}
+                                                    </span>
+                                                )}
+                                            </>
                                         )}
                                     </button>
-                                    <button
-                                        onClick={() => handleDeleteProject(project.id)}
-                                        className="p-0.5 rounded text-zinc-600 hover:text-red-400 transition-colors opacity-0 group-hover/proj:opacity-100 shrink-0"
-                                        aria-label="프로젝트 삭제"
-                                    >
-                                        <Trash2 className="w-3 h-3" />
-                                    </button>
+
+                                    {!isRenamingProject && (
+                                        <ProjectHeaderMenu
+                                            onRename={() => setRenamingProjectId(project.id)}
+                                            onDelete={() => handleDeleteProject(project.id)}
+                                        />
+                                    )}
                                 </div>
 
                                 {/* 프로젝트 내 대화 목록 */}
                                 {!isCollapsed && (
-                                    <div className="ml-3 pl-2 border-l border-[#2a2a38] space-y-0.5 mt-0.5 mb-1">
+                                    <div className="ml-3 pl-2 border-l border-white/5 space-y-0.5 mt-0.5 mb-1">
                                         {projectChats.length === 0 ? (
                                             <p className="px-2 py-1 text-[11px] text-zinc-600 italic">대화 없음</p>
-                                        ) : (
-                                            projectChats.map((chat) => {
-                                                const isActive = activeChatId === chat.id
-                                                const isRenaming = renamingId === chat.id
+                                        ) : projectChats.map((chat) => {
+                                            const isActive = activeChatId === chat.id
+                                            const isRenaming = renamingConvId === chat.id
 
-                                                return (
-                                                    <div
-                                                        key={chat.id}
-                                                        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors group ${isActive ? "bg-[#1e1e2e]" : "hover:bg-[#18181f]"
-                                                            }`}
-                                                    >
-                                                        <span className={`w-1 h-1 rounded-full shrink-0 ${isActive ? "bg-violet-400" : "bg-zinc-600 group-hover:bg-zinc-500"
-                                                            }`} />
+                                            return (
+                                                <div
+                                                    key={chat.id}
+                                                    className={`flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors group ${isActive ? "bg-[#1e1e2e]" : "hover:bg-white/[0.04]"
+                                                        }`}
+                                                >
+                                                    <span className={`w-1 h-1 rounded-full shrink-0 ${isActive ? "bg-violet-400" : "bg-zinc-600 group-hover:bg-zinc-500"
+                                                        }`} />
 
-                                                        {isRenaming ? (
-                                                            <InlineRename
-                                                                initialValue={chat.title}
-                                                                onSave={(v) => handleRenameConversation(chat.id, v)}
-                                                                onCancel={() => setRenamingId(null)}
-                                                            />
-                                                        ) : (
-                                                            <button
-                                                                className="flex-1 min-w-0 text-left"
-                                                                onClick={() => onSelectChat(chat.id)}
-                                                                title={chat.title}
-                                                            >
-                                                                <span className={`text-xs truncate block transition-colors ${isActive
-                                                                        ? "text-zinc-100 font-medium"
-                                                                        : "text-zinc-400 group-hover:text-zinc-200"
-                                                                    }`}>
-                                                                    {chat.title}
-                                                                </span>
-                                                            </button>
-                                                        )}
+                                                    {isRenaming ? (
+                                                        <InlineRename
+                                                            initialValue={chat.title}
+                                                            onSave={(v) => handleRenameConversation(chat.id, v)}
+                                                            onCancel={() => setRenamingConvId(null)}
+                                                        />
+                                                    ) : (
+                                                        <button
+                                                            className="flex-1 min-w-0 text-left"
+                                                            onClick={() => onSelectChat(chat.id)}
+                                                            title={chat.title}
+                                                        >
+                                                            <span className={`text-xs truncate block transition-colors ${isActive
+                                                                    ? "text-zinc-100 font-medium"
+                                                                    : "text-zinc-400 group-hover:text-zinc-200"
+                                                                }`}>
+                                                                {chat.title}
+                                                            </span>
+                                                        </button>
+                                                    )}
 
-                                                        {!isRenaming && (
-                                                            <ProjectItemMenu
-                                                                onShare={() => handleShare(chat.id)}
-                                                                onRename={() => setRenamingId(chat.id)}
-                                                                onDelete={() => handleDeleteConversation(chat.id)}
-                                                            />
-                                                        )}
-                                                    </div>
-                                                )
-                                            })
-                                        )}
+                                                    {!isRenaming && (
+                                                        <ProjectItemMenu
+                                                            onShare={() => handleShare(chat.id)}
+                                                            onRename={() => setRenamingConvId(chat.id)}
+                                                            onDelete={() => handleDeleteConversation(chat.id)}
+                                                        />
+                                                    )}
+                                                </div>
+                                            )
+                                        })}
                                     </div>
                                 )}
                             </div>

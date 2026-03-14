@@ -39,10 +39,23 @@ export async function createProject(name: string): Promise<Project | null> {
     return data
 }
 
+export async function updateProjectName(id: string, name: string): Promise<void> {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("로그인이 필요합니다.")
+
+    const { error } = await supabase
+        .from("projects")
+        .update({ name: name.trim(), updated_at: new Date().toISOString() })
+        .eq("id", id)
+        .eq("user_id", user.id)
+
+    if (error) throw new Error(`프로젝트 이름 변경 실패: ${error.message}`)
+}
+
 export async function deleteProject(id: string): Promise<void> {
     const supabase = createClient()
 
-    // 프로젝트 내 대화를 recent로 복원
     await supabase
         .from("conversations")
         .update({ project_id: null, storage_type: "recent" })
