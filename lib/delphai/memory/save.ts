@@ -84,6 +84,11 @@ function buildMemoryKey(
     scope: MemoryScope,
     projectId?: string
 ): string | undefined {
+    // episodic_note와 user_preference는 덮어쓰지 않고 계속 쌓이도록 key를 반환하지 않음
+    if (type === "episodic_note" || type === "user_preference") {
+        return undefined
+    }
+
     if (scope === "project" && projectId) {
         return `project.${projectId}.${type}`
     }

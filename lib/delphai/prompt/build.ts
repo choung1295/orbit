@@ -34,8 +34,8 @@ export function buildPrompt({
     const parts: string[] = []
 
     if (memories.length > 0) {
-        const memoryBlock = memories.map(m => `- ${m.content}`).join("\n")
-        parts.push(`[관련 기억]\n${memoryBlock}`)
+        const memoryBlock = memories.map(m => `(기억-${m.type}): ${m.content}`).join("\n")
+        parts.push(`### [사용자 관련 기억]\n${memoryBlock}\n---`)
     }
 
     if (ragContext) {

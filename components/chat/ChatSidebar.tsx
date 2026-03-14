@@ -466,6 +466,13 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
             </div>
 
             <div className="px-3 py-3 border-t border-[#1e1e28] space-y-0.5">
+                <Link 
+                    href="/orbit/cctv"
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-indigo-400 hover:bg-white/[0.04] hover:text-indigo-300 transition-colors text-xs font-medium"
+                >
+                    <FolderInput className="w-3.5 h-3.5 shrink-0" />
+                    실시간 CCTV 지도
+                </Link>
                 <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-200 transition-colors text-xs">
                     <MessageSquare className="w-3.5 h-3.5 shrink-0" />
                     제안하기

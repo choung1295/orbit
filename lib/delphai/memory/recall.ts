@@ -131,17 +131,23 @@ function isRelevant(content: string, message: string, tags?: string[]): boolean 
     const normalizedMessage = message.toLowerCase()
     const normalizedTags = (tags ?? []).map((tag) => tag.toLowerCase())
 
+    // 조사 제거 및 분리
     const words = normalizedMessage
+        .replace(/[?.,!]/g, " ")
         .split(/\s+/)
         .map((w) => w.trim())
         .filter((w) => w.length >= 2)
 
     if (words.length === 0) return true
 
-    const contentMatchCount = words.filter((w) => normalizedContent.includes(w)).length
-    const tagMatchCount = words.filter((w) =>
-        normalizedTags.some((tag) => tag.includes(w))
-    ).length
+    // 키워드 가중치 기반 매칭 (메시지에 포함된 단어가 내용이나 태그에 얼마나 있는지)
+    const matches = words.filter((w) => 
+        normalizedContent.includes(w) || 
+        normalizedTags.some(tag => tag.includes(w))
+    )
 
-    return contentMatchCount >= 1 || tagMatchCount >= 1
+    // 하나라도 매칭되면 관련 있는 것으로 간주하되, 
+    // "기억해", "알려줘" 같은 기능적 단어만 매칭되는 경우를 방지하기 위해 
+    // 실제 의미 있는 명사 중심의 매칭이 유리함 (현재는 단순 포함 여부)
+    return matches.length >= 1
 }
