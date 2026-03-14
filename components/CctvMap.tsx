@@ -166,26 +166,20 @@ export default function CctvMap() {
             <div>
               <p className="text-white text-sm font-semibold">{getName(selected)}</p>
               {getUrl(selected) && (
-
-                href = { getUrl(selected) }
-                  target="_blank"
-              rel="noopener noreferrer"
-              className="text-indigo-400 text-xs mt-0.5 hover:underline"
-                >
-              영상 보기 →
-            </a>
+                <a href={getUrl(selected)} target="_blank" rel="noopener noreferrer" className="text-indigo-400 text-xs mt-0.5 hover:underline">
+                  영상 보기 →
+                </a>
               )}
+            </div>
+            <button
+              onClick={() => setSelected(null)}
+              className="text-gray-500 hover:text-white text-lg leading-none shrink-0"
+            >
+              ✕
+            </button>
           </div>
-          <button
-            onClick={() => setSelected(null)}
-            className="text-gray-500 hover:text-white text-lg leading-none shrink-0"
-          >
-            ✕
-          </button>
         </div>
-        </div>
-  )
-}
-    </div >
+      )}
+    </div>
   )
 }
