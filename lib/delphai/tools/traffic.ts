@@ -3,6 +3,13 @@
  * 국가교통정보센터(ITS) API — 실시간 돌발 상황 정보
  */
 
+interface TrafficEvent {
+    eventtype?: string
+    eventdetail?: string
+    eventmsg?: string
+    roadname?: string
+}
+
 export async function getTrafficHotspots(): Promise<string> {
     const apiKey = process.env.MOLIT_API_KEY
     if (!apiKey) return ""
@@ -20,13 +27,13 @@ export async function getTrafficHotspots(): Promise<string> {
 
         const res = await fetch(url.toString())
         const data = await res.json()
-        const items = data?.body?.items || []
+        const items: TrafficEvent[] = data?.body?.items || []
 
         if (items.length === 0) return "[교통 소식] 현재 전국 주요 도로에 특이한 돌발 상황은 없습니다."
 
         const summary = items
             .slice(0, 5)
-            .map((i: any) => `• [${i.eventtype || "사고/공사"}] ${i.eventdetail || i.eventmsg} (${i.roadname || "도로명 미상"})`)
+            .map((i) => `• [${i.eventtype || "사고/공사"}] ${i.eventdetail || i.eventmsg} (${i.roadname || "도로명 미상"})`)
             .join("\n")
 
         return `[실시간 전국 교통 돌발 정보]\n${summary}`

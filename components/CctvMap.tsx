@@ -11,78 +11,106 @@ interface CCTVData {
   cctvcoordy: string
 }
 
+// kakao 전역 타입 최소 선언
+declare global {
+  interface Window {
+    kakao: {
+      maps: {
+        LatLng: new (lat: number, lng: number) => unknown
+        Map: new (container: HTMLElement, options: object) => KakaoMap
+        Marker: new (options: object) => KakaoMarker
+        CustomOverlay: new (options: object) => KakaoOverlay
+        ZoomControl: new () => unknown
+        ControlPosition: { RIGHT: unknown }
+        event: { addListener: (target: unknown, type: string, handler: () => void) => void }
+      }
+    }
+  }
+}
+
+interface KakaoMap {
+  getBounds: () => { getSouthWest: () => KakaoLatLng; getNorthEast: () => KakaoLatLng }
+  addControl: (control: unknown, position: unknown) => void
+}
+
+interface KakaoLatLng {
+  getLat: () => number
+  getLng: () => number
+}
+
+interface KakaoMarker {
+  setMap: (map: KakaoMap | null) => void
+}
+
+interface KakaoOverlay {
+  setMap: (map: KakaoMap | null) => void
+}
+
 const CctvMap: React.FC = () => {
   const mapContainerRef = useRef<HTMLDivElement>(null)
-  const [map, setMap] = useState<any>(null)
+  const [map, setMap] = useState<KakaoMap | null>(null)
   const [cctvs, setCctvs] = useState<CCTVData[]>([])
-  const [loading, setLoading] = useState(false) // Initially false to show the loading screen ONLY during actual fetch
   const [fetchInProgress, setFetchInProgress] = useState(false)
   const [debugStatus, setDebugStatus] = useState<string>("Initializing SDK...")
 
-  // Fetch CCTV Data for a specific range
   const fetchCctvs = async (minX: number, maxX: number, minY: number, maxY: number) => {
     try {
       setFetchInProgress(true)
       setDebugStatus(`Fetching data (${minX.toFixed(2)}~${maxX.toFixed(2)})...`)
       const res = await fetch(`/api/traffic/cctv?minX=${minX}&maxX=${maxX}&minY=${minY}&maxY=${maxY}`)
       const data = await res.json()
-      const items = data?.body?.items || []
-      
+      const items: CCTVData[] = data?.body?.items || []
+
       console.log(`Fetched ${items.length} items for range:`, { minX, maxX, minY, maxY })
       setCctvs(items.slice(0, 300))
-      
+
       if (items.length === 0) {
         setDebugStatus("No items found. Zoom out or move the map.")
       } else {
         setDebugStatus(`Loaded ${items.length} markers.`)
       }
-    } catch (error: any) {
-      setDebugStatus(`Data Error: ${error.message}`)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error"
+      setDebugStatus(`Data Error: ${message}`)
     } finally {
       setTimeout(() => setFetchInProgress(false), 300)
     }
   }
 
-  // Initialize Map
   const initMap = () => {
     if (!mapContainerRef.current || map) return
-    
+
     try {
       console.log("Initializing Kakao Map...")
-      const center = new window.kakao.maps.LatLng(37.4, 127.1) // Seongnam area
-      const options = {
-        center: center,
-        level: 8,
-      }
+      const center = new window.kakao.maps.LatLng(37.4, 127.1)
+      const options = { center, level: 8 }
       const kakaoMap = new window.kakao.maps.Map(mapContainerRef.current, options)
-      
+
       const zoomControl = new window.kakao.maps.ZoomControl()
       kakaoMap.addControl(zoomControl, window.kakao.maps.ControlPosition.RIGHT)
-      
+
       setMap(kakaoMap)
       setDebugStatus("Map Initialized.")
-      
-      // Initial fetch for the startup view
       fetchCctvs(127.0, 127.2, 37.3, 37.5)
-    } catch (err: any) {
-      setDebugStatus(`Map Error: ${err.message}`)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error"
+      setDebugStatus(`Map Error: ${message}`)
       console.error("Map initialization failed:", err)
     }
   }
 
   const handleRefresh = () => {
-      if (!map) return
-      const bounds = map.getBounds()
-      const sw = bounds.getSouthWest()
-      const ne = bounds.getNorthEast()
-      fetchCctvs(sw.getLng(), ne.getLng(), sw.getLat(), ne.getLat())
+    if (!map) return
+    const bounds = map.getBounds()
+    const sw = bounds.getSouthWest()
+    const ne = bounds.getNorthEast()
+    fetchCctvs(sw.getLng(), ne.getLng(), sw.getLat(), ne.getLat())
   }
 
-  // Plot Markers
   useEffect(() => {
     if (!map || cctvs.length === 0) return
 
-    const markers: any[] = []
+    const markers: KakaoMarker[] = []
     cctvs.forEach((cctv) => {
       const lat = parseFloat(cctv.cctvcoordy)
       const lng = parseFloat(cctv.cctvcoordx)
@@ -100,10 +128,10 @@ const CctvMap: React.FC = () => {
       const content = document.createElement("div")
       content.className = "bg-[#1a1a1f] p-3 rounded-lg border border-gray-700 shadow-2xl w-72"
       content.style.marginBottom = "140px"
-      
+
       const safeName = cctv.cctvname.replace(/[^a-zA-Z0-9가-힣]/g, "-")
       const containerId = `video-container-${safeName}`
-      
+
       content.innerHTML = `
         <div class="flex justify-between items-center mb-2">
           <h3 class="text-xs font-bold text-white truncate">${cctv.cctvname}</h3>
@@ -116,7 +144,7 @@ const CctvMap: React.FC = () => {
       `
 
       const overlay = new window.kakao.maps.CustomOverlay({
-        content: content,
+        content,
         position: markerPosition,
         yAnchor: 1,
       })
@@ -134,7 +162,7 @@ const CctvMap: React.FC = () => {
             video.muted = true
             video.playsInline = true
             container.appendChild(video)
-            
+
             if (video.canPlayType("application/vnd.apple.mpegurl")) {
               video.src = cctv.cctvurl
             } else if (Hls.isSupported()) {
@@ -148,29 +176,27 @@ const CctvMap: React.FC = () => {
       })
     })
 
-    return () => markers.forEach(m => m.setMap(null))
+    return () => markers.forEach((m) => m.setMap(null))
   }, [map, cctvs])
 
   return (
     <div className="space-y-4">
       <KakaoMapLoader onLoad={initMap} onError={setDebugStatus} />
-      
+
       <div className="flex items-center justify-between px-2">
         <div className="flex items-center gap-3">
-            <div className={`w-2 h-2 rounded-full ${map ? "bg-green-500 ring-2 ring-green-950" : "bg-red-500 animate-pulse"}`} />
-            <span className="text-[11px] text-gray-400 font-mono italic">{debugStatus}</span>
+          <div className={`w-2 h-2 rounded-full ${map ? "bg-green-500 ring-2 ring-green-950" : "bg-red-500 animate-pulse"}`} />
+          <span className="text-[11px] text-gray-400 font-mono italic">{debugStatus}</span>
         </div>
         <div className="flex items-center gap-4">
-            <div className="text-[11px] text-gray-500 font-mono">
-                {cctvs.length} Markers
-            </div>
-            <button 
-                onClick={handleRefresh}
-                disabled={!map || fetchInProgress}
-                className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-800 text-white text-[10px] font-bold rounded-lg transition-colors shadow-lg"
-            >
-                현 위치에서 검색
-            </button>
+          <div className="text-[11px] text-gray-500 font-mono">{cctvs.length} Markers</div>
+          <button
+            onClick={handleRefresh}
+            disabled={!map || fetchInProgress}
+            className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-800 text-white text-[10px] font-bold rounded-lg transition-colors shadow-lg"
+          >
+            현 위치에서 검색
+          </button>
         </div>
       </div>
 
@@ -179,7 +205,7 @@ const CctvMap: React.FC = () => {
         {fetchInProgress && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50 backdrop-blur-sm">
             <div className="flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
               <div className="text-white text-sm font-medium">데이터 수신 중...</div>
             </div>
           </div>
@@ -187,10 +213,10 @@ const CctvMap: React.FC = () => {
         {!map && !fetchInProgress && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 backdrop-blur-md">
             <div className="flex flex-col items-center gap-3 p-6 text-center max-w-sm">
-              <div className="w-10 h-10 border-2 border-gray-600 border-t-indigo-500 rounded-full animate-spin mb-2"></div>
+              <div className="w-10 h-10 border-2 border-gray-600 border-t-indigo-500 rounded-full animate-spin mb-2" />
               <div className="text-white text-base font-bold">지도 서비스를 초기화 중입니다</div>
               <p className="text-gray-400 text-xs">
-                상태 메시지: <span className="text-amber-400">{debugStatus}</span><br/>
+                상태 메시지: <span className="text-amber-400">{debugStatus}</span><br />
                 오랫동안 멈춰있다면 <strong>F12-Console</strong> 에러를 확인해 주세요.
               </p>
             </div>
