@@ -44,7 +44,8 @@ function getUrl(item: CctvItem): string {
 
 export default function CctvMap() {
   const mapRef = useRef<HTMLDivElement>(null)
-  const mapInstanceRef = useRef<object | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapInstanceRef = useRef<any>(null)
   const [selected, setSelected] = useState<CctvItem | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -124,7 +125,8 @@ export default function CctvMap() {
       mapInstanceRef.current = map
 
       map.on('click', (evt) => {
-        const feature = map.forEachFeatureAtPixel(evt.pixel, (f: unknown) => f)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const feature = map.forEachFeatureAtPixel(evt.pixel, (f: any) => f)
         if (feature) {
           setSelected(feature.get('data') as CctvItem)
         } else {
@@ -164,26 +166,26 @@ export default function CctvMap() {
             <div>
               <p className="text-white text-sm font-semibold">{getName(selected)}</p>
               {getUrl(selected) && (
-                <a
-                  href={getUrl(selected)}
+
+                href = { getUrl(selected) }
                   target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-indigo-400 text-xs mt-0.5 hover:underline"
+              rel="noopener noreferrer"
+              className="text-indigo-400 text-xs mt-0.5 hover:underline"
                 >
-                  영상 보기 →
-                </a>
+              영상 보기 →
+            </a>
               )}
-            </div>
-            <button
-              onClick={() => setSelected(null)}
-              className="text-gray-500 hover:text-white text-lg leading-none shrink-0"
-            >
-              ✕
-            </button>
           </div>
+          <button
+            onClick={() => setSelected(null)}
+            className="text-gray-500 hover:text-white text-lg leading-none shrink-0"
+          >
+            ✕
+          </button>
         </div>
-      )
-      }
+        </div>
+  )
+}
     </div >
   )
 }
