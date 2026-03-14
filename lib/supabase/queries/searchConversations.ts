@@ -17,22 +17,20 @@ interface MessageRow {
     created_at: string
 }
 
-export async function searchConversations(
-    keyword: string
-): Promise<SearchResult[]> {
-    if (!keyword.trim()) return []
+export async function searchConversations(keyword: string): Promise<SearchResult[]> {
+    // 최소 2글자
+    if (keyword.trim().length < 2) return []
 
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return []
 
-    const now = new Date()
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
     // ① title 검색
     const { data: byTitle } = await supabase
         .from("conversations")
-        .select("id, title, updated_at, project_id")
+        .select("id, title, updated_at, storage_type, project_id")
         .eq("user_id", user.id)
         .ilike("title", `%${keyword}%`)
         .order("updated_at", { ascending: false })
@@ -48,7 +46,7 @@ export async function searchConversations(
 
     const messages: MessageRow[] = byMessage ?? []
 
-    // ③ byMessage의 conversation_id로 대화 조회 (Set 스프레드 대신 Array.from 사용)
+    // ③ message conversation_id로 대화 조회
     const msgConvIds = Array.from(
         new Set(messages.map((m) => m.conversation_id).filter(Boolean))
     )
@@ -57,13 +55,14 @@ export async function searchConversations(
         id: string
         title: string
         updated_at: string
+        storage_type: string | null
         project_id: string | null
     }[] = []
 
     if (msgConvIds.length > 0) {
         const { data } = await supabase
             .from("conversations")
-            .select("id, title, updated_at, project_id")
+            .select("id, title, updated_at, storage_type, project_id")
             .eq("user_id", user.id)
             .in("id", msgConvIds)
 
@@ -76,6 +75,7 @@ export async function searchConversations(
         id: string
         title: string
         updated_at: string
+        storage_type: string | null
         project_id: string | null
         snippet: string
     }[] = []
@@ -99,14 +99,14 @@ export async function searchConversations(
         merged.push({ ...c, snippet })
     }
 
-    // ⑤ storage_type 분류 및 정렬
+    // ⑤ storage_type 분류
     const results: SearchResult[] = merged
         .slice(0, 20)
         .map((c) => {
             let storage_type: StorageType = "archive"
-            if (c.project_id) {
+            if (c.storage_type === "project") {
                 storage_type = "project"
-            } else if (c.updated_at >= sevenDaysAgo) {
+            } else if (c.storage_type === "recent" || c.updated_at >= sevenDaysAgo) {
                 storage_type = "recent"
             }
             return {
@@ -118,10 +118,8 @@ export async function searchConversations(
                 last_message_at: c.updated_at,
             }
         })
-        .sort(
-            (a, b) =>
-                new Date(b.last_message_at).getTime() -
-                new Date(a.last_message_at).getTime()
+        .sort((a, b) =>
+            new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
         )
 
     return results
