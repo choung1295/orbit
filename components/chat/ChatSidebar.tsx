@@ -298,7 +298,7 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
         try {
             const results = await searchConversations(keyword)
             setSearchResults(results)
-        } catch (e) {
+        } catch {
             setSearchResults([])
         } finally {
             setIsSearching(false)
