@@ -13,6 +13,7 @@ import {
     updateConversationTitle,
     deleteConversation,
     moveConversationToProject,
+    type Conversation,
 } from "@/lib/supabase/queries/conversations"
 
 import { getProjects, type Project } from "@/lib/supabase/queries/projects"
@@ -22,16 +23,6 @@ import SearchBar from "@/components/chat/SearchBar"
 import SearchResults from "@/components/chat/SearchResults"
 import ProjectsSection from "@/components/chat/ProjectsSection"
 import ProjectMoveMenu from "@/components/chat/ProjectMoveMenu"
-
-// ─── 타입 ─────────────────────────────────────────────────────────────────────
-
-interface Conversation {
-    id: string
-    title: string
-    updated_at: string
-    storage_type?: string | null
-    project_id?: string | null
-}
 
 interface ChatSidebarProps {
     activeChatId?: string
@@ -75,7 +66,7 @@ function InlineRenameInput({
                 if (e.key === "Escape") { e.preventDefault(); onCancel() }
             }}
             onBlur={save}
-            className="flex-1 min-w-0 bg-[#22222e] border border-indigo-500/60 rounded-md px-2 py-0.5 text-xs text-[#f0f0f5] outline-none focus:border-indigo-400 transition-colors"
+            className="flex-1 min-w-0 bg-[#22222e] border border-indigo-500/60 rounded-md px-2 py-0.5 text-xs text-white outline-none focus:border-indigo-400 transition-colors"
             onClick={(e) => e.stopPropagation()}
         />
     )
@@ -90,7 +81,7 @@ function MenuItem({ icon, label, onClick, danger = false }: {
         <button onClick={onClick}
             className={`w-full flex items-center gap-2.5 px-3 py-2 transition-colors text-xs ${danger
                     ? "text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                    : "text-[#909098] hover:text-[#e0e0e8] hover:bg-[#22222e]"
+                    : "text-zinc-200 hover:text-white hover:bg-[#22222e]"
                 }`}
         >
             {icon}<span>{label}</span>
@@ -99,14 +90,15 @@ function MenuItem({ icon, label, onClick, danger = false }: {
 }
 
 function ConversationMenu({
-    onRename, onDelete, onShare, projects, currentProjectId, onMoveToProject, onProjectCreated,
+    onRename, onDelete, onShare, projects, currentProjectId,
+    onMoveToProject, onProjectCreated,
 }: {
     onRename: () => void
     onDelete: () => void
     onShare: () => void
     projects: Project[]
     currentProjectId?: string | null
-    onMoveToProject: (projectId: string) => void
+    onMoveToProject: (projectId: string) => Promise<void>
     onProjectCreated: (project: Project) => void
 }) {
     const [open, setOpen] = useState(false)
@@ -129,7 +121,7 @@ function ConversationMenu({
         <div ref={menuRef} className="relative" onClick={(e) => e.stopPropagation()}>
             <button
                 onClick={() => { setOpen((v) => !v); setProjectSubOpen(false) }}
-                className="p-1 rounded-md text-[#404050] hover:text-[#a0a0b0] hover:bg-[#2a2a38] transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                className="p-1 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-[#2a2a38] transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                 aria-label="메뉴"
             >
                 <MoreHorizontal className="w-3.5 h-3.5" />
@@ -137,40 +129,49 @@ function ConversationMenu({
 
             {open && (
                 <div className="absolute right-0 top-7 z-50 w-44 rounded-xl bg-[#1a1a24] border border-[#2a2a38] shadow-xl shadow-black/40 py-1 text-xs">
-                    <MenuItem icon={<Share2 className="w-3.5 h-3.5" />} label="공유" onClick={() => { onShare(); setOpen(false) }} />
-                    <MenuItem icon={<Pencil className="w-3.5 h-3.5" />} label="이름 변경" onClick={() => { onRename(); setOpen(false) }} />
+                    <MenuItem icon={<Share2 className="w-3.5 h-3.5" />} label="공유"
+                        onClick={() => { onShare(); setOpen(false) }} />
+                    <MenuItem icon={<Pencil className="w-3.5 h-3.5" />} label="이름 변경"
+                        onClick={() => { onRename(); setOpen(false) }} />
 
                     {/* 프로젝트로 이동 서브메뉴 */}
                     <div className="relative"
                         onMouseEnter={() => setProjectSubOpen(true)}
                         onMouseLeave={() => setProjectSubOpen(false)}
                     >
-                        <button className="w-full flex items-center gap-2.5 px-3 py-2 text-[#909098] hover:text-[#e0e0e8] hover:bg-[#22222e] transition-colors text-xs">
+                        <button className="w-full flex items-center gap-2.5 px-3 py-2 text-zinc-200 hover:text-white hover:bg-[#22222e] transition-colors text-xs">
                             <FolderInput className="w-3.5 h-3.5" />
                             <span className="flex-1 text-left">프로젝트로 이동</span>
-                            <ChevronRight className="w-3 h-3 text-[#404050]" />
+                            <ChevronRight className="w-3 h-3 text-zinc-500" />
                         </button>
                         {projectSubOpen && (
                             <div className="absolute left-full top-0 ml-1 w-48 rounded-xl bg-[#1a1a24] border border-[#2a2a38] shadow-xl shadow-black/40 py-1">
                                 <ProjectMoveMenu
                                     projects={projects}
                                     currentProjectId={currentProjectId}
-                                    onMove={(projectId) => { onMoveToProject(projectId); setOpen(false); setProjectSubOpen(false) }}
-                                    onProjectCreated={(project) => { onProjectCreated(project); }}
+                                    onMove={async (projectId) => {
+                                        await onMoveToProject(projectId)
+                                        setOpen(false)
+                                        setProjectSubOpen(false)
+                                    }}
+                                    onProjectCreated={(project) => {
+                                        onProjectCreated(project)
+                                    }}
                                 />
                             </div>
                         )}
                     </div>
 
                     <div className="border-t border-[#2a2a38] my-1" />
-                    <MenuItem icon={<Trash2 className="w-3.5 h-3.5" />} label="삭제" danger onClick={() => { onDelete(); setOpen(false) }} />
+                    <MenuItem icon={<Trash2 className="w-3.5 h-3.5" />} label="삭제" danger
+                        onClick={() => { onDelete(); setOpen(false) }} />
                 </div>
             )}
         </div>
     )
 }
 
-// ─── 대화 항목 행 ─────────────────────────────────────────────────────────────
+// ─── 대화 항목 행 (draggable) ─────────────────────────────────────────────────
 
 function ConversationItem({
     chat, isActive, isRenaming,
@@ -187,24 +188,43 @@ function ConversationItem({
     onDelete: () => void
     onShare: () => void
     projects: Project[]
-    onMoveToProject: (projectId: string) => void
+    onMoveToProject: (projectId: string) => Promise<void>
     onProjectCreated: (project: Project) => void
 }) {
+    const [isDragging, setIsDragging] = useState(false)
+
     return (
-        <div className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors group ${isActive ? "bg-[#1e1e2e]" : "hover:bg-[#18181f]"
-            }`}>
-            <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${isActive ? "bg-violet-400" : "bg-[#303040] group-hover:bg-[#505060]"
+        <div
+            draggable
+            onDragStart={(e) => {
+                e.dataTransfer.setData("conversationId", chat.id)
+                e.dataTransfer.effectAllowed = "move"
+                setIsDragging(true)
+            }}
+            onDragEnd={() => setIsDragging(false)}
+            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all group cursor-grab active:cursor-grabbing ${isActive ? "bg-[#1e1e2e]" : "hover:bg-[#18181f]"
+                } ${isDragging ? "opacity-40" : ""}`}
+        >
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${isActive ? "bg-violet-400" : "bg-zinc-600 group-hover:bg-zinc-400"
                 }`} />
+
             {isRenaming ? (
-                <InlineRenameInput initialValue={chat.title} onSave={onRenameSave} onCancel={onRenameCancel} />
+                <InlineRenameInput
+                    initialValue={chat.title}
+                    onSave={onRenameSave}
+                    onCancel={onRenameCancel}
+                />
             ) : (
                 <button className="flex-1 min-w-0 text-left" onClick={onSelect} title={chat.title}>
-                    <span className={`text-xs truncate block transition-colors ${isActive ? "text-[#f0f0f5] font-medium" : "text-[#707080] group-hover:text-[#a0a0b0]"
+                    <span className={`text-xs truncate block transition-colors ${isActive
+                            ? "text-white font-medium"
+                            : "text-zinc-300 group-hover:text-white"
                         }`}>
                         {chat.title}
                     </span>
                 </button>
             )}
+
             {!isRenaming && (
                 <ConversationMenu
                     onRename={onRenameStart}
@@ -224,9 +244,9 @@ function ConversationItem({
 
 function SectionHeader({ icon, label }: { icon?: React.ReactNode; label: string }) {
     return (
-        <div className="flex items-center gap-1.5 px-2 py-1.5 mt-2 first:mt-0">
-            {icon && <span className="text-[#404050]">{icon}</span>}
-            <p className="text-[10px] font-semibold text-[#404050] uppercase tracking-widest">{label}</p>
+        <div className="flex items-center gap-1.5 px-2 py-1.5 mt-3">
+            {icon && <span className="text-zinc-400">{icon}</span>}
+            <p className="text-[10px] font-semibold text-zinc-300 uppercase tracking-widest">{label}</p>
         </div>
     )
 }
@@ -239,8 +259,6 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
     const [isLoading, setIsLoading] = useState(true)
     const [mobileOpen, setMobileOpen] = useState(false)
     const [renamingId, setRenamingId] = useState<string | null>(null)
-
-    // 검색 상태 — SearchBar가 input 자체를 관리하므로 여기선 결과만
     const [searchKeyword, setSearchKeyword] = useState("")
     const [searchResults, setSearchResults] = useState<SearchResult[]>([])
     const [isSearching, setIsSearching] = useState(false)
@@ -253,7 +271,7 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                     getConversations(),
                     getProjects(),
                 ])
-                setConversations(convData ?? [])
+                setConversations(convData)
                 setProjects(projData)
             } catch (e) {
                 console.error("fetch 실패:", e)
@@ -264,13 +282,8 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
         fetchAll()
     }, [activeChatId])
 
-    // SearchBar에서 debounce된 keyword가 올라오면 검색 실행
     const handleSearch = useCallback(async (keyword: string) => {
-        if (keyword.trim().length < 2) {
-            setSearchResults([])
-            setSearchKeyword("")
-            return
-        }
+        if (keyword.trim().length < 2) { setSearchResults([]); setSearchKeyword(""); return }
         setSearchKeyword(keyword)
         setIsSearching(true)
         try {
@@ -288,6 +301,24 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
         setSearchKeyword("")
         setSearchResults([])
         setIsSearching(false)
+    }, [])
+
+    // ─── 프로젝트 이동 (optimistic update) ───────────────────────────────────
+    const handleMoveToProject = useCallback(async (chatId: string, projectId: string) => {
+        // optimistic: 즉시 UI 반영
+        setConversations((prev) => prev.map((c) =>
+            c.id === chatId
+                ? { ...c, project_id: projectId, storage_type: "project" }
+                : c
+        ))
+        try {
+            await moveConversationToProject(chatId, projectId)
+        } catch (e) {
+            console.error("프로젝트 이동 실패:", e)
+            // 실패 시 롤백
+            const original = await getConversations()
+            setConversations(original)
+        }
     }, [])
 
     const recentConvs = useMemo(() => conversations.filter((c) => classifyConversation(c) === "recent"), [conversations])
@@ -309,15 +340,6 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
             if (activeChatId === id) onNewChat?.()
         } catch (e) { console.error("삭제 실패:", e) }
     }, [activeChatId, onNewChat])
-
-    const handleMoveToProject = useCallback(async (chatId: string, projectId: string) => {
-        try {
-            await moveConversationToProject(chatId, projectId)
-            setConversations((prev) => prev.map((c) =>
-                c.id === chatId ? { ...c, project_id: projectId, storage_type: "project" } : c
-            ))
-        } catch (e) { console.error("프로젝트 이동 실패:", e) }
-    }, [])
 
     const handleShare = useCallback((chatId: string) => {
         const url = `${window.location.origin}/orbit?chat=${chatId}`
@@ -345,7 +367,7 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                     onDelete={() => handleDelete(chat.id)}
                     onShare={() => handleShare(chat.id)}
                     projects={projects}
-                    onMoveToProject={(pid) => handleMoveToProject(chat.id, pid)}
+                    onMoveToProject={(projectId) => handleMoveToProject(chat.id, projectId)}
                     onProjectCreated={(p) => setProjects((prev) => [p, ...prev])}
                 />
             ))}
@@ -359,14 +381,15 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                 <div className="flex items-center justify-between mb-4">
                     <Link href="/orbit" className="flex items-center gap-2 group">
                         <div className="w-6 h-6 shrink-0" aria-hidden="true" />
-                        <span className="font-semibold text-[#f0f0f5] text-sm group-hover:text-violet-300 transition-colors tracking-wide">
+                        <span className="font-semibold text-white text-sm group-hover:text-violet-300 transition-colors tracking-wide">
                             Orbit
                         </span>
                     </Link>
                     <div className="flex items-center gap-1">
-                        <ChevronDown className="w-4 h-4 text-[#404050]" />
+                        <ChevronDown className="w-4 h-4 text-zinc-500" />
                         {onClose && (
-                            <button onClick={onClose} className="p-1 rounded-md text-[#404050] hover:text-[#f0f0f5] hover:bg-[#1e1e28] transition-colors">
+                            <button onClick={onClose}
+                                className="p-1 rounded-md text-zinc-500 hover:text-white hover:bg-[#1e1e28] transition-colors">
                                 <X className="w-4 h-4" />
                             </button>
                         )}
@@ -383,16 +406,12 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
 
             {/* 검색창 */}
             <div className="px-4 pb-3 relative">
-                <SearchBar
-                    onSearch={handleSearch}
-                    onClear={handleSearchClear}
-                />
+                <SearchBar onSearch={handleSearch} onClear={handleSearchClear} />
             </div>
 
             {/* 리스트 */}
             <div className="flex-1 overflow-y-auto px-3 pb-2 custom-scrollbar">
                 {searchKeyword.length >= 2 ? (
-                    // 검색 결과
                     <SearchResults
                         results={searchResults}
                         isSearching={isSearching}
@@ -401,15 +420,16 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                         activeId={activeChatId}
                     />
                 ) : isLoading ? (
-                    <p className="px-2 py-2 text-xs text-[#404050] animate-pulse italic">Thinking...</p>
+                    <p className="px-2 py-2 text-xs text-zinc-400 animate-pulse italic">Thinking...</p>
                 ) : (
                     <>
-                        {/* Projects 섹션 — SearchBar 바로 아래 */}
+                        {/* Projects — SearchBar 바로 아래 */}
                         <ProjectsSection
                             projects={projects}
                             conversations={conversations}
                             activeChatId={activeChatId}
                             onProjectsChange={setProjects}
+                            onConversationMove={(convId, projectId) => handleMoveToProject(convId, projectId)}
                             onSelectChat={(id) => handleSelectChat(id, onClose)}
                         />
 
@@ -430,7 +450,7 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                         )}
 
                         {conversations.length === 0 && projects.length === 0 && (
-                            <p className="px-2 py-2 text-xs text-[#404050]">대화가 없습니다.</p>
+                            <p className="px-2 py-2 text-xs text-zinc-400">대화가 없습니다.</p>
                         )}
                     </>
                 )}
@@ -438,11 +458,11 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
 
             {/* 하단 */}
             <div className="px-3 py-3 border-t border-[#1e1e28] space-y-0.5">
-                <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[#606070] hover:bg-[#18181f] hover:text-[#c0c0c8] transition-colors text-xs">
+                <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-400 hover:bg-[#18181f] hover:text-white transition-colors text-xs">
                     <MessageSquare className="w-3.5 h-3.5 shrink-0" />
                     제안하기
                 </button>
-                <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[#606070] hover:bg-[#18181f] hover:text-[#c0c0c8] transition-colors text-xs">
+                <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-400 hover:bg-[#18181f] hover:text-white transition-colors text-xs">
                     <Settings className="w-3.5 h-3.5 shrink-0" />
                     Settings
                 </button>
@@ -454,7 +474,7 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
         <>
             <button
                 onClick={() => setMobileOpen(!mobileOpen)}
-                className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-xl bg-[#1e1e26] border border-[#2a2a35] text-[#a0a0b0] hover:text-[#f0f0f5] transition-colors shadow-lg"
+                className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-xl bg-[#1e1e26] border border-[#2a2a35] text-zinc-300 hover:text-white transition-colors shadow-lg"
             >
                 {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>

@@ -1,9 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { FolderOpen, Plus, Trash2 } from "lucide-react"
+import { FolderOpen, Plus, Trash2, ChevronDown, ChevronRight } from "lucide-react"
 import type { Project } from "@/lib/supabase/queries/projects"
 import { createProject, deleteProject } from "@/lib/supabase/queries/projects"
+import { moveConversationToProject } from "@/lib/supabase/queries/conversations"
 import ProjectCreateInput from "@/components/chat/ProjectCreateInput"
 
 interface Conversation {
@@ -19,6 +20,7 @@ interface ProjectsSectionProps {
     conversations: Conversation[]
     activeChatId?: string
     onProjectsChange: (projects: Project[]) => void
+    onConversationMove: (conversationId: string, projectId: string) => void
     onSelectChat: (id: string) => void
 }
 
@@ -27,17 +29,18 @@ export default function ProjectsSection({
     conversations,
     activeChatId,
     onProjectsChange,
+    onConversationMove,
     onSelectChat,
 }: ProjectsSectionProps) {
     const [creating, setCreating] = useState(false)
-    const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set())
+    // 기본값: 모든 프로젝트 펼침
+    const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set())
+    const [dragOverProjectId, setDragOverProjectId] = useState<string | null>(null)
 
     const handleCreate = async (name: string) => {
         try {
             const project = await createProject(name)
-            if (project) {
-                onProjectsChange([project, ...projects])
-            }
+            if (project) onProjectsChange([project, ...projects])
         } catch (e) {
             console.error("프로젝트 생성 실패:", e)
         } finally {
@@ -55,8 +58,8 @@ export default function ProjectsSection({
         }
     }
 
-    const toggleExpand = (projectId: string) => {
-        setExpandedProjects((prev) => {
+    const toggleCollapse = (projectId: string) => {
+        setCollapsedProjects((prev) => {
             const next = new Set(prev)
             if (next.has(projectId)) next.delete(projectId)
             else next.add(projectId)
@@ -64,19 +67,49 @@ export default function ProjectsSection({
         })
     }
 
+    // ─── 드롭 핸들러 ─────────────────────────────────────────────────────────
+
+    const handleDragOver = (e: React.DragEvent, projectId: string) => {
+        e.preventDefault()
+        e.dataTransfer.dropEffect = "move"
+        setDragOverProjectId(projectId)
+    }
+
+    const handleDragLeave = () => {
+        setDragOverProjectId(null)
+    }
+
+    const handleDrop = async (e: React.DragEvent, projectId: string) => {
+        e.preventDefault()
+        setDragOverProjectId(null)
+        const conversationId = e.dataTransfer.getData("conversationId")
+        if (!conversationId) return
+
+        // 이미 같은 프로젝트면 무시
+        const conv = conversations.find((c) => c.id === conversationId)
+        if (conv?.project_id === projectId) return
+
+        try {
+            await moveConversationToProject(conversationId, projectId)
+            onConversationMove(conversationId, projectId)
+        } catch (e) {
+            console.error("드롭 이동 실패:", e)
+        }
+    }
+
     return (
         <div className="mb-1">
             {/* 섹션 헤더 */}
             <div className="flex items-center justify-between px-2 py-1.5 group/header">
                 <div className="flex items-center gap-1.5">
-                    <FolderOpen className="w-3 h-3 text-[#404050]" />
-                    <p className="text-[10px] font-semibold text-[#404050] uppercase tracking-widest">
+                    <FolderOpen className="w-3 h-3 text-zinc-400" />
+                    <p className="text-[10px] font-semibold text-zinc-300 uppercase tracking-widest">
                         Projects
                     </p>
                 </div>
                 <button
                     onClick={() => setCreating(true)}
-                    className="p-0.5 rounded text-[#404050] hover:text-[#a0a0b0] hover:bg-[#2a2a38] transition-colors opacity-0 group-hover/header:opacity-100"
+                    className="p-0.5 rounded text-zinc-400 hover:text-white hover:bg-[#2a2a38] transition-colors opacity-0 group-hover/header:opacity-100"
                     aria-label="새 프로젝트"
                 >
                     <Plus className="w-3.5 h-3.5" />
@@ -93,36 +126,47 @@ export default function ProjectsSection({
 
             {/* 프로젝트 목록 */}
             {projects.length === 0 && !creating ? (
-                <p className="px-3 py-1 text-[11px] text-[#404050] italic">프로젝트 없음</p>
+                <p className="px-3 py-1 text-[11px] text-zinc-400 italic">프로젝트 없음</p>
             ) : (
                 <div className="space-y-0.5">
                     {projects.map((project) => {
                         const projectChats = conversations.filter((c) => c.project_id === project.id)
-                        const isExpanded = expandedProjects.has(project.id)
+                        const isCollapsed = collapsedProjects.has(project.id)
+                        const isDragOver = dragOverProjectId === project.id
 
                         return (
                             <div key={project.id}>
-                                {/* 프로젝트 행 */}
-                                <div className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-[#18181f] group/proj transition-colors">
+                                {/* 프로젝트 행 — drop target */}
+                                <div
+                                    onDragOver={(e) => handleDragOver(e, project.id)}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={(e) => handleDrop(e, project.id)}
+                                    className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-all group/proj ${isDragOver
+                                            ? "bg-indigo-500/20 ring-1 ring-indigo-500/60"
+                                            : "hover:bg-[#18181f]"
+                                        }`}
+                                >
                                     <button
-                                        onClick={() => toggleExpand(project.id)}
+                                        onClick={() => toggleCollapse(project.id)}
                                         className="flex items-center gap-1.5 flex-1 min-w-0 text-left"
                                     >
-                                        <span className="text-[#404050] text-[10px]">
-                                            {isExpanded ? "▾" : "▸"}
-                                        </span>
-                                        <span className="text-xs text-[#707080] group-hover/proj:text-[#a0a0b0] truncate transition-colors">
+                                        {isCollapsed ? (
+                                            <ChevronRight className="w-3 h-3 text-zinc-400 shrink-0" />
+                                        ) : (
+                                            <ChevronDown className="w-3 h-3 text-zinc-400 shrink-0" />
+                                        )}
+                                        <span className="text-xs text-zinc-200 group-hover/proj:text-white truncate transition-colors font-medium">
                                             {project.name}
                                         </span>
                                         {projectChats.length > 0 && (
-                                            <span className="text-[10px] text-[#404050] ml-auto shrink-0">
+                                            <span className="text-[10px] text-zinc-400 ml-auto shrink-0 tabular-nums">
                                                 {projectChats.length}
                                             </span>
                                         )}
                                     </button>
                                     <button
                                         onClick={() => handleDelete(project.id)}
-                                        className="p-0.5 rounded text-[#404050] hover:text-red-400 transition-colors opacity-0 group-hover/proj:opacity-100 shrink-0"
+                                        className="p-0.5 rounded text-zinc-500 hover:text-red-400 transition-colors opacity-0 group-hover/proj:opacity-100 shrink-0"
                                         aria-label="프로젝트 삭제"
                                     >
                                         <Trash2 className="w-3 h-3" />
@@ -130,30 +174,30 @@ export default function ProjectsSection({
                                 </div>
 
                                 {/* 프로젝트 내 대화 목록 */}
-                                {isExpanded && projectChats.length > 0 && (
-                                    <div className="ml-4 space-y-0.5">
-                                        {projectChats.map((chat) => (
-                                            <button
-                                                key={chat.id}
-                                                onClick={() => onSelectChat(chat.id)}
-                                                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors text-left group ${activeChatId === chat.id ? "bg-[#1e1e2e]" : "hover:bg-[#18181f]"
-                                                    }`}
-                                            >
-                                                <span className={`w-1 h-1 rounded-full shrink-0 ${activeChatId === chat.id ? "bg-violet-400" : "bg-[#303040]"
-                                                    }`} />
-                                                <span className={`text-xs truncate ${activeChatId === chat.id
-                                                        ? "text-[#f0f0f5] font-medium"
-                                                        : "text-[#606070] group-hover:text-[#a0a0b0]"
-                                                    }`}>
-                                                    {chat.title}
-                                                </span>
-                                            </button>
-                                        ))}
+                                {!isCollapsed && (
+                                    <div className="ml-3 pl-2 border-l border-[#2a2a38] space-y-0.5 mt-0.5">
+                                        {projectChats.length === 0 ? (
+                                            <p className="px-2 py-1 text-[11px] text-zinc-500 italic">대화 없음</p>
+                                        ) : (
+                                            projectChats.map((chat) => (
+                                                <button
+                                                    key={chat.id}
+                                                    onClick={() => onSelectChat(chat.id)}
+                                                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors text-left group ${activeChatId === chat.id ? "bg-[#1e1e2e]" : "hover:bg-[#18181f]"
+                                                        }`}
+                                                >
+                                                    <span className={`w-1 h-1 rounded-full shrink-0 ${activeChatId === chat.id ? "bg-violet-400" : "bg-zinc-600 group-hover:bg-zinc-400"
+                                                        }`} />
+                                                    <span className={`text-xs truncate transition-colors ${activeChatId === chat.id
+                                                            ? "text-white font-medium"
+                                                            : "text-zinc-300 group-hover:text-white"
+                                                        }`}>
+                                                        {chat.title}
+                                                    </span>
+                                                </button>
+                                            ))
+                                        )}
                                     </div>
-                                )}
-
-                                {isExpanded && projectChats.length === 0 && (
-                                    <p className="ml-4 px-2 py-1 text-[11px] text-[#404050] italic">대화 없음</p>
                                 )}
                             </div>
                         )

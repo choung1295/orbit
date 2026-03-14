@@ -1,14 +1,14 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { Plus, Check } from "lucide-react"
+import { Plus, Check, Loader2 } from "lucide-react"
 import type { Project } from "@/lib/supabase/queries/projects"
 import { createProject } from "@/lib/supabase/queries/projects"
 
 interface ProjectMoveMenuProps {
     projects: Project[]
     currentProjectId?: string | null
-    onMove: (projectId: string, projectName: string) => void
+    onMove: (projectId: string) => Promise<void>
     onProjectCreated: (project: Project) => void
 }
 
@@ -21,7 +21,20 @@ export default function ProjectMoveMenu({
     const [creating, setCreating] = useState(false)
     const [newName, setNewName] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [movingId, setMovingId] = useState<string | null>(null)
     const inputRef = useRef<HTMLInputElement>(null)
+
+    const handleMove = async (projectId: string) => {
+        if (movingId) return
+        setMovingId(projectId)
+        try {
+            await onMove(projectId)
+        } catch (e) {
+            console.error("이동 실패:", e)
+        } finally {
+            setMovingId(null)
+        }
+    }
 
     const handleCreateAndMove = async () => {
         const trimmed = newName.trim()
@@ -32,10 +45,10 @@ export default function ProjectMoveMenu({
             const project = await createProject(trimmed)
             if (project) {
                 onProjectCreated(project)
-                onMove(project.id, project.name)
+                await onMove(project.id)
             }
         } catch (e) {
-            console.error("프로젝트 생성 실패:", e)
+            console.error("프로젝트 생성 후 이동 실패:", e)
         } finally {
             setIsSubmitting(false)
             setCreating(false)
@@ -45,24 +58,33 @@ export default function ProjectMoveMenu({
 
     return (
         <div className="w-full">
-            {projects.length === 0 && !creating ? (
-                <p className="px-3 py-2 text-[11px] text-[#505060] italic">프로젝트 없음</p>
-            ) : (
-                projects.map((p) => (
+            {projects.length === 0 && !creating && (
+                <p className="px-3 py-2 text-[11px] text-zinc-400 italic">프로젝트 없음</p>
+            )}
+
+            {projects.map((p) => {
+                const isCurrent = currentProjectId === p.id
+                const isMoving = movingId === p.id
+                return (
                     <button
                         key={p.id}
-                        onClick={() => onMove(p.id, p.name)}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-[#909098] hover:text-[#e0e0e8] hover:bg-[#22222e] transition-colors text-left text-xs"
+                        onClick={() => handleMove(p.id)}
+                        disabled={isMoving}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-zinc-200 hover:text-white hover:bg-[#22222e] transition-colors text-left text-xs disabled:opacity-60"
                     >
-                        {currentProjectId === p.id && (
+                        {isMoving ? (
+                            <Loader2 className="w-3 h-3 animate-spin shrink-0" />
+                        ) : isCurrent ? (
                             <Check className="w-3 h-3 text-indigo-400 shrink-0" />
+                        ) : (
+                            <span className="w-3 h-3 shrink-0" />
                         )}
-                        <span className={`truncate ${currentProjectId === p.id ? "text-indigo-300" : ""}`}>
+                        <span className={`truncate ${isCurrent ? "text-indigo-300" : ""}`}>
                             {p.name}
                         </span>
                     </button>
-                ))
-            )}
+                )
+            })}
 
             <div className="border-t border-[#2a2a38] mt-1 pt-1">
                 {creating ? (
@@ -84,7 +106,7 @@ export default function ProjectMoveMenu({
                                 }
                             }}
                             disabled={isSubmitting}
-                            className="w-full bg-[#1a1a24] border border-indigo-500/60 rounded-md px-2 py-1 text-xs text-[#f0f0f5] outline-none focus:border-indigo-400 transition-colors placeholder:text-[#505060]"
+                            className="w-full bg-[#1a1a24] border border-indigo-500/60 rounded-md px-2 py-1 text-xs text-white outline-none focus:border-indigo-400 transition-colors placeholder:text-zinc-500"
                         />
                     </div>
                 ) : (

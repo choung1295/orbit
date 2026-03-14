@@ -1,6 +1,14 @@
 import { createClient } from "../client"
 
-export async function getConversations() {
+export interface Conversation {
+    id: string
+    title: string
+    updated_at: string
+    storage_type: string | null
+    project_id: string | null
+}
+
+export async function getConversations(): Promise<Conversation[]> {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error("로그인이 필요합니다.")
@@ -12,10 +20,10 @@ export async function getConversations() {
         .order("updated_at", { ascending: false })
 
     if (error) throw error
-    return data
+    return data ?? []
 }
 
-export async function createConversation(title: string = "새 대화") {
+export async function createConversation(title: string = "새 대화"): Promise<Conversation> {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error("로그인이 필요합니다.")
@@ -23,14 +31,14 @@ export async function createConversation(title: string = "새 대화") {
     const { data, error } = await supabase
         .from("conversations")
         .insert({ title, user_id: user.id, storage_type: "recent" })
-        .select()
+        .select("id, title, updated_at, storage_type, project_id")
         .single()
 
     if (error) throw error
     return data
 }
 
-export async function updateConversationTitle(id: string, title: string) {
+export async function updateConversationTitle(id: string, title: string): Promise<void> {
     const supabase = createClient()
     const { error } = await supabase
         .from("conversations")
@@ -40,7 +48,7 @@ export async function updateConversationTitle(id: string, title: string) {
     if (error) throw error
 }
 
-export async function deleteConversation(id: string) {
+export async function deleteConversation(id: string): Promise<void> {
     const supabase = createClient()
     const { error } = await supabase
         .from("conversations")
@@ -53,8 +61,11 @@ export async function deleteConversation(id: string) {
 export async function moveConversationToProject(
     conversationId: string,
     projectId: string
-) {
+): Promise<void> {
     const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("로그인이 필요합니다.")
+
     const { error } = await supabase
         .from("conversations")
         .update({
@@ -63,12 +74,16 @@ export async function moveConversationToProject(
             updated_at: new Date().toISOString(),
         })
         .eq("id", conversationId)
+        .eq("user_id", user.id)
 
-    if (error) throw error
+    if (error) throw new Error(`프로젝트 이동 실패: ${error.message}`)
 }
 
-export async function removeConversationFromProject(conversationId: string) {
+export async function removeConversationFromProject(conversationId: string): Promise<void> {
     const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("로그인이 필요합니다.")
+
     const { error } = await supabase
         .from("conversations")
         .update({
@@ -77,6 +92,7 @@ export async function removeConversationFromProject(conversationId: string) {
             updated_at: new Date().toISOString(),
         })
         .eq("id", conversationId)
+        .eq("user_id", user.id)
 
-    if (error) throw error
+    if (error) throw new Error(`프로젝트 제거 실패: ${error.message}`)
 }
