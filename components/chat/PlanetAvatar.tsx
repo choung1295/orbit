@@ -16,7 +16,6 @@ export default function PlanetAvatar({ size = 140 }: PlanetAvatarProps) {
     const orbitRotation = -15 // 기울기 (degrees)
 
     // 궤도 경로를 위한 정확한 좌표 계산 (기울기 반영)
-    // 주요 축의 양 끝점 (startX, startY) -> (endX, endY)
     const rad = (orbitRotation * Math.PI) / 180
     const xOffset = orbitRx * Math.cos(rad)
     const yOffset = orbitRx * Math.sin(rad)
@@ -68,10 +67,10 @@ export default function PlanetAvatar({ size = 140 }: PlanetAvatarProps) {
                     </feMerge>
                 </filter>
                 
-                {/* 전체 궤도 경로 (소행성 이동용) */}
+                {/* 전체 궤도 경로 (소행성 이동용) - Front then Back */}
                 <path
                     id="orbitPath"
-                    d={`M ${startX},${startY} A ${orbitRx} ${orbitRy} ${orbitRotation} 1 0 ${endX},${endY} A ${orbitRx} ${orbitRy} ${orbitRotation} 1 0 ${startX},${startY}`}
+                    d={`M ${startX},${startY} A ${orbitRx} ${orbitRy} ${orbitRotation} 0 0 ${endX},${endY} A ${orbitRx} ${orbitRy} ${orbitRotation} 0 0 ${startX},${startY}`}
                 />
             </defs>
 
@@ -96,13 +95,13 @@ export default function PlanetAvatar({ size = 140 }: PlanetAvatarProps) {
                 </circle>
             ))}
 
-            {/* 궤도 뒷부분 (행성 뒤로 숨음) */}
+            {/* 궤도 뒷부분 (행성 뒤) */}
             <path
-                d={`M ${startX},${startY} A ${orbitRx} ${orbitRy} ${orbitRotation} 0 1 ${endX},${endY}`}
+                d={`M ${endX},${endY} A ${orbitRx} ${orbitRy} ${orbitRotation} 0 0 ${startX},${startY}`}
                 stroke="#4ade80"
                 strokeWidth={s * 0.02}
                 strokeLinecap="round"
-                opacity="0.3"
+                opacity="0.25"
                 filter="url(#neonGlow)"
             />
 
@@ -117,45 +116,42 @@ export default function PlanetAvatar({ size = 140 }: PlanetAvatarProps) {
                 filter="url(#neonGlow)"
             />
 
-            {/* 궤도 앞부분 (행성 앞으로 나옴) */}
+            {/* 궤도 앞부분 (행성 앞) */}
             <path
-                d={`M ${startX},${startY} A ${orbitRx} ${orbitRy} ${orbitRotation} 1 0 ${endX},${endY}`}
+                d={`M ${startX},${startY} A ${orbitRx} ${orbitRy} ${orbitRotation} 0 0 ${endX},${endY}`}
                 stroke="#4ade80"
                 strokeWidth={s * 0.035}
                 strokeLinecap="round"
                 filter="url(#neonGlow)"
             />
             
-            {/* 이중 궤도 장식 */}
+            {/* 이중 궤도 장식 (앞부분만) */}
             <path
-                d={`M ${startX + (endX-startX)*0.1},${startY + (endY-startY)*0.1} A ${orbitRx * 0.9} ${orbitRy * 0.7} ${orbitRotation} 1 0 ${endX - (endX-startX)*0.1},${endY - (endY-startY)*0.1}`}
+                d={`M ${startX + (endX-startX)*0.1},${startY + (endY-startY)*0.1} A ${orbitRx * 0.9} ${orbitRy * 0.7} ${orbitRotation} 0 0 ${endX - (endX-startX)*0.1},${endY - (endY-startY)*0.1}`}
                 stroke="#4ade80"
-                strokeWidth={s * 0.012}
+                strokeWidth={s * 0.01}
                 strokeLinecap="round"
                 opacity="0.4"
             />
 
-            {/* 소행성 */}
-            <g filter="url(#starGlow)">
-                <circle r={s * 0.045} fill="#ffffff">
+            {/* 소행성 (깨끗한 흰색 구체, 행성 뒤에서 가려짐) */}
+            <g>
+                <circle r={s * 0.045} fill="#ffffff" filter="url(#starGlow)">
                     <animateMotion
-                        dur="5s"
+                        dur="6s"
                         repeatCount="indefinite"
                         rotate="auto"
                     >
                         <mpath href="#orbitPath" />
                     </animateMotion>
-                </circle>
-                {/* 소행성 잔상 */}
-                <circle r={s * 0.035} fill="#4ade80" opacity="0.6">
-                    <animateMotion
-                        dur="5s"
-                        begin="-0.1s"
+                    {/* 행성 뒤로 갈 때 투명도 조절로 숨김 효과 (0.5~1.0 구간이 뒷부분) */}
+                    <animate
+                        attributeName="opacity"
+                        values="1; 1; 0; 0; 1"
+                        keyTimes="0; 0.48; 0.52; 0.98; 1"
+                        dur="6s"
                         repeatCount="indefinite"
-                        rotate="auto"
-                    >
-                        <mpath href="#orbitPath" />
-                    </animateMotion>
+                    />
                 </circle>
             </g>
         </svg>

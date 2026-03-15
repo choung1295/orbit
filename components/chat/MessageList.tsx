@@ -23,9 +23,12 @@ export default function MessageList({ messages, loading, streamingText, onRetry,
     return (
         <div className="max-w-3xl mx-auto w-full px-4 py-4">
             {messages.length === 0 ? (
-                <div className="flex flex-col md:flex-row items-center justify-center min-h-[65vh] gap-8 md:gap-14 text-center md:text-left px-6">
-                    <div className="order-2 md:order-1 transition-all duration-700 delay-100 ease-out">
-                        <h1 className="text-3xl md:text-4xl font-bold mb-4 tracking-tight" 
+                <div className="flex flex-col items-center justify-center min-h-[65vh] gap-8 text-center px-6">
+                    <div className="transform hover:scale-110 transition-transform duration-700 ease-in-out">
+                        <PlanetAvatar size={160} />
+                    </div>
+                    <div className="transition-all duration-700 delay-100 ease-out">
+                        <h1 className="text-3xl md:text-5xl font-bold mb-4 tracking-tight" 
                             style={{ 
                                 background: 'linear-gradient(to bottom, #ffffff, #a0a0b0)',
                                 WebkitBackgroundClip: 'text',
@@ -33,13 +36,10 @@ export default function MessageList({ messages, loading, streamingText, onRetry,
                             }}>
                             무엇을 도와드릴까요?
                         </h1>
-                        <p className="text-[#606070] text-sm md:text-base font-medium max-w-xs md:max-w-none">
+                        <p className="text-[#606070] text-sm md:text-lg font-medium max-w-sm mx-auto">
                             메시지를 입력해 대화를 시작하세요. <br className="hidden md:block" />
-                            Orbit AI가 당신의 업무와 일상을 돕겠습니다.
+                            Orbit AI가 항상 곁에 있겠습니다.
                         </p>
-                    </div>
-                    <div className="order-1 md:order-2 transform hover:scale-110 transition-transform duration-700 ease-in-out">
-                        <PlanetAvatar size={140} />
                     </div>
                 </div>
             ) : (
