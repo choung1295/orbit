@@ -23,12 +23,12 @@ export default function MessageList({ messages, loading, streamingText, onRetry,
     return (
         <div className="max-w-3xl mx-auto w-full px-4 py-4">
             {messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center min-h-[65vh] gap-8 text-center px-6">
+                <div className="flex flex-col items-center justify-center min-h-[55vh] gap-6 text-center px-6">
                     <div className="transform hover:scale-110 transition-transform duration-700 ease-in-out">
-                        <PlanetAvatar size={160} />
+                        <PlanetAvatar size={72} />
                     </div>
                     <div className="transition-all duration-700 delay-100 ease-out">
-                        <h1 className="text-3xl md:text-5xl font-bold mb-4 tracking-tight" 
+                        <h1 className="text-xl md:text-2xl font-bold mb-2 tracking-tight" 
                             style={{ 
                                 background: 'linear-gradient(to bottom, #ffffff, #a0a0b0)',
                                 WebkitBackgroundClip: 'text',
@@ -36,7 +36,7 @@ export default function MessageList({ messages, loading, streamingText, onRetry,
                             }}>
                             무엇을 도와드릴까요?
                         </h1>
-                        <p className="text-[#606070] text-sm md:text-lg font-medium max-w-sm mx-auto">
+                        <p className="text-[#606070] text-xs md:text-sm font-medium max-w-[240px] mx-auto">
                             메시지를 입력해 대화를 시작하세요. <br className="hidden md:block" />
                             Orbit AI가 항상 곁에 있겠습니다.
                         </p>
