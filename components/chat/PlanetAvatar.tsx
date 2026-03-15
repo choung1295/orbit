@@ -9,8 +9,8 @@ export default function PlanetAvatar({ size = 140 }: PlanetAvatarProps) {
     const cx = s / 2
     const cy = s / 2
     
-    // 행성 및 궤도 비율
-    const planetR = s * 0.24
+    // 행성 및 궤도 비율 (정교한 밸런스 조정)
+    const planetR = s * 0.233
     const orbitRx = s * 0.42
     const orbitRy = s * 0.14
     const orbitRotation = -15 // 기울기 (degrees)
