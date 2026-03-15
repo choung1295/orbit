@@ -1,6 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import type Map from 'ol/Map'
+import type VectorSource from 'ol/source/Vector'
+import type Feature from 'ol/Feature'
+import type { Geometry } from 'ol/geom'
 
 interface CctvItem {
   cctvname?: string; cctvName?: string; name?: string;
@@ -8,6 +12,18 @@ interface CctvItem {
   coordy?: number | string; coordY?: number | string; latitude?: number | string; lat?: number | string;
   cctvurl?: string; cctvUrl?: string; url?: string;
 }
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+interface OlRefs {
+  Feature: any;
+  Point: any;
+  fromLonLat: any;
+  Style: any;
+  CircleStyle: any;
+  Fill: any;
+  Stroke: any;
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 function getName(item: CctvItem): string { return item.cctvname ?? item.cctvName ?? item.name ?? 'CCTV' }
 function getLng(item: CctvItem): number | null {
@@ -30,15 +46,14 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
 
 export default function CctvMap() {
   const mapRef = useRef<HTMLDivElement>(null)
-  const mapInstanceRef = useRef<any>(null)
-  const cctvSourceRef = useRef<any>(null)
-  const locationSourceRef = useRef<any>(null)
-  const olRefs = useRef<any>(null)
+  const mapInstanceRef = useRef<Map | null>(null)
+  const cctvSourceRef = useRef<VectorSource | null>(null)
+  const locationSourceRef = useRef<VectorSource | null>(null)
+  const olRefs = useRef<OlRefs | null>(null)
 
   const [isMapReady, setIsMapReady] = useState(false)
   const [cctvList, setCctvList] = useState<CctvItem[]>([])
   const [selected, setSelected] = useState<CctvItem | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [myLocation, setMyLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [locError, setLocError] = useState<string | null>(null)
   const [isLoadingLoc, setIsLoadingLoc] = useState(false)
@@ -86,7 +101,7 @@ export default function CctvMap() {
 
       mapInstanceRef.current = map
       map.on('click', (evt) => {
-        const feature = map.forEachFeatureAtPixel(evt.pixel, (f: any) => f, { layerFilter: (l) => l.getZIndex() === 10 })
+        const feature = map.forEachFeatureAtPixel(evt.pixel, (f) => f as Feature<Geometry>, { layerFilter: (l) => l.getZIndex() === 10 })
         setSelected(feature ? feature.get('data') : null)
       })
       map.on('pointermove', (evt) => {
@@ -117,22 +132,23 @@ export default function CctvMap() {
         const res = await fetch('/api/traffic/cctv?minX=124.0&maxX=132.0&minY=33.0&maxY=43.0')
         const data = await res.json()
         setCctvList(Array.isArray(data?.response?.data ?? data?.data ?? data) ? (data?.response?.data ?? data?.data ?? data) : [])
-      } catch { setError('CCTV 데이터를 불러올 수 없습니다.') }
+      } catch { console.error('CCTV 데이터를 불러올 수 없습니다.') }
     }
     fetchCctvData()
   }, [])
 
   useEffect(() => {
-    if (!isMapReady || !cctvSourceRef.current || !olRefs.current) return
+    const source = cctvSourceRef.current
+    if (!isMapReady || !source || !olRefs.current) return
     const { Feature, Point, Style, CircleStyle, Fill, Stroke, fromLonLat } = olRefs.current
-    cctvSourceRef.current.clear()
+    source.clear()
     cctvList.forEach(item => {
       const lng = getLng(item), lat = getLat(item)
       if (lng == null || lat == null || lng < 124 || lng > 132 || lat < 33 || lat > 43) return
       if (is4kmFilterActive && myLocation && getDistance(myLocation.lat, myLocation.lng, lat, lng) > 4.0) return
       const feature = new Feature({ geometry: new Point(fromLonLat([lng, lat])), data: item })
       feature.setStyle(new Style({ image: new CircleStyle({ radius: 6, fill: new Fill({ color: '#6366f1' }), stroke: new Stroke({ color: '#fff', width: 1.5 }) }) }))
-      cctvSourceRef.current.addFeature(feature)
+      source.addFeature(feature)
     })
   }, [isMapReady, cctvList, is4kmFilterActive, myLocation])
 
@@ -147,7 +163,7 @@ export default function CctvMap() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude: lat, longitude: lng, accuracy } = pos.coords
-        if (mapInstanceRef.current && olRefs.current) {
+        if (mapInstanceRef.current && olRefs.current && locationSourceRef.current) {
           const { Feature, Point, Style, CircleStyle, Fill, Stroke, fromLonLat } = olRefs.current
           const coords = fromLonLat([lng, lat])
           locationSourceRef.current.clear()
@@ -171,8 +187,10 @@ export default function CctvMap() {
           setMyLocation({ lat, lng })
           mapInstanceRef.current.updateSize()
           setTimeout(() => {
-            mapInstanceRef.current.updateSize()
-            mapInstanceRef.current.getView().animate({ center: coords, zoom: 16, duration: 1000 })
+            if (mapInstanceRef.current) {
+              mapInstanceRef.current.updateSize()
+              mapInstanceRef.current.getView().animate({ center: coords, zoom: 16, duration: 1000 })
+            }
           }, 50)
           setIsLoadingLoc(false)
         } else {
