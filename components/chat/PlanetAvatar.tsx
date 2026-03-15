@@ -25,15 +25,6 @@ export default function PlanetAvatar({ size = 140 }: PlanetAvatarProps) {
     const endX = cx + xOffset
     const endY = cy + yOffset
 
-    // 별 데이터 (배경 장식)
-    const stars = [
-        { x: 0.15, y: 0.2, r: 1, delay: "0s" },
-        { x: 0.85, y: 0.15, r: 1.2, delay: "0.5s" },
-        { x: 0.1, y: 0.75, r: 0.8, delay: "1.2s" },
-        { x: 0.9, y: 0.8, r: 1.1, delay: "0.8s" },
-        { x: 0.4, y: 0.05, r: 0.7, delay: "2s" },
-        { x: 0.6, y: 0.95, r: 0.9, delay: "1.5s" },
-    ]
 
     return (
         <svg
@@ -74,26 +65,6 @@ export default function PlanetAvatar({ size = 140 }: PlanetAvatarProps) {
                 />
             </defs>
 
-            {/* 배경 별 */}
-            {stars.map((star, i) => (
-                <circle
-                    key={i}
-                    cx={s * star.x}
-                    cy={s * star.y}
-                    r={star.r}
-                    fill="#4ade80"
-                    opacity="0.4"
-                    filter="url(#starGlow)"
-                >
-                    <animate
-                        attributeName="opacity"
-                        values="0.2;0.8;0.2"
-                        dur="3s"
-                        begin={star.delay}
-                        repeatCount="indefinite"
-                    />
-                </circle>
-            ))}
 
             {/* 궤도 뒷부분 (행성 뒤) */}
             <path
