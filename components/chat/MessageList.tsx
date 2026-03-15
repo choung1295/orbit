@@ -23,13 +23,23 @@ export default function MessageList({ messages, loading, streamingText, onRetry,
     return (
         <div className="max-w-3xl mx-auto w-full px-4 py-4">
             {messages.length === 0 ? (
-                <div className="flex flex-col md:flex-row items-center justify-center min-h-[60vh] gap-6 md:gap-10 text-center md:text-left px-6">
-                    <div className="order-2 md:order-1">
-                        <h1 className="text-[#e2e2e8] text-2xl md:text-3xl font-bold mb-3 tracking-tight">무엇을 도와드릴까요?</h1>
-                        <p className="text-[#606070] text-sm md:text-base font-medium">메시지를 입력해 대화를 시작하세요.</p>
+                <div className="flex flex-col md:flex-row items-center justify-center min-h-[65vh] gap-8 md:gap-14 text-center md:text-left px-6">
+                    <div className="order-2 md:order-1 transition-all duration-700 delay-100 ease-out">
+                        <h1 className="text-3xl md:text-4xl font-bold mb-4 tracking-tight" 
+                            style={{ 
+                                background: 'linear-gradient(to bottom, #ffffff, #a0a0b0)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent'
+                            }}>
+                            무엇을 도와드릴까요?
+                        </h1>
+                        <p className="text-[#606070] text-sm md:text-base font-medium max-w-xs md:max-w-none">
+                            메시지를 입력해 대화를 시작하세요. <br className="hidden md:block" />
+                            Orbit AI가 당신의 업무와 일상을 돕겠습니다.
+                        </p>
                     </div>
-                    <div className="order-1 md:order-2 transform hover:scale-105 transition-transform duration-500">
-                        <PlanetAvatar size={120} />
+                    <div className="order-1 md:order-2 transform hover:scale-110 transition-transform duration-700 ease-in-out">
+                        <PlanetAvatar size={140} />
                     </div>
                 </div>
             ) : (
