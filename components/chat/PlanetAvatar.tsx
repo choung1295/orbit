@@ -4,7 +4,7 @@ interface PlanetAvatarProps {
     size?: number
 }
 
-export default function PlanetAvatar({ size = 120 }: PlanetAvatarProps) {
+export default function PlanetAvatar({ size = 140 }: PlanetAvatarProps) {
     const s = size
     const cx = s / 2
     const cy = s / 2
@@ -13,18 +13,27 @@ export default function PlanetAvatar({ size = 120 }: PlanetAvatarProps) {
     const planetR = s * 0.28
     const orbitRx = s * 0.42
     const orbitRy = s * 0.14
-    const orbitRotation = -15 // 기울기
+    const orbitRotation = -15 // 기울기 (degrees)
 
-    // 별 데이터 생성 (랜덤성 부여)
+    // 궤도 경로를 위한 정확한 좌표 계산 (기울기 반영)
+    // 주요 축의 양 끝점 (startX, startY) -> (endX, endY)
+    const rad = (orbitRotation * Math.PI) / 180
+    const xOffset = orbitRx * Math.cos(rad)
+    const yOffset = orbitRx * Math.sin(rad)
+    
+    const startX = cx - xOffset
+    const startY = cy - yOffset
+    const endX = cx + xOffset
+    const endY = cy + yOffset
+
+    // 별 데이터 (배경 장식)
     const stars = [
-        { x: 0.2, y: 0.2, r: 1, delay: "0s" },
-        { x: 0.8, y: 0.15, r: 1.2, delay: "0.5s" },
-        { x: 0.1, y: 0.7, r: 0.8, delay: "1.2s" },
-        { x: 0.85, y: 0.8, r: 1.1, delay: "0.8s" },
-        { x: 0.4, y: 0.1, r: 0.7, delay: "2s" },
-        { x: 0.6, y: 0.9, r: 0.9, delay: "1.5s" },
-        { x: 0.95, y: 0.4, r: 1, delay: "0.3s" },
-        { x: 0.05, y: 0.35, r: 0.8, delay: "1.7s" },
+        { x: 0.15, y: 0.2, r: 1, delay: "0s" },
+        { x: 0.85, y: 0.15, r: 1.2, delay: "0.5s" },
+        { x: 0.1, y: 0.75, r: 0.8, delay: "1.2s" },
+        { x: 0.9, y: 0.8, r: 1.1, delay: "0.8s" },
+        { x: 0.4, y: 0.05, r: 0.7, delay: "2s" },
+        { x: 0.6, y: 0.95, r: 0.9, delay: "1.5s" },
     ]
 
     return (
@@ -46,7 +55,7 @@ export default function PlanetAvatar({ size = 120 }: PlanetAvatarProps) {
 
                 {/* 형광색 글로우 필터 */}
                 <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur stdDeviation="2" result="blur" />
+                    <feGaussianBlur stdDeviation="2.5" result="blur" />
                     <feComposite in="SourceGraphic" in2="blur" operator="over" />
                 </filter>
 
@@ -59,14 +68,14 @@ export default function PlanetAvatar({ size = 120 }: PlanetAvatarProps) {
                     </feMerge>
                 </filter>
                 
-                {/* 궤도 경로 */}
+                {/* 전체 궤도 경로 (소행성 이동용) */}
                 <path
                     id="orbitPath"
-                    d={`M ${cx - orbitRx},${cy} a ${orbitRx},${orbitRy} ${orbitRotation} 1,0 ${orbitRx * 2},0 a ${orbitRx},${orbitRy} ${orbitRotation} 1,0 -${orbitRx * 2},0`}
+                    d={`M ${startX},${startY} A ${orbitRx} ${orbitRy} ${orbitRotation} 1 0 ${endX},${endY} A ${orbitRx} ${orbitRy} ${orbitRotation} 1 0 ${startX},${startY}`}
                 />
             </defs>
 
-            {/* 배경 별 (Stars) */}
+            {/* 배경 별 */}
             {stars.map((star, i) => (
                 <circle
                     key={i}
@@ -87,17 +96,17 @@ export default function PlanetAvatar({ size = 120 }: PlanetAvatarProps) {
                 </circle>
             ))}
 
-            {/* 궤도 뒷부분 (행성 뒤) */}
+            {/* 궤도 뒷부분 (행성 뒤로 숨음) */}
             <path
-                d={`M ${cx - orbitRx},${cy} a ${orbitRx},${orbitRy} ${orbitRotation} 0,1 ${orbitRx * 2},0`}
+                d={`M ${startX},${startY} A ${orbitRx} ${orbitRy} ${orbitRotation} 0 1 ${endX},${endY}`}
                 stroke="#4ade80"
                 strokeWidth={s * 0.02}
                 strokeLinecap="round"
-                opacity="0.4"
+                opacity="0.3"
                 filter="url(#neonGlow)"
             />
 
-            {/* 행성 본체 (입체감 추가) */}
+            {/* 행성 본체 */}
             <circle
                 cx={cx}
                 cy={cy}
@@ -108,24 +117,25 @@ export default function PlanetAvatar({ size = 120 }: PlanetAvatarProps) {
                 filter="url(#neonGlow)"
             />
 
-            {/* 궤도 앞부분 (행성 앞) */}
+            {/* 궤도 앞부분 (행성 앞으로 나옴) */}
             <path
-                d={`M ${cx - orbitRx},${cy} a ${orbitRx},${orbitRy} ${orbitRotation} 1,1 ${orbitRx * 2},0`}
+                d={`M ${startX},${startY} A ${orbitRx} ${orbitRy} ${orbitRotation} 1 0 ${endX},${endY}`}
                 stroke="#4ade80"
                 strokeWidth={s * 0.035}
                 strokeLinecap="round"
                 filter="url(#neonGlow)"
             />
-            {/* 이중 궤도 느낌을 위한 보조 라인 */}
+            
+            {/* 이중 궤도 장식 */}
             <path
-                d={`M ${cx - orbitRx * 0.95},${cy} a ${orbitRx * 0.95},${orbitRy * 0.9} ${orbitRotation} 1,1 ${orbitRx * 1.9},0`}
+                d={`M ${startX + (endX-startX)*0.1},${startY + (endY-startY)*0.1} A ${orbitRx * 0.9} ${orbitRy * 0.7} ${orbitRotation} 1 0 ${endX - (endX-startX)*0.1},${endY - (endY-startY)*0.1}`}
                 stroke="#4ade80"
-                strokeWidth={s * 0.01}
+                strokeWidth={s * 0.012}
                 strokeLinecap="round"
-                opacity="0.5"
+                opacity="0.4"
             />
 
-            {/* 소행성 (반짝이는 흰색 구체) */}
+            {/* 소행성 */}
             <g filter="url(#starGlow)">
                 <circle r={s * 0.045} fill="#ffffff">
                     <animateMotion
@@ -136,8 +146,8 @@ export default function PlanetAvatar({ size = 120 }: PlanetAvatarProps) {
                         <mpath href="#orbitPath" />
                     </animateMotion>
                 </circle>
-                {/* 소행성 꼬리/잔상 느낌 */}
-                <circle r={s * 0.03} fill="#4ade80" opacity="0.6">
+                {/* 소행성 잔상 */}
+                <circle r={s * 0.035} fill="#4ade80" opacity="0.6">
                     <animateMotion
                         dur="5s"
                         begin="-0.1s"
