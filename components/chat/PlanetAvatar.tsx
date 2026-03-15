@@ -116,11 +116,11 @@ export default function PlanetAvatar({ size = 140 }: PlanetAvatarProps) {
                     >
                         <mpath href="#orbitPath" />
                     </animateMotion>
-                    {/* 행성 뒤로 갈 때 투명도 조절로 숨김 효과 (0.5~1.0 구간이 뒷부분) */}
+                    {/* 사실적인 광원 효과: 행성 뒤그림자 영역에서 디밍, 본체 뒤에서 소멸 */}
                     <animate
                         attributeName="opacity"
-                        values="1; 1; 0; 0; 1"
-                        keyTimes="0; 0.48; 0.52; 0.98; 1"
+                        values="1; 1; 0.6; 0.6; 0; 0; 0.6; 0.6; 1"
+                        keyTimes="0; 0.45; 0.5; 0.64; 0.68; 0.82; 0.86; 0.95; 1"
                         dur="6s"
                         repeatCount="indefinite"
                     />
