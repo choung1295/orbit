@@ -124,6 +124,14 @@ export default function PlanetAvatar({ size = 140 }: PlanetAvatarProps) {
                         dur="6s"
                         repeatCount="indefinite"
                     />
+                    {/* 원근감: 앞으로 올 때 커지고 뒤로 갈 때 작아짐 */}
+                    <animate
+                        attributeName="r"
+                        values={`${s * 0.045}; ${s * 0.045}; ${s * 0.035}; ${s * 0.035}; ${s * 0.03}; ${s * 0.03}; ${s * 0.035}; ${s * 0.035}; ${s * 0.045}`}
+                        keyTimes="0; 0.45; 0.5; 0.64; 0.68; 0.82; 0.86; 0.95; 1"
+                        dur="6s"
+                        repeatCount="indefinite"
+                    />
                 </circle>
             </g>
         </svg>
