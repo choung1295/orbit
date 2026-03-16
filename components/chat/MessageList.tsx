@@ -23,7 +23,7 @@ export default function MessageList({ messages, loading, streamingText, onRetry,
     return (
         <div className="max-w-3xl mx-auto w-full px-4 py-4">
             {messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-start min-h-[65vh] pt-36 gap-3 text-center px-6">
+                <div className="flex flex-col items-center justify-start min-h-[65vh] pt-44 gap-3 text-center px-6">
                     <div className="transform hover:scale-110 transition-transform duration-700 ease-in-out">
                         <PlanetAvatar size={72} />
                     </div>
