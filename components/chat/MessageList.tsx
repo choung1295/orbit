@@ -34,10 +34,10 @@ export default function MessageList({ messages, loading, streamingText, onRetry,
                                 WebkitBackgroundClip: 'text',
                                 WebkitTextFillColor: 'transparent'
                             }}>
-                            무엇을 도와드릴까요?
+                            어떤 도움이 필요하신가요?
                         </h1>
                         <p className="text-[#606070] text-xs md:text-sm font-medium">
-                            어떤 도움이 필요하신가요?
+                            Orbit 비서가 항상 대기하고 있습니다
                         </p>
                     </div>
                 </div>
