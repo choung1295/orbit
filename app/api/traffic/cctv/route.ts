@@ -3,11 +3,7 @@ import https from "https";
 
 export const runtime = "nodejs";
 
-function httpsGetText(url: string): Promise<{
-  statusCode: number;
-  contentType: string;
-  body: string;
-}> {
+function httpsGetJson(url: string): Promise<unknown> {
   return new Promise((resolve, reject) => {
     const req = https.get(
       url,
@@ -19,31 +15,51 @@ function httpsGetText(url: string): Promise<{
         },
       },
       (res) => {
-        const statusCode = res.statusCode ?? 0;
-        const contentType = String(res.headers["content-type"] ?? "");
-        const chunks: Buffer[] = [];
+        let data = "";
 
         res.on("data", (chunk: Buffer | string) => {
-          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+          data += Buffer.isBuffer(chunk) ? chunk.toString("utf8") : chunk;
         });
 
         res.on("end", () => {
-          const body = Buffer.concat(chunks).toString("utf8").trim();
-          resolve({ statusCode, contentType, body });
+          try {
+            const text = data.trim().replace(/^\uFEFF/, "");
+
+            if (!text) {
+              resolve({
+                error: "ITS API returned empty body",
+                items: [],
+              });
+              return;
+            }
+
+            if (!text.startsWith("{") && !text.startsWith("[")) {
+              resolve({
+                error: "ITS API did not return JSON",
+                preview: text.slice(0, 500),
+                items: [],
+              });
+              return;
+            }
+
+            resolve(JSON.parse(text));
+          } catch {
+            resolve({
+              error: "ITS API JSON parse failed",
+              preview: data.slice(0, 500),
+              items: [],
+            });
+          }
         });
       }
     );
 
     req.on("error", reject);
+
     req.setTimeout(10000, () => {
       req.destroy(new Error("ITS API request timeout"));
     });
   });
-}
-
-function safeJsonParse(text: string) {
-  const cleaned = text.replace(/^\uFEFF/, "").trim();
-  return JSON.parse(cleaned);
 }
 
 export async function GET(request: Request) {
@@ -58,7 +74,7 @@ export async function GET(request: Request) {
 
   if (!apiKey) {
     return NextResponse.json(
-      { error: "Missing MOLIT_API_KEY" },
+      { error: "Missing MOLIT_API_KEY", items: [] },
       { status: 500 }
     );
   }
@@ -75,47 +91,14 @@ export async function GET(request: Request) {
     `&getType=json`;
 
   try {
-    const result = await httpsGetText(url);
-
-    if (result.statusCode < 200 || result.statusCode >= 300) {
-      return NextResponse.json(
-        {
-          error: "ITS API responded with non-2xx status",
-          statusCode: result.statusCode,
-          contentType: result.contentType,
-          preview: result.body.slice(0, 300),
-        },
-        { status: 502 }
-      );
-    }
-
-    if (!result.body) {
-      return NextResponse.json(
-        {
-          error: "ITS API returned empty body",
-        },
-        { status: 502 }
-      );
-    }
-
-    try {
-      const parsed = safeJsonParse(result.body);
-      return NextResponse.json(parsed);
-    } catch {
-      return NextResponse.json(
-        {
-          error: "ITS API did not return valid JSON",
-          contentType: result.contentType,
-          preview: result.body.slice(0, 500),
-        },
-        { status: 502 }
-      );
-    }
+    const data = await httpsGetJson(url);
+    return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json(
       {
         error: "Failed to fetch CCTV data",
         detail: error instanceof Error ? error.message : String(error),
+        items: [],
       },
       { status: 500 }
     );
