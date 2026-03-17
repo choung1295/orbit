@@ -1,7 +1,8 @@
 'use client'
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import Script from 'next/script'
 
 declare global {
   interface Window {
@@ -60,35 +61,22 @@ export default function CctvMap() {
   const [isLoadingLoc, setIsLoadingLoc] = useState(false)
   const [is4kmFilterActive, setIs4kmFilterActive] = useState(false)
 
-  useEffect(() => {
-    const initMap = () => {
-      window.kakao.maps.load(() => {
-        if (!mapRef.current) return
-        const map = new window.kakao.maps.Map(mapRef.current, {
-          center: new window.kakao.maps.LatLng(36.5, 127.5),
-          level: 13,
-        })
-        mapInstanceRef.current = map
-        setIsMapReady(true)
+  const initMap = useCallback(() => {
+    if (!window.kakao?.maps || mapInstanceRef.current) return
+    window.kakao.maps.load(() => {
+      if (!mapRef.current) return
+      const map = new window.kakao.maps.Map(mapRef.current, {
+        center: new window.kakao.maps.LatLng(36.5, 127.5),
+        level: 13,
       })
-    }
-
-    if (document.getElementById(SCRIPT_ID)) {
-      if (window.kakao) {
-        initMap()
-      } else {
-        document.getElementById(SCRIPT_ID)!.addEventListener('load', initMap)
-      }
-      return
-    }
-
-    const script = document.createElement("script")
-    script.id = SCRIPT_ID
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_JS_KEY}&autoload=false`
-    script.async = true
-    script.onload = () => initMap()
-    document.head.appendChild(script)
+      mapInstanceRef.current = map
+      setIsMapReady(true)
+    })
   }, [])
+
+  useEffect(() => {
+    if (window.kakao) initMap()
+  }, [initMap])
 
   useEffect(() => {
     const fetchCctvData = async () => {
@@ -200,6 +188,12 @@ export default function CctvMap() {
 
   return (
     <div className="relative w-full min-w-0 overflow-hidden rounded-2xl border-4 border-gray-800/10 shadow-2xl bg-gray-200 h-[65dvh] md:h-[600px]">
+      <Script
+        id={SCRIPT_ID}
+        src={`//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_JS_KEY}&autoload=false`}
+        strategy="afterInteractive"
+        onLoad={initMap}
+      />
       <div ref={mapRef} className="absolute inset-0 w-full h-full" />
 
       <div

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import https from "https";
+import { Agent } from "undici";
 
-const agent = new https.Agent({ rejectUnauthorized: false });
+const dispatcher = new Agent({ connect: { rejectUnauthorized: false } });
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -18,7 +18,8 @@ export async function GET(request: Request) {
   const url = `https://openapi.its.go.kr:9443/cctvInfo?apiKey=${apiKey}&type=all&cctvType=1&minX=${minX}&maxX=${maxX}&minY=${minY}&maxY=${maxY}&getType=json`;
 
   try {
-    const res = await fetch(url, { agent } as RequestInit);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const res = await fetch(url, { dispatcher } as any);
     const data = await res.json();
     return NextResponse.json(data);
   } catch (e) {
