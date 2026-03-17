@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import https from "https";
+
+const agent = new https.Agent({ rejectUnauthorized: false });
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -15,10 +18,13 @@ export async function GET(request: Request) {
   const url = `https://openapi.its.go.kr:9443/cctvInfo?apiKey=${apiKey}&type=all&cctvType=1&minX=${minX}&maxX=${maxX}&minY=${minY}&maxY=${maxY}&getType=json`;
 
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { agent } as RequestInit);
     const data = await res.json();
     return NextResponse.json(data);
-  } catch {
-    return NextResponse.json({ error: "Failed to fetch CCTV data" }, { status: 500 });
+  } catch (e) {
+    return NextResponse.json(
+      { error: "Failed to fetch CCTV data", detail: String(e) },
+      { status: 500 }
+    );
   }
 }

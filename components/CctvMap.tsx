@@ -10,6 +10,13 @@ declare global {
 
 const SCRIPT_ID = "kakao-map-script"
 
+const CCTV_MARKER_IMG = 'data:image/svg+xml;base64,' + btoa(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"><circle cx="7" cy="7" r="6" fill="#6366f1" stroke="#ffffff" stroke-width="1.5"/></svg>'
+)
+const MY_LOCATION_MARKER_IMG = 'data:image/svg+xml;base64,' + btoa(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><circle cx="10" cy="10" r="8" fill="#ff00ff" stroke="#ffffff" stroke-width="2"/></svg>'
+)
+
 interface CctvItem {
   cctvname?: string; cctvName?: string; name?: string;
   coordx?: number | string; coordX?: number | string; longitude?: number | string; lng?: number | string; lon?: number | string;
@@ -47,7 +54,7 @@ export default function CctvMap() {
   const [cctvList, setCctvList] = useState<CctvItem[]>([])
   const [selected, setSelected] = useState<CctvItem | null>(null)
   const [myLocation, setMyLocation] = useState<{ lat: number; lng: number } | null>(null)
-  const [myMarker, setMyMarker] = useState<any>(null)
+  const myMarkerRef = useRef<any>(null)
   const [locError, setLocError] = useState<string | null>(null)
   const [isLoadingLoc, setIsLoadingLoc] = useState(false)
   const [is4kmFilterActive, setIs4kmFilterActive] = useState(false)
@@ -66,7 +73,7 @@ export default function CctvMap() {
     }
 
     if (document.getElementById(SCRIPT_ID)) {
-      if (window.kakao?.maps) {
+      if (window.kakao) {
         initMap()
       } else {
         document.getElementById(SCRIPT_ID)!.addEventListener('load', initMap)
@@ -76,7 +83,7 @@ export default function CctvMap() {
 
     const script = document.createElement("script")
     script.id = SCRIPT_ID
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&autoload=false`
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_JS_KEY}&autoload=false`
     script.async = true
     script.onload = () => initMap()
     document.head.appendChild(script)
@@ -112,9 +119,7 @@ export default function CctvMap() {
       if (is4kmFilterActive && myLocation && getDistance(myLocation.lat, myLocation.lng, lat, lng) > 4.0) return
 
       const markerImage = new window.kakao.maps.MarkerImage(
-        'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
-          '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"><circle cx="7" cy="7" r="6" fill="#6366f1" stroke="#ffffff" stroke-width="1.5"/></svg>'
-        ),
+        CCTV_MARKER_IMG,
         new window.kakao.maps.Size(14, 14),
         { offset: new window.kakao.maps.Point(7, 7) }
       )
@@ -134,12 +139,23 @@ export default function CctvMap() {
     })
   }, [isMapReady, cctvList, is4kmFilterActive, myLocation])
 
+  useEffect(() => {
+    if (!isMapReady || !myLocation || !mapInstanceRef.current) return
+    const position = new window.kakao.maps.LatLng(myLocation.lat, myLocation.lng)
+    mapInstanceRef.current.setCenter(position)
+    mapInstanceRef.current.setLevel(5)
+  }, [isMapReady, myLocation])
+
   function showLocError(msg: string) {
     setLocError(msg)
     setTimeout(() => setLocError(null), 3000)
   }
 
   const handleMyLocation = () => {
+    if (!isMapReady || !window.kakao?.maps) {
+      showLocError('지도가 아직 준비되지 않았습니다.')
+      return
+    }
     if (!navigator.geolocation) {
       showLocError('위치 기능을 지원하지 않습니다.')
       return
@@ -150,12 +166,13 @@ export default function CctvMap() {
         const { latitude: lat, longitude: lng } = pos.coords
         const position = new window.kakao.maps.LatLng(lat, lng)
 
-        if (myMarker) myMarker.setMap(null)
+        if (myMarkerRef.current) {
+          myMarkerRef.current.setMap(null)
+          myMarkerRef.current = null
+        }
 
         const locMarkerImage = new window.kakao.maps.MarkerImage(
-          'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
-            '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><circle cx="10" cy="10" r="8" fill="#ff00ff" stroke="#ffffff" stroke-width="2"/></svg>'
-          ),
+          MY_LOCATION_MARKER_IMG,
           new window.kakao.maps.Size(20, 20),
           { offset: new window.kakao.maps.Point(10, 10) }
         )
@@ -166,10 +183,8 @@ export default function CctvMap() {
           image: locMarkerImage,
         })
 
-        setMyMarker(marker)
+        myMarkerRef.current = marker
         setMyLocation({ lat, lng })
-        mapInstanceRef.current.setCenter(position)
-        mapInstanceRef.current.setLevel(5)
         setIsLoadingLoc(false)
       },
       (err) => {
@@ -192,7 +207,7 @@ export default function CctvMap() {
       >
         <button
           onClick={handleMyLocation}
-          disabled={isLoadingLoc}
+          disabled={isLoadingLoc || !isMapReady}
           className="pointer-events-auto px-6 py-3 bg-[#6366f1] text-white font-black text-sm rounded-2xl shadow-[0_10px_40px_rgba(99,102,241,0.6)] hover:bg-indigo-700 active:scale-90 transition-all disabled:opacity-70 flex items-center gap-2 border-2 border-white whitespace-nowrap"
         >
           {isLoadingLoc ? '탐색 중...' : '📍 내 위치 찾기'}
