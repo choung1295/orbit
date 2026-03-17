@@ -4,29 +4,26 @@ import { useEffect, useRef } from "react"
 
 declare global {
     interface Window {
-        vw: {
-            Map2D: new (id: string, options: object) => unknown
-        }
+        kakao: any
     }
 }
 
-const VWORLD_API_KEY = "7DD6167F-10F4-3194-ABED-DC50B40B6695"
-const SCRIPT_ID = "vworld-script"
+const SCRIPT_ID = "kakao-map-script"
 
 export default function MapPage() {
     const mapRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
         const initMap = () => {
-            if (!window.vw || !mapRef.current) return
-            new window.vw.Map2D("vworld-map", {
-                basemap: "korean",
-                center: { x: 127.5, y: 36.5 },
-                zoom: 7,
+            if (!window.kakao || !mapRef.current) return
+            window.kakao.maps.load(() => {
+                const map = new window.kakao.maps.Map(mapRef.current, {
+                    center: new window.kakao.maps.LatLng(36.5, 127.5),
+                    level: 13,
+                })
             })
         }
 
-        // 중복 방지
         if (document.getElementById(SCRIPT_ID)) {
             initMap()
             return
@@ -34,7 +31,7 @@ export default function MapPage() {
 
         const script = document.createElement("script")
         script.id = SCRIPT_ID
-        script.src = `https://map.vworld.kr/js/vworldMapInit.js.do?version=2.0&apiKey=${VWORLD_API_KEY}`
+        script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&autoload=false`
         script.async = true
         script.onload = () => initMap()
         document.head.appendChild(script)
@@ -42,7 +39,6 @@ export default function MapPage() {
 
     return (
         <div
-            id="vworld-map"
             ref={mapRef}
             style={{ width: "100%", height: "100vh" }}
         />
