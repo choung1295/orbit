@@ -1,7 +1,18 @@
 import { NextResponse } from "next/server";
-import { Agent } from "undici";
+import https from "https";
 
-const dispatcher = new Agent({ connect: { rejectUnauthorized: false } });
+function httpsGetJson(url: string): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    https.get(url, { rejectUnauthorized: false }, (res) => {
+      let data = "";
+      res.on("data", (chunk: string) => { data += chunk; });
+      res.on("end", () => {
+        try { resolve(JSON.parse(data)); }
+        catch (e) { reject(e); }
+      });
+    }).on("error", reject);
+  });
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -18,9 +29,7 @@ export async function GET(request: Request) {
   const url = `https://openapi.its.go.kr:9443/cctvInfo?apiKey=${apiKey}&type=all&cctvType=1&minX=${minX}&maxX=${maxX}&minY=${minY}&maxY=${maxY}&getType=json`;
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const res = await fetch(url, { dispatcher } as any);
-    const data = await res.json();
+    const data = await httpsGetJson(url);
     return NextResponse.json(data);
   } catch (e) {
     return NextResponse.json(
