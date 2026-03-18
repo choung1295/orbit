@@ -1,8 +1,7 @@
 'use client'
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
-import Script from 'next/script'
+import { useEffect, useRef, useState } from 'react'
 
 declare global {
   interface Window {
@@ -10,7 +9,6 @@ declare global {
   }
 }
 
-const SCRIPT_ID = "kakao-map-script"
 
 const CCTV_MARKER_IMG = 'data:image/svg+xml;base64,' + btoa(
   '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"><circle cx="7" cy="7" r="6" fill="#6366f1" stroke="#ffffff" stroke-width="1.5"/></svg>'
@@ -61,22 +59,45 @@ export default function CctvMap() {
   const [isLoadingLoc, setIsLoadingLoc] = useState(false)
   const [is4kmFilterActive, setIs4kmFilterActive] = useState(false)
 
-  const initMap = useCallback(() => {
-    if (!window.kakao?.maps || mapInstanceRef.current) return
-    window.kakao.maps.load(() => {
-      if (!mapRef.current) return
+  useEffect(() => {
+    const createMap = () => {
+      if (mapInstanceRef.current || !mapRef.current) return
       const map = new window.kakao.maps.Map(mapRef.current, {
         center: new window.kakao.maps.LatLng(36.5, 127.5),
         level: 13,
       })
       mapInstanceRef.current = map
+      // animate-fade-in 등 CSS 애니메이션 중 생성 시 컨테이너 크기가 0으로 계산되는 문제 해결
+      map.relayout()
+      requestAnimationFrame(() => {
+        if (mapInstanceRef.current) mapInstanceRef.current.relayout()
+      })
       setIsMapReady(true)
-    })
-  }, [])
+    }
 
-  useEffect(() => {
-    if (window.kakao) initMap()
-  }, [initMap])
+    const tryInit = () => {
+      if (mapInstanceRef.current || !mapRef.current) return
+      window.kakao.maps.load(createMap)
+    }
+
+    if (window.kakao?.maps) {
+      tryInit()
+      return
+    }
+
+    const SCRIPT_ID = 'kakao-map-script'
+    let script = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null
+    if (!script) {
+      script = document.createElement('script')
+      script.id = SCRIPT_ID
+      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_JS_KEY}&autoload=false`
+      document.head.appendChild(script)
+    }
+
+    const onLoad = () => tryInit()
+    script.addEventListener('load', onLoad)
+    return () => script?.removeEventListener('load', onLoad)
+  }, [])
 
   useEffect(() => {
     const fetchCctvData = async () => {
@@ -188,12 +209,6 @@ export default function CctvMap() {
 
   return (
     <div className="relative w-full min-w-0 overflow-hidden rounded-2xl border-4 border-gray-800/10 shadow-2xl bg-gray-200 h-[65dvh] md:h-[600px]">
-      <Script
-        id={SCRIPT_ID}
-        src={`//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_JS_KEY}&autoload=false`}
-        strategy="afterInteractive"
-        onLoad={initMap}
-      />
       <div ref={mapRef} className="absolute inset-0 w-full h-full" />
 
       <div
