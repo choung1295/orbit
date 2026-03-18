@@ -49,6 +49,7 @@ export default function CctvMap() {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
   const markersRef = useRef<any[]>([])
+  const clustererRef = useRef<any>(null)
 
   const [isMapReady, setIsMapReady] = useState(false)
   const [cctvList, setCctvList] = useState<CctvItem[]>([])
@@ -90,7 +91,7 @@ export default function CctvMap() {
     if (!script) {
       script = document.createElement('script')
       script.id = SCRIPT_ID
-      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_JS_KEY}&autoload=false`
+      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_JS_KEY}&autoload=false&libraries=clusterer`
       document.head.appendChild(script)
     }
 
@@ -119,24 +120,29 @@ export default function CctvMap() {
   useEffect(() => {
     if (!isMapReady || !mapInstanceRef.current) return
 
-    markersRef.current.forEach(m => m.setMap(null))
+    // 기존 클러스터러 제거
+    if (clustererRef.current) {
+      clustererRef.current.clear()
+      clustererRef.current.setMap(null)
+      clustererRef.current = null
+    }
     markersRef.current = []
 
+    const markerImage = new window.kakao.maps.MarkerImage(
+      CCTV_MARKER_IMG,
+      new window.kakao.maps.Size(14, 14),
+      { offset: new window.kakao.maps.Point(7, 7) }
+    )
+
+    const newMarkers: any[] = []
     cctvList.forEach(item => {
       const lng = getLng(item)
       const lat = getLat(item)
       if (lng == null || lat == null || lng < 124 || lng > 132 || lat < 33 || lat > 43) return
       if (is4kmFilterActive && myLocation && getDistance(myLocation.lat, myLocation.lng, lat, lng) > 4.0) return
 
-      const markerImage = new window.kakao.maps.MarkerImage(
-        CCTV_MARKER_IMG,
-        new window.kakao.maps.Size(14, 14),
-        { offset: new window.kakao.maps.Point(7, 7) }
-      )
-
       const marker = new window.kakao.maps.Marker({
         position: new window.kakao.maps.LatLng(lat, lng),
-        map: mapInstanceRef.current,
         image: markerImage,
         title: getName(item),
       })
@@ -145,8 +151,17 @@ export default function CctvMap() {
         setSelected(item)
       })
 
-      markersRef.current.push(marker)
+      newMarkers.push(marker)
     })
+
+    clustererRef.current = new window.kakao.maps.MarkerClusterer({
+      map: mapInstanceRef.current,
+      averageCenter: true,
+      minLevel: 10,
+      disableClickZoom: false,
+      markers: newMarkers,
+    })
+    markersRef.current = newMarkers
   }, [isMapReady, cctvList, is4kmFilterActive, myLocation])
 
   useEffect(() => {
@@ -253,14 +268,12 @@ export default function CctvMap() {
                 {getName(selected)}
               </h3>
               {getUrl(selected) && (
-                <a
-                  href={getUrl(selected)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 text-white text-[10px] md:text-[12px] font-black rounded-lg hover:bg-indigo-700 transition-all shadow-lg"
-                >
-                  영상 보기 →
-                </a>
+                <img
+                  src={getUrl(selected)}
+                  alt={getName(selected)}
+                  style={{ width: '100%' }}
+                  className="rounded-lg mt-2"
+                />
               )}
             </div>
             <button
