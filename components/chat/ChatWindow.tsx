@@ -28,7 +28,7 @@ export default function ChatWindow({ conversationId, onConversationCreated }: Ch
     const {
         messages,
         input, setInput,
-        loading, streamingText,
+        loading, streamingText, thinkingStatus,
         selectedFile, setSelectedFile,
         isRecording,
         loadMessages, handleSend, handleStop, toggleRecording
@@ -67,6 +67,7 @@ export default function ChatWindow({ conversationId, onConversationCreated }: Ch
                     messages={messages}
                     loading={loading}
                     streamingText={streamingText}
+                    thinkingStatus={thinkingStatus}
                     onRetry={(content) => handleSend(content)}
                     onRegenerate={handleRegenerate}
                 />

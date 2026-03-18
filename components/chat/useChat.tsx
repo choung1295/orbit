@@ -11,6 +11,8 @@ export interface Message {
     fileName?: string;
 }
 
+export type ThinkingStatus = "idle" | "thinking" | "analyzing";
+
 export function useChat(
     conversationId: string | null,
     onConversationCreated: (id: string) => void
@@ -22,8 +24,16 @@ export function useChat(
     const [streamingText, setStreamingText] = useState("");
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isRecording, setIsRecording] = useState(false);
+    const [thinkingStatus, setThinkingStatus] = useState<ThinkingStatus>("idle");
     const abortControllerRef = useRef<AbortController | null>(null);
     const recognitionRef = useRef<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
+    const thinkingTimer1Ref = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const thinkingTimer2Ref = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const clearThinkingTimers = () => {
+        if (thinkingTimer1Ref.current) { clearTimeout(thinkingTimer1Ref.current); thinkingTimer1Ref.current = null; }
+        if (thinkingTimer2Ref.current) { clearTimeout(thinkingTimer2Ref.current); thinkingTimer2Ref.current = null; }
+    };
 
     /**
      * 신규 대화 생성 직후 onConversationCreated → URL 변경 → conversationId 변경 →
@@ -53,8 +63,10 @@ export function useChat(
     }, [conversationId]);
 
     const handleStop = useCallback(() => {
+        clearThinkingTimers();
+        setThinkingStatus("idle");
         abortControllerRef.current?.abort();
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const toggleRecording = useCallback(() => {
         if (isRecording) {
@@ -125,6 +137,12 @@ export function useChat(
         setSelectedFile(null);
         setLoading(true);
         setStreamingText("");
+
+        // 단계별 thinking 상태 타이머
+        clearThinkingTimers();
+        setThinkingStatus("idle");
+        thinkingTimer1Ref.current = setTimeout(() => setThinkingStatus("thinking"), 1000);
+        thinkingTimer2Ref.current = setTimeout(() => setThinkingStatus("analyzing"), 3000);
 
         if (isRecording) {
             recognitionRef.current?.stop();
@@ -238,6 +256,8 @@ export function useChat(
                 }
             }
         } finally {
+            clearThinkingTimers();
+            setThinkingStatus("idle");
             setLoading(false);
             setStreamingText("");
             abortControllerRef.current = null;
@@ -251,6 +271,7 @@ export function useChat(
         setInput,
         loading,
         streamingText,
+        thinkingStatus,
         selectedFile,
         setSelectedFile,
         isRecording,
