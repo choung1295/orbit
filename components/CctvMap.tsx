@@ -128,16 +128,19 @@ type MediaState = 'video' | 'image' | 'error'
 function CctvMediaViewer({ url, name }: { url: string; name: string }) {
   const initialState = (): MediaState => {
     if (!url) return 'error'
+    if (isVideoUrl(url)) return 'video'
     if (isImageUrl(url)) return 'image'
-    return 'video' // 영상 URL이거나 판별 불가인 경우 video 우선 시도
+    return 'video' // 판별 불가 시 video 우선 시도
   }
 
   const [state, setState] = useState<MediaState>(initialState)
 
   // 다른 CCTV 선택 시 상태 리셋
   useEffect(() => {
-    setState(initialState())
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!url) { setState('error'); return }
+    if (isVideoUrl(url)) { setState('video'); return }
+    if (isImageUrl(url)) { setState('image'); return }
+    setState('video')
   }, [url])
 
   if (!url) {
@@ -167,6 +170,7 @@ function CctvMediaViewer({ url, name }: { url: string; name: string }) {
 
   if (state === 'image') {
     return (
+      // eslint-disable-next-line @next/next/no-img-element
       <img
         key={url}
         src={url}
