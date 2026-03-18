@@ -6,7 +6,8 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "sync:cctv": "node scripts/sync-cctv.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
