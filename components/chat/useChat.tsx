@@ -25,11 +25,25 @@ export function useChat(
     const abortControllerRef = useRef<AbortController | null>(null);
     const recognitionRef = useRef<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
 
+    /**
+     * 신규 대화 생성 직후 onConversationCreated → URL 변경 → conversationId 변경 →
+     * loadMessages가 자동으로 발동되는데, 이때는 handleSend가 직접 메시지를 쌓고 있으므로
+     * 한 번만 스킵하여 상태 충돌을 방지한다.
+     */
+    const skipNextLoadRef = useRef(false);
+
     const loadMessages = useCallback(async () => {
-        if (!conversationId) {
-            setMessages([]);
+        // 신규 대화 생성 직후에는 스킵 (handleSend가 메시지를 직접 관리 중)
+        if (skipNextLoadRef.current) {
+            skipNextLoadRef.current = false;
             return;
         }
+
+        // 대화 전환 시 이전 메시지 즉시 제거 (잠깐 보이는 현상 방지)
+        setMessages([]);
+
+        if (!conversationId) return;
+
         try {
             const data = await getMessages(conversationId);
             setMessages(data as Message[]);
@@ -126,6 +140,10 @@ export function useChat(
                 if (!currentConversationId) {
                     const newConv = await createConversation(content.slice(0, 30));
                     currentConversationId = newConv.id;
+
+                    // URL이 변경되면 loadMessages가 발동되는데,
+                    // handleSend가 메시지를 직접 쌓고 있으므로 한 번 스킵
+                    skipNextLoadRef.current = true;
                     onConversationCreated(newConv.id);
                 }
                 const convId = currentConversationId as string;
@@ -150,7 +168,7 @@ export function useChat(
 
             const history = messages
                 .slice(-10)
-                .map((m) => ({ role: m.role, content: m.content }))
+                .map((m) => ({ role: m.role, content: m.content }));
 
             const res = await fetch("/api/chat", {
                 method: "POST",

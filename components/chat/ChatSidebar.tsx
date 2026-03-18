@@ -357,7 +357,7 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
 
     const handleShare = useCallback((chatId: string) => {
         const url = `${window.location.origin}/orbit?chat=${chatId}`
-        navigator.clipboard.writeText(url).then(() => alert("링크가 복사됐습니다."))
+        navigator.clipboard.writeText(url).then(() => alert('링크가 복사됐습니다.'))
     }, [])
 
     const handleSelectChat = useCallback((id: string, onClose?: () => void) => {
