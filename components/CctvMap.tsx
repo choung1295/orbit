@@ -9,13 +9,64 @@ declare global {
   }
 }
 
-
 const CCTV_MARKER_IMG = 'data:image/svg+xml;base64,' + btoa(
   '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"><circle cx="7" cy="7" r="6" fill="#6366f1" stroke="#ffffff" stroke-width="1.5"/></svg>'
 )
 const MY_LOCATION_MARKER_IMG = 'data:image/svg+xml;base64,' + btoa(
   '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><circle cx="10" cy="10" r="8" fill="#ff00ff" stroke="#ffffff" stroke-width="2"/></svg>'
 )
+
+// 클러스터 마커 스타일 (단계별: 소→중→대→초대)
+const CLUSTER_STYLES = [
+  {
+    width: '44px', height: '44px',
+    background: '#3B82F6',
+    border: '2px solid rgba(255,255,255,0.9)',
+    borderRadius: '50%',
+    textAlign: 'center',
+    lineHeight: '40px',
+    fontSize: '13px',
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.35)',
+  },
+  {
+    width: '52px', height: '52px',
+    background: '#7C3AED',
+    border: '2px solid rgba(255,255,255,0.9)',
+    borderRadius: '50%',
+    textAlign: 'center',
+    lineHeight: '48px',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+  },
+  {
+    width: '60px', height: '60px',
+    background: '#F59E0B',
+    border: '2px solid rgba(255,255,255,0.9)',
+    borderRadius: '50%',
+    textAlign: 'center',
+    lineHeight: '56px',
+    fontSize: '15px',
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    boxShadow: '0 2px 10px rgba(0,0,0,0.4)',
+  },
+  {
+    width: '68px', height: '68px',
+    background: '#EF4444',
+    border: '2px solid rgba(255,255,255,0.9)',
+    borderRadius: '50%',
+    textAlign: 'center',
+    lineHeight: '64px',
+    fontSize: '16px',
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    boxShadow: '0 2px 12px rgba(0,0,0,0.45)',
+  },
+]
 
 interface CctvItem {
   cctvname?: string; cctvName?: string; name?: string;
@@ -35,8 +86,106 @@ function getLat(item: CctvItem): number | null {
   if (raw == null || raw === '') return null
   const n = Number(raw); return isNaN(n) ? null : n
 }
-function getUrl(item: CctvItem): string { return item.cctvurl ?? item.cctvUrl ?? item.url ?? '' }
+function getRawUrl(item: CctvItem): string { return item.cctvurl ?? item.cctvUrl ?? item.url ?? '' }
 
+/** HTML entity 디코딩, 이중 프로토콜, 공백 등 보정 */
+function normalizeCctvUrl(url: string): string {
+  if (!url) return ''
+  let u = url
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .trim()
+  // 이중 프로토콜 수정 (http://http://)
+  u = u.replace(/^(https?:\/\/)(https?:\/\/)/i, '$1')
+  // 프로토콜 상대 URL 보정
+  if (u.startsWith('//')) u = 'http:' + u
+  return u
+}
+
+/** mp4, m3u8, webm 등 영상 URL 여부 판별 */
+function isVideoUrl(url: string): boolean {
+  const lower = url.toLowerCase().split('?')[0]
+  return /\.(mp4|m3u8|webm|ts|flv|avi|mov|mkv)$/.test(lower)
+}
+
+/** jpg, png 등 정적 이미지 URL 여부 판별 */
+function isImageUrl(url: string): boolean {
+  const lower = url.toLowerCase().split('?')[0]
+  return /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/.test(lower)
+}
+
+/** 렌더링에 사용할 정규화된 URL 반환 */
+function getBestMediaSource(item: CctvItem): string {
+  return normalizeCctvUrl(getRawUrl(item))
+}
+
+// ── CCTV 미디어 뷰어 ───────────────────────────────────────────────────────
+type MediaState = 'video' | 'image' | 'error'
+
+function CctvMediaViewer({ url, name }: { url: string; name: string }) {
+  const initialState = (): MediaState => {
+    if (!url) return 'error'
+    if (isImageUrl(url)) return 'image'
+    return 'video' // 영상 URL이거나 판별 불가인 경우 video 우선 시도
+  }
+
+  const [state, setState] = useState<MediaState>(initialState)
+
+  // 다른 CCTV 선택 시 상태 리셋
+  useEffect(() => {
+    setState(initialState())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url])
+
+  if (!url) {
+    return (
+      <p className="text-gray-400 text-xs mt-2 py-3 text-center bg-gray-900/50 rounded-lg">
+        영상 정보가 없습니다
+      </p>
+    )
+  }
+
+  if (state === 'video') {
+    return (
+      <video
+        key={url}
+        src={url}
+        autoPlay
+        muted
+        playsInline
+        controls
+        preload="metadata"
+        className="w-full rounded-lg mt-2 bg-black"
+        style={{ maxHeight: '200px' }}
+        onError={() => setState('image')}
+      />
+    )
+  }
+
+  if (state === 'image') {
+    return (
+      <img
+        key={url}
+        src={url}
+        alt={name}
+        className="w-full rounded-lg mt-2"
+        style={{ maxHeight: '200px', objectFit: 'contain' }}
+        onError={() => setState('error')}
+      />
+    )
+  }
+
+  return (
+    <p className="text-gray-400 text-xs mt-2 py-3 text-center bg-gray-900/50 rounded-lg">
+      영상 정보를 불러오지 못했습니다
+    </p>
+  )
+}
+
+// ── 거리 계산 ──────────────────────────────────────────────────────────────
 function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371
   const dLat = (lat2 - lat1) * (Math.PI / 180)
@@ -45,6 +194,7 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
+// ── 메인 컴포넌트 ──────────────────────────────────────────────────────────
 export default function CctvMap() {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
@@ -68,7 +218,6 @@ export default function CctvMap() {
         level: 13,
       })
       mapInstanceRef.current = map
-      // animate-fade-in 등 CSS 애니메이션 중 생성 시 컨테이너 크기가 0으로 계산되는 문제 해결
       map.relayout()
       requestAnimationFrame(() => {
         if (mapInstanceRef.current) mapInstanceRef.current.relayout()
@@ -120,7 +269,6 @@ export default function CctvMap() {
   useEffect(() => {
     if (!isMapReady || !mapInstanceRef.current) return
 
-    // 기존 클러스터러 제거
     if (clustererRef.current) {
       clustererRef.current.clear()
       clustererRef.current.setMap(null)
@@ -160,6 +308,7 @@ export default function CctvMap() {
       minLevel: 10,
       disableClickZoom: false,
       markers: newMarkers,
+      styles: CLUSTER_STYLES,
     })
     markersRef.current = newMarkers
   }, [isMapReady, cctvList, is4kmFilterActive, myLocation])
@@ -263,22 +412,18 @@ export default function CctvMap() {
       {selected && (
         <div className="absolute bottom-24 md:bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:max-w-md z-[1000000] bg-[#1a1a24] border-2 border-indigo-500/30 rounded-2xl px-5 py-4 shadow-2xl backdrop-blur-xl">
           <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <h3 className="text-white text-sm md:text-base font-black leading-tight mb-2">
                 {getName(selected)}
               </h3>
-              {getUrl(selected) && (
-                <img
-                  src={getUrl(selected)}
-                  alt={getName(selected)}
-                  style={{ width: '100%' }}
-                  className="rounded-lg mt-2"
-                />
-              )}
+              <CctvMediaViewer
+                url={getBestMediaSource(selected)}
+                name={getName(selected)}
+              />
             </div>
             <button
               onClick={() => setSelected(null)}
-              className="p-1.5 bg-gray-800/50 hover:bg-gray-700 rounded-full text-gray-400 hover:text-white transition-all shadow-inner"
+              className="p-1.5 bg-gray-800/50 hover:bg-gray-700 rounded-full text-gray-400 hover:text-white transition-all shadow-inner flex-shrink-0"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
