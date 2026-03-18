@@ -1,16 +1,21 @@
 import { NextResponse } from "next/server";
 import https from "https";
 
+// ITS 서버(한국 정부망)가 해외 IP를 차단하므로 Vercel 인천 리전에서 실행
+export const preferredRegion = 'icn1'
+
 function httpsGetJson(url: string): Promise<unknown> {
   return new Promise((resolve, reject) => {
-    https.get(url, { rejectUnauthorized: false }, (res) => {
+    const req = https.get(url, { rejectUnauthorized: false, timeout: 8000 }, (res) => {
       let data = "";
       res.on("data", (chunk: string) => { data += chunk; });
       res.on("end", () => {
         try { resolve(JSON.parse(data)); }
         catch (e) { reject(e); }
       });
-    }).on("error", reject);
+    });
+    req.on("timeout", () => { req.destroy(); reject(new Error("Request timeout")); });
+    req.on("error", reject);
   });
 }
 
