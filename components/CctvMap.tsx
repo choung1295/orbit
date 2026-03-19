@@ -9,12 +9,27 @@ declare global {
   }
 }
 
-const CCTV_MARKER_IMG = 'data:image/svg+xml;base64,' + btoa(
-  '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"><circle cx="7" cy="7" r="6" fill="#6366f1" stroke="#ffffff" stroke-width="1.5"/></svg>'
-)
+// 내 위치 마커: 카카오맵 스타일 (빨간 원 + 흰 테두리 + 흰 중심점)
 const MY_LOCATION_MARKER_IMG = 'data:image/svg+xml;base64,' + btoa(
-  '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><circle cx="10" cy="10" r="8" fill="#ff00ff" stroke="#ffffff" stroke-width="2"/></svg>'
+  '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><circle cx="14" cy="14" r="13" fill="white"/><circle cx="14" cy="14" r="9" fill="#EF4444"/><circle cx="14" cy="14" r="3.5" fill="white"/></svg>'
 )
+
+// CCTV 마커: zoom level에 따라 크기 동적 생성
+function getCctvMarkerImg(size: number): string {
+  const half = Math.round(size / 2)
+  const r = half - 1
+  return 'data:image/svg+xml;base64,' + btoa(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${half}" cy="${half}" r="${r}" fill="#6366f1" stroke="#ffffff" stroke-width="1.5"/></svg>`
+  )
+}
+
+function getCctvMarkerSize(zoom: number): number {
+  if (zoom <= 3) return 26
+  if (zoom <= 5) return 22
+  if (zoom <= 7) return 18
+  if (zoom <= 9) return 14
+  return 10
+}
 
 // 클러스터 마커 스타일 (단계별: 소→중→대→초대)
 const CLUSTER_STYLES = [
@@ -213,6 +228,7 @@ export default function CctvMap() {
   const [locError, setLocError] = useState<string | null>(null)
   const [isLoadingLoc, setIsLoadingLoc] = useState(false)
   const [is4kmFilterActive, setIs4kmFilterActive] = useState(false)
+  const [zoomLevel, setZoomLevel] = useState(13)
 
   useEffect(() => {
     const createMap = () => {
@@ -226,6 +242,12 @@ export default function CctvMap() {
       requestAnimationFrame(() => {
         if (mapInstanceRef.current) mapInstanceRef.current.relayout()
       })
+
+      // zoom 변경 시 마커 크기 업데이트
+      window.kakao.maps.event.addListener(map, 'zoom_changed', () => {
+        setZoomLevel(map.getLevel())
+      })
+
       setIsMapReady(true)
     }
 
@@ -280,10 +302,12 @@ export default function CctvMap() {
     }
     markersRef.current = []
 
+    const size = getCctvMarkerSize(zoomLevel)
+    const half = Math.round(size / 2)
     const markerImage = new window.kakao.maps.MarkerImage(
-      CCTV_MARKER_IMG,
-      new window.kakao.maps.Size(14, 14),
-      { offset: new window.kakao.maps.Point(7, 7) }
+      getCctvMarkerImg(size),
+      new window.kakao.maps.Size(size, size),
+      { offset: new window.kakao.maps.Point(half, half) }
     )
 
     const newMarkers: any[] = []
@@ -315,7 +339,7 @@ export default function CctvMap() {
       styles: CLUSTER_STYLES,
     })
     markersRef.current = newMarkers
-  }, [isMapReady, cctvList, is4kmFilterActive, myLocation])
+  }, [isMapReady, cctvList, is4kmFilterActive, myLocation, zoomLevel])
 
   useEffect(() => {
     if (!isMapReady || !myLocation || !mapInstanceRef.current) return
@@ -351,8 +375,8 @@ export default function CctvMap() {
 
         const locMarkerImage = new window.kakao.maps.MarkerImage(
           MY_LOCATION_MARKER_IMG,
-          new window.kakao.maps.Size(20, 20),
-          { offset: new window.kakao.maps.Point(10, 10) }
+          new window.kakao.maps.Size(28, 28),
+          { offset: new window.kakao.maps.Point(14, 14) }
         )
 
         const marker = new window.kakao.maps.Marker({
@@ -379,42 +403,59 @@ export default function CctvMap() {
     <div className="relative w-full min-w-0 overflow-hidden rounded-2xl border-4 border-gray-800/10 shadow-2xl bg-gray-200 h-[65dvh] md:h-[600px]">
       <div ref={mapRef} className="absolute inset-0 w-full h-full" />
 
+      {/* 우측 하단 버튼 그룹 */}
       <div
-        className="fixed bottom-10 left-4 right-4 md:absolute md:top-4 md:bottom-auto flex flex-wrap justify-center md:justify-end gap-3 pointer-events-none"
-        style={{ zIndex: 9999999 }}
+        className="absolute bottom-4 right-4 flex flex-col items-end gap-2"
+        style={{ zIndex: 100 }}
       >
-        <button
-          onClick={handleMyLocation}
-          disabled={isLoadingLoc || !isMapReady}
-          className="pointer-events-auto px-6 py-3 bg-[#6366f1] text-white font-black text-sm rounded-2xl shadow-[0_10px_40px_rgba(99,102,241,0.6)] hover:bg-indigo-700 active:scale-90 transition-all disabled:opacity-70 flex items-center gap-2 border-2 border-white whitespace-nowrap"
-        >
-          {isLoadingLoc ? '탐색 중...' : '📍 내 위치 찾기'}
-        </button>
-
+        {/* 4km 필터 버튼 */}
         {myLocation && (
           <button
             onClick={() => setIs4kmFilterActive(!is4kmFilterActive)}
-            className={`pointer-events-auto px-6 py-3 font-black text-sm rounded-2xl shadow-2xl active:scale-90 transition-all border-2 whitespace-nowrap ${
+            className={`px-3 py-1.5 text-xs font-bold rounded-full shadow-lg transition-all border whitespace-nowrap ${
               is4kmFilterActive
-                ? 'bg-emerald-500 text-white border-white'
-                : 'bg-white text-indigo-600 border-indigo-500'
+                ? 'bg-emerald-500 text-white border-emerald-400'
+                : 'bg-white text-indigo-600 border-indigo-300'
             }`}
           >
-            {is4kmFilterActive ? '🌐 전체 CCTV' : '🎯 주변 4km'}
+            {is4kmFilterActive ? '전체 CCTV' : '주변 4km'}
           </button>
         )}
+
+        {/* 내 위치 아이콘 버튼 */}
+        <button
+          onClick={handleMyLocation}
+          disabled={isLoadingLoc || !isMapReady}
+          title="내 위치 찾기"
+          className="w-11 h-11 bg-white rounded-full shadow-lg border border-gray-200 hover:bg-gray-50 active:scale-90 transition-all disabled:opacity-60 flex items-center justify-center"
+        >
+          {isLoadingLoc ? (
+            <svg className="animate-spin w-5 h-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"/>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <line x1="12" y1="2" x2="12" y2="6"/>
+              <line x1="12" y1="18" x2="12" y2="22"/>
+              <line x1="2" y1="12" x2="6" y2="12"/>
+              <line x1="18" y1="12" x2="22" y2="12"/>
+            </svg>
+          )}
+        </button>
       </div>
 
       {locError && (
-        <div className="absolute top-20 left-4 right-4 z-[1000000] flex justify-center pointer-events-none">
-          <div className="px-5 py-2.5 bg-rose-600 text-white text-xs font-black rounded-full shadow-2xl border-2 border-white animate-bounce pointer-events-auto">
-            ⚠️ {locError}
+        <div className="absolute top-4 left-4 right-4 z-[100] flex justify-center pointer-events-none">
+          <div className="px-4 py-2 bg-rose-600 text-white text-xs font-bold rounded-full shadow-lg border border-rose-400 pointer-events-auto">
+            {locError}
           </div>
         </div>
       )}
 
       {selected && (
-        <div className="absolute bottom-24 md:bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:max-w-md z-[1000000] bg-[#1a1a24] border-2 border-indigo-500/30 rounded-2xl px-5 py-4 shadow-2xl backdrop-blur-xl">
+        <div className="absolute bottom-4 left-4 right-16 md:left-1/2 md:-translate-x-1/2 md:max-w-md z-[100] bg-[#1a1a24] border-2 border-indigo-500/30 rounded-2xl px-5 py-4 shadow-2xl backdrop-blur-xl">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
               <h3 className="text-white text-sm md:text-base font-black leading-tight mb-2">
