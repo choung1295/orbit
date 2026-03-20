@@ -5,14 +5,14 @@ import { createClient } from '@supabase/supabase-js'
 export const maxDuration = 300
 export const preferredRegion = 'icn1'
 
-function httpsGetJson(url: string): Promise<unknown> {
+function httpsGetJson(url: string): Promise<{ status: number; body: unknown }> {
   return new Promise((resolve, reject) => {
     const req = https.get(url, { rejectUnauthorized: false, timeout: 60000 } as Parameters<typeof https.get>[1], (res) => {
       let data = ''
       res.on('data', (chunk: string) => { data += chunk })
       res.on('end', () => {
-        try { resolve(JSON.parse(data)) }
-        catch (e) { reject(e) }
+        try { resolve({ status: res.statusCode ?? 0, body: JSON.parse(data) }) }
+        catch { resolve({ status: res.statusCode ?? 0, body: data.slice(0, 300) }) }
       })
     })
     req.on('timeout', () => { req.destroy(); reject(new Error('Request timeout')) })
@@ -39,18 +39,29 @@ export async function GET(request: Request) {
 
   const url = `https://openapi.its.go.kr:9443/cctvInfo?apiKey=${ITS_API_KEY}&type=all&cctvType=1&minX=124.0&maxX=132.0&minY=33.0&maxY=43.0&getType=json`
 
+  let httpStatus: number
   let rawData: unknown
   try {
-    rawData = await httpsGetJson(url)
+    const result = await httpsGetJson(url)
+    httpStatus = result.status
+    rawData = result.body
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
     return NextResponse.json({ error: `ITS API 호출 실패: ${msg}` }, { status: 502 })
   }
 
-  const items = (rawData as Record<string, unknown>)?.response as unknown[] ?? (rawData as Record<string, unknown>)?.data as unknown[] ?? []
-  const itemArray = Array.isArray(items) ? items : []
+  if (httpStatus !== 200) {
+    return NextResponse.json({ error: `ITS API HTTP ${httpStatus}`, body: String(rawData).slice(0, 300) }, { status: 502 })
+  }
+
+  const raw = rawData as Record<string, unknown>
+  // ITS API 응답: { response: [...] } 또는 { data: [...] } 또는 배열 직접
+  const responseVal = raw?.response
+  const items = Array.isArray(responseVal) ? responseVal
+    : (responseVal as Record<string, unknown>)?.data ?? raw?.data ?? raw?.result ?? null
+  const itemArray = Array.isArray(items) ? items : Array.isArray(rawData) ? rawData as unknown[] : []
   if (itemArray.length === 0) {
-    return NextResponse.json({ error: 'CCTV 데이터 없음' }, { status: 502 })
+    return NextResponse.json({ error: 'CCTV 데이터 없음', rawKeys: Object.keys(raw ?? {}), rawSample: JSON.stringify(rawData).slice(0, 500) }, { status: 502 })
   }
 
   const rows = itemArray
