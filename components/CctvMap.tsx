@@ -1,156 +1,42 @@
 'use client'
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  CctvItem,
+  CityCctvItem,
+  getCctvName, getCctvLat, getCctvLng, getCctvUrl,
+  getCctvMarkerImg, getCctvMarkerSize,
+  getCityCctvMarkerImg, buildCityCctvStreamUrl,
+  isVideoUrl, isImageUrl,
+  CLUSTER_STYLES, CITY_CLUSTER_STYLES,
+} from './cctv/cctvUtils'
+import { useRoute } from './route/useRoute'
+import { useCctvFilter } from './cctv/useCctvFilter'
+import RouteLayer from './map/RouteLayer'
+import RoutePanel from './map/RoutePanel'
+import CctvLayer from './cctv/CctvLayer'
 
 declare global {
-  interface Window {
-    kakao: any
-  }
+  interface Window { kakao: any }
 }
 
-// 내 위치 마커: 카카오맵 스타일 (빨간 원 + 흰 테두리 + 흰 중심점)
-const MY_LOCATION_MARKER_IMG = 'data:image/svg+xml;base64,' + btoa(
+const MY_LOCATION_IMG = 'data:image/svg+xml;base64,' + btoa(
   '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><circle cx="14" cy="14" r="13" fill="white"/><circle cx="14" cy="14" r="9" fill="#EF4444"/><circle cx="14" cy="14" r="3.5" fill="white"/></svg>'
 )
 
-// CCTV 마커: zoom level에 따라 크기 동적 생성
-function getCctvMarkerImg(size: number): string {
-  const half = Math.round(size / 2)
-  const r = half - 1
-  return 'data:image/svg+xml;base64,' + btoa(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${half}" cy="${half}" r="${r}" fill="#6366f1" stroke="#ffffff" stroke-width="1.5"/></svg>`
-  )
-}
-
-function getCctvMarkerSize(zoom: number): number {
-  if (zoom <= 3) return 26
-  if (zoom <= 5) return 22
-  if (zoom <= 7) return 18
-  if (zoom <= 9) return 14
-  return 10
-}
-
-// 클러스터 마커 스타일 (단계별: 소→중→대→초대)
-const CLUSTER_STYLES = [
-  {
-    width: '44px', height: '44px',
-    background: '#3B82F6',
-    border: '2px solid rgba(255,255,255,0.9)',
-    borderRadius: '50%',
-    textAlign: 'center',
-    lineHeight: '40px',
-    fontSize: '13px',
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    boxShadow: '0 2px 6px rgba(0,0,0,0.35)',
-  },
-  {
-    width: '52px', height: '52px',
-    background: '#7C3AED',
-    border: '2px solid rgba(255,255,255,0.9)',
-    borderRadius: '50%',
-    textAlign: 'center',
-    lineHeight: '48px',
-    fontSize: '14px',
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
-  },
-  {
-    width: '60px', height: '60px',
-    background: '#F59E0B',
-    border: '2px solid rgba(255,255,255,0.9)',
-    borderRadius: '50%',
-    textAlign: 'center',
-    lineHeight: '56px',
-    fontSize: '15px',
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.4)',
-  },
-  {
-    width: '68px', height: '68px',
-    background: '#EF4444',
-    border: '2px solid rgba(255,255,255,0.9)',
-    borderRadius: '50%',
-    textAlign: 'center',
-    lineHeight: '64px',
-    fontSize: '16px',
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    boxShadow: '0 2px 12px rgba(0,0,0,0.45)',
-  },
-]
-
-interface CctvItem {
-  cctvname?: string; cctvName?: string; name?: string;
-  coordx?: number | string; coordX?: number | string; longitude?: number | string; lng?: number | string; lon?: number | string;
-  coordy?: number | string; coordY?: number | string; latitude?: number | string; lat?: number | string;
-  cctvurl?: string; cctvUrl?: string; url?: string;
-}
-
-function getName(item: CctvItem): string { return item.cctvname ?? item.cctvName ?? item.name ?? 'CCTV' }
-function getLng(item: CctvItem): number | null {
-  const raw = item.coordx ?? item.coordX ?? item.longitude ?? item.lng ?? item.lon
-  if (raw == null || raw === '') return null
-  const n = Number(raw); return isNaN(n) ? null : n
-}
-function getLat(item: CctvItem): number | null {
-  const raw = item.coordy ?? item.coordY ?? item.latitude ?? item.lat
-  if (raw == null || raw === '') return null
-  const n = Number(raw); return isNaN(n) ? null : n
-}
-function getRawUrl(item: CctvItem): string { return item.cctvurl ?? item.cctvUrl ?? item.url ?? '' }
-
-/** HTML entity 디코딩, 이중 프로토콜, 공백 등 보정 */
-function normalizeCctvUrl(url: string): string {
-  if (!url) return ''
-  let u = url
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&#39;/g, "'")
-    .replace(/&quot;/g, '"')
-    .trim()
-  // 이중 프로토콜 수정 (http://http://)
-  u = u.replace(/^(https?:\/\/)(https?:\/\/)/i, '$1')
-  // 프로토콜 상대 URL 보정
-  if (u.startsWith('//')) u = 'http:' + u
-  return u
-}
-
-/** mp4, m3u8, webm 등 영상 URL 여부 판별 */
-function isVideoUrl(url: string): boolean {
-  const lower = url.toLowerCase().split('?')[0]
-  return /\.(mp4|m3u8|webm|ts|flv|avi|mov|mkv)$/.test(lower)
-}
-
-/** jpg, png 등 정적 이미지 URL 여부 판별 */
-function isImageUrl(url: string): boolean {
-  const lower = url.toLowerCase().split('?')[0]
-  return /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/.test(lower)
-}
-
-/** 렌더링에 사용할 정규화된 URL 반환 */
-function getBestMediaSource(item: CctvItem): string {
-  return normalizeCctvUrl(getRawUrl(item))
-}
-
-// ── CCTV 미디어 뷰어 ───────────────────────────────────────────────────────
+// ── 도시교통 CCTV 미디어 뷰어 ─────────────────────────────────────────────
 type MediaState = 'video' | 'image' | 'error'
 
-function CctvMediaViewer({ url, name }: { url: string; name: string }) {
-  const initialState = (): MediaState => {
+function CctvMediaViewer({ url, name, reconnectKey }: { url: string; name: string; reconnectKey: number }) {
+  const getInitialState = (): MediaState => {
     if (!url) return 'error'
     if (isVideoUrl(url)) return 'video'
     if (isImageUrl(url)) return 'image'
-    return 'video' // 판별 불가 시 video 우선 시도
+    return 'video'
   }
+  const [state, setState] = useState<MediaState>(getInitialState)
 
-  const [state, setState] = useState<MediaState>(initialState)
-
-  // 다른 CCTV 선택 시 상태 리셋
   useEffect(() => {
     if (!url) { setState('error'); return }
     if (isVideoUrl(url)) { setState('video'); return }
@@ -158,78 +44,78 @@ function CctvMediaViewer({ url, name }: { url: string; name: string }) {
     setState('video')
   }, [url])
 
-  if (!url) {
-    return (
-      <p className="text-gray-400 text-xs mt-2 py-3 text-center bg-gray-900/50 rounded-lg">
-        영상 정보가 없습니다
-      </p>
-    )
-  }
-
-  if (state === 'video') {
-    return (
-      <video
-        key={url}
-        src={url}
-        autoPlay
-        muted
-        playsInline
-        controls
-        preload="metadata"
-        className="w-full rounded-lg mt-2 bg-black"
-        style={{ maxHeight: '200px' }}
-        onError={() => setState('image')}
-      />
-    )
-  }
-
-  if (state === 'image') {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        key={url}
-        src={url}
-        alt={name}
-        className="w-full rounded-lg mt-2"
-        style={{ maxHeight: '200px', objectFit: 'contain' }}
-        onError={() => setState('error')}
-      />
-    )
-  }
-
+  if (!url) return (
+    <div className="mt-2 py-4 text-center text-xs text-gray-500 bg-gray-900/40 rounded-lg">영상 정보 없음</div>
+  )
+  if (state === 'video') return (
+    <video key={`${url}-${reconnectKey}`} src={url} autoPlay muted playsInline controls preload="metadata"
+      className="w-full rounded-lg mt-2 bg-black" style={{ maxHeight: '180px' }}
+      onError={() => setState('image')} />
+  )
+  if (state === 'image') return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img key={`${url}-${reconnectKey}`} src={url} alt={name}
+      className="w-full rounded-lg mt-2" style={{ maxHeight: '180px', objectFit: 'contain' }}
+      onError={() => setState('error')} />
+  )
   return (
-    <p className="text-gray-400 text-xs mt-2 py-3 text-center bg-gray-900/50 rounded-lg">
-      영상 정보를 불러오지 못했습니다
-    </p>
+    <div className="mt-2 py-4 text-center text-xs text-gray-500 bg-gray-900/40 rounded-lg">영상을 불러오지 못했습니다</div>
   )
 }
 
-// ── 거리 계산 ──────────────────────────────────────────────────────────────
-function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
-  const R = 6371
-  const dLat = (lat2 - lat1) * (Math.PI / 180)
-  const dLon = (lon2 - lon1) * (Math.PI / 180)
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
+// ── 타입 ──────────────────────────────────────────────────────────────────
+type MapBaseType = 'normal' | 'satellite'
+type LayerId = 'urban-cctv' | 'city-cctv' | 'cadastral'
+interface MapBounds { minX: number; minY: number; maxX: number; maxY: number }
 
 // ── 메인 컴포넌트 ──────────────────────────────────────────────────────────
 export default function CctvMap() {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
-  const markersRef = useRef<any[]>([])
   const clustererRef = useRef<any>(null)
+  const cityCctvClustererRef = useRef<any>(null)
+  const myMarkerRef = useRef<any>(null)
+  const reconnectTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const cityFetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [isMapReady, setIsMapReady] = useState(false)
-  const [cctvList, setCctvList] = useState<CctvItem[]>([])
+  const [mapBaseType, setMapBaseType] = useState<MapBaseType>('normal')
+  const [activeLayers, setActiveLayers] = useState<Set<LayerId>>(new Set())
+  const [showRoutePanel, setShowRoutePanel] = useState(false)
+
+  // 도시교통 CCTV
+  const [urbanCctvList, setUrbanCctvList] = useState<CctvItem[]>([])
+  const [urbanCctvLoaded, setUrbanCctvLoaded] = useState(false)
+  const [urbanCctvLoading, setUrbanCctvLoading] = useState(false)
   const [selected, setSelected] = useState<CctvItem | null>(null)
+  const [reconnectKey, setReconnectKey] = useState(0)
+
+  // 시내교통 CCTV
+  const [cityCctvList, setCityCctvList] = useState<CityCctvItem[]>([])
+  const [cityCctvLoading, setCityCctvLoading] = useState(false)
+  const [selectedCity, setSelectedCity] = useState<CityCctvItem | null>(null)
+  const [mapBounds, setMapBounds] = useState<MapBounds | null>(null)
+
+  // 내 위치
   const [myLocation, setMyLocation] = useState<{ lat: number; lng: number } | null>(null)
-  const myMarkerRef = useRef<any>(null)
-  const [locError, setLocError] = useState<string | null>(null)
-  const [isLoadingLoc, setIsLoadingLoc] = useState(false)
-  const [is4kmFilterActive, setIs4kmFilterActive] = useState(false)
+  const [locationLoading, setLocationLoading] = useState(false)
   const [zoomLevel, setZoomLevel] = useState(13)
 
+  // 경로
+  const { routes, isLoading: routeLoading, error: routeError, fetchRoutesByCoords, selectRoute, clearRoutes } = useRoute()
+  const routeCctvMap = useCctvFilter(routes, urbanCctvList)
+  const routeMode = routes.length > 0
+  const selectedRoute = routes.find(r => r.isSelected)
+  const routeCctvList = selectedRoute ? (routeCctvMap[selectedRoute.routeId] ?? []) : []
+  const routeCctvCountMap = Object.fromEntries(
+    Object.entries(routeCctvMap).map(([id, list]) => [id, list.length])
+  )
+  const handleSelectCctv = useCallback((item: CctvItem) => {
+    setSelected(item)
+    setSelectedCity(null)
+  }, [])
+
+  // ── 지도 초기화 ──────────────────────────────────────────────────────────
   useEffect(() => {
     const createMap = () => {
       if (mapInstanceRef.current || !mapRef.current) return
@@ -239,28 +125,15 @@ export default function CctvMap() {
       })
       mapInstanceRef.current = map
       map.relayout()
-      requestAnimationFrame(() => {
-        if (mapInstanceRef.current) mapInstanceRef.current.relayout()
-      })
-
-      // zoom 변경 시 마커 크기 업데이트
-      window.kakao.maps.event.addListener(map, 'zoom_changed', () => {
-        setZoomLevel(map.getLevel())
-      })
-
+      requestAnimationFrame(() => mapInstanceRef.current?.relayout())
+      window.kakao.maps.event.addListener(map, 'zoom_changed', () => setZoomLevel(map.getLevel()))
       setIsMapReady(true)
     }
-
     const tryInit = () => {
       if (mapInstanceRef.current || !mapRef.current) return
       window.kakao.maps.load(createMap)
     }
-
-    if (window.kakao?.maps) {
-      tryInit()
-      return
-    }
-
+    if (window.kakao?.maps) { tryInit(); return }
     const SCRIPT_ID = 'kakao-map-script'
     let script = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null
     if (!script) {
@@ -269,212 +142,323 @@ export default function CctvMap() {
       script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_JS_KEY}&autoload=false&libraries=clusterer`
       document.head.appendChild(script)
     }
-
     const onLoad = () => tryInit()
     script.addEventListener('load', onLoad)
     return () => script?.removeEventListener('load', onLoad)
   }, [])
 
-  useEffect(() => {
-    const fetchCctvData = async () => {
-      try {
-        const res = await fetch('/api/traffic/cctv?minX=124.0&maxX=132.0&minY=33.0&maxY=43.0')
-        const data = await res.json()
-        setCctvList(
-          Array.isArray(data?.response?.data ?? data?.data ?? data)
-            ? (data?.response?.data ?? data?.data ?? data)
-            : []
-        )
-      } catch {
-        console.error('CCTV 데이터를 불러올 수 없습니다.')
-      }
-    }
-    fetchCctvData()
-  }, [])
-
+  // ── 지도 bounds 추적 ─────────────────────────────────────────────────────
   useEffect(() => {
     if (!isMapReady || !mapInstanceRef.current) return
-
-    if (clustererRef.current) {
-      clustererRef.current.clear()
-      clustererRef.current.setMap(null)
-      clustererRef.current = null
+    const map = mapInstanceRef.current
+    const updateBounds = () => {
+      const bounds = map.getBounds()
+      const sw = bounds.getSouthWest()
+      const ne = bounds.getNorthEast()
+      setMapBounds({ minX: sw.getLng(), minY: sw.getLat(), maxX: ne.getLng(), maxY: ne.getLat() })
     }
-    markersRef.current = []
+    window.kakao.maps.event.addListener(map, 'idle', updateBounds)
+    updateBounds()
+    return () => window.kakao.maps.event.removeListener(map, 'idle', updateBounds)
+  }, [isMapReady])
 
-    const size = getCctvMarkerSize(zoomLevel)
-    const half = Math.round(size / 2)
-    const markerImage = new window.kakao.maps.MarkerImage(
-      getCctvMarkerImg(size),
-      new window.kakao.maps.Size(size, size),
-      { offset: new window.kakao.maps.Point(half, half) }
-    )
-
-    const newMarkers: any[] = []
-    cctvList.forEach(item => {
-      const lng = getLng(item)
-      const lat = getLat(item)
-      if (lng == null || lat == null || lng < 124 || lng > 132 || lat < 33 || lat > 43) return
-      if (is4kmFilterActive && myLocation && getDistance(myLocation.lat, myLocation.lng, lat, lng) > 4.0) return
-
-      const marker = new window.kakao.maps.Marker({
-        position: new window.kakao.maps.LatLng(lat, lng),
-        image: markerImage,
-        title: getName(item),
-      })
-
-      window.kakao.maps.event.addListener(marker, 'click', () => {
-        setSelected(item)
-      })
-
-      newMarkers.push(marker)
-    })
-
-    clustererRef.current = new window.kakao.maps.MarkerClusterer({
-      map: mapInstanceRef.current,
-      averageCenter: true,
-      minLevel: 10,
-      disableClickZoom: false,
-      markers: newMarkers,
-      styles: CLUSTER_STYLES,
-    })
-    markersRef.current = newMarkers
-  }, [isMapReady, cctvList, is4kmFilterActive, myLocation, zoomLevel])
-
+  // ── 지도 타입 ────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!isMapReady || !myLocation || !mapInstanceRef.current) return
+    if (!isMapReady || !mapInstanceRef.current) return
+    mapInstanceRef.current.setMapTypeId(
+      mapBaseType === 'satellite'
+        ? window.kakao.maps.MapTypeId.HYBRID
+        : window.kakao.maps.MapTypeId.ROADMAP
+    )
+  }, [isMapReady, mapBaseType])
+
+  // ── 지적도 오버레이 ──────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!isMapReady || !mapInstanceRef.current) return
+    if (activeLayers.has('cadastral')) {
+      mapInstanceRef.current.addOverlayMapTypeId(window.kakao.maps.MapTypeId.USE_DISTRICT)
+    } else {
+      mapInstanceRef.current.removeOverlayMapTypeId(window.kakao.maps.MapTypeId.USE_DISTRICT)
+    }
+  }, [isMapReady, activeLayers])
+
+  // ── 도시교통 CCTV 로딩 (on-demand) ──────────────────────────────────────
+  const loadUrbanCctv = useCallback(async () => {
+    if (urbanCctvLoaded || urbanCctvLoading) return
+    setUrbanCctvLoading(true)
+    try {
+      const r = await fetch('/api/traffic/cctv?minX=124.0&maxX=132.0&minY=33.0&maxY=43.0')
+      const data = await r.json()
+      const list = data?.response?.data ?? data?.data ?? data
+      setUrbanCctvList(Array.isArray(list) ? list : [])
+      setUrbanCctvLoaded(true)
+    } catch { console.error('도시교통 CCTV 로딩 실패') }
+    finally { setUrbanCctvLoading(false) }
+  }, [urbanCctvLoaded, urbanCctvLoading])
+
+  // ── 시내교통 CCTV 로딩 (지도 범위 기반, 디바운스, 줌 레벨 9 이하만) ────
+  useEffect(() => {
+    if (!activeLayers.has('city-cctv') || !mapBounds) return
+    if (zoomLevel > 9) { setCityCctvList([]); return }
+    if (cityFetchTimerRef.current) clearTimeout(cityFetchTimerRef.current)
+    cityFetchTimerRef.current = setTimeout(async () => {
+      setCityCctvLoading(true)
+      try {
+        const { minX, minY, maxX, maxY } = mapBounds
+        const r = await fetch(`/api/traffic/city-cctv?minX=${minX}&minY=${minY}&maxX=${maxX}&maxY=${maxY}`)
+        const data = await r.json()
+        setCityCctvList(Array.isArray(data?.data) ? data.data : [])
+      } catch { console.error('시내교통 CCTV 로딩 실패') }
+      finally { setCityCctvLoading(false) }
+    }, 600)
+    return () => { if (cityFetchTimerRef.current) clearTimeout(cityFetchTimerRef.current) }
+  }, [activeLayers, mapBounds, zoomLevel])
+
+  // ── 레이어 토글 ──────────────────────────────────────────────────────────
+  const toggleLayer = useCallback((layerId: LayerId) => {
+    setActiveLayers(prev => {
+      const next = new Set(prev)
+      if (next.has(layerId)) {
+        next.delete(layerId)
+        if (layerId === 'urban-cctv') setSelected(null)
+        if (layerId === 'city-cctv') { setSelectedCity(null); setCityCctvList([]) }
+      } else {
+        next.add(layerId)
+        if (layerId === 'urban-cctv') loadUrbanCctv()
+      }
+      return next
+    })
+  }, [loadUrbanCctv])
+
+  // ── 도시교통 30분 자동 재연결 ────────────────────────────────────────────
+  useEffect(() => {
+    if (reconnectTimerRef.current) { clearInterval(reconnectTimerRef.current); reconnectTimerRef.current = null }
+    if (!selected) return
+    reconnectTimerRef.current = setInterval(() => setReconnectKey(k => k + 1), 30 * 60 * 1000)
+    return () => { if (reconnectTimerRef.current) { clearInterval(reconnectTimerRef.current); reconnectTimerRef.current = null } }
+  }, [selected])
+
+  // ── 내 위치 마커 ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!isMapReady || !mapInstanceRef.current || !myLocation) return
     const position = new window.kakao.maps.LatLng(myLocation.lat, myLocation.lng)
+    if (myMarkerRef.current) { myMarkerRef.current.setMap(null); myMarkerRef.current = null }
+    myMarkerRef.current = new window.kakao.maps.Marker({
+      position, map: mapInstanceRef.current,
+      image: new window.kakao.maps.MarkerImage(MY_LOCATION_IMG, new window.kakao.maps.Size(28, 28), { offset: new window.kakao.maps.Point(14, 14) }),
+    })
     mapInstanceRef.current.setCenter(position)
     mapInstanceRef.current.setLevel(5)
   }, [isMapReady, myLocation])
 
-  function showLocError(msg: string) {
-    setLocError(msg)
-    setTimeout(() => setLocError(null), 3000)
-  }
-
-  const handleMyLocation = () => {
-    if (!isMapReady || !window.kakao?.maps) {
-      showLocError('지도가 아직 준비되지 않았습니다.')
-      return
-    }
-    if (!navigator.geolocation) {
-      showLocError('위치 기능을 지원하지 않습니다.')
-      return
-    }
-    setIsLoadingLoc(true)
+  // ── 내 위치 버튼 ─────────────────────────────────────────────────────────
+  const handleMyLocation = useCallback(() => {
+    if (!isMapReady || !navigator.geolocation) return
+    setLocationLoading(true)
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords
-        const position = new window.kakao.maps.LatLng(lat, lng)
-
-        if (myMarkerRef.current) {
-          myMarkerRef.current.setMap(null)
-          myMarkerRef.current = null
-        }
-
-        const locMarkerImage = new window.kakao.maps.MarkerImage(
-          MY_LOCATION_MARKER_IMG,
-          new window.kakao.maps.Size(28, 28),
-          { offset: new window.kakao.maps.Point(14, 14) }
-        )
-
-        const marker = new window.kakao.maps.Marker({
-          position,
-          map: mapInstanceRef.current,
-          image: locMarkerImage,
-        })
-
-        myMarkerRef.current = marker
-        setMyLocation({ lat, lng })
-        setIsLoadingLoc(false)
-      },
-      (err) => {
-        setIsLoadingLoc(false)
-        let msg = '위치를 가져올 수 없습니다.'
-        if (err.code === 1) msg = '위치 권한이 거부되었습니다.'
-        showLocError(msg)
-      },
+      pos => { setMyLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setLocationLoading(false) },
+      () => setLocationLoading(false),
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     )
-  }
+  }, [isMapReady])
+
+  // ── 도시교통 CCTV 클러스터러 ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!isMapReady || !mapInstanceRef.current) return
+    if (clustererRef.current) { clustererRef.current.clear(); clustererRef.current.setMap(null); clustererRef.current = null }
+    if (!activeLayers.has('urban-cctv') || routeMode || !urbanCctvLoaded) return
+    const size = getCctvMarkerSize(zoomLevel)
+    const half = Math.round(size / 2)
+    const markerImage = new window.kakao.maps.MarkerImage(getCctvMarkerImg(size), new window.kakao.maps.Size(size, size), { offset: new window.kakao.maps.Point(half, half) })
+    const markers: any[] = []
+    urbanCctvList.forEach(item => {
+      const lng = getCctvLng(item); const lat = getCctvLat(item)
+      if (lng == null || lat == null || lng < 124 || lng > 132 || lat < 33 || lat > 43) return
+      const marker = new window.kakao.maps.Marker({ position: new window.kakao.maps.LatLng(lat, lng), image: markerImage, title: getCctvName(item) })
+      window.kakao.maps.event.addListener(marker, 'click', () => { setSelected(item); setSelectedCity(null) })
+      markers.push(marker)
+    })
+    clustererRef.current = new window.kakao.maps.MarkerClusterer({ map: mapInstanceRef.current, averageCenter: true, minLevel: 10, disableClickZoom: false, markers, styles: CLUSTER_STYLES })
+  }, [isMapReady, urbanCctvList, myLocation, zoomLevel, routeMode, activeLayers, urbanCctvLoaded])
+
+  // ── 시내교통 CCTV 클러스터러 ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!isMapReady || !mapInstanceRef.current) return
+    if (cityCctvClustererRef.current) { cityCctvClustererRef.current.clear(); cityCctvClustererRef.current.setMap(null); cityCctvClustererRef.current = null }
+    if (!activeLayers.has('city-cctv') || cityCctvList.length === 0) return
+    const size = getCctvMarkerSize(zoomLevel)
+    const half = Math.round(size / 2)
+    const markerImage = new window.kakao.maps.MarkerImage(getCityCctvMarkerImg(size), new window.kakao.maps.Size(size, size), { offset: new window.kakao.maps.Point(half, half) })
+    const markers: any[] = []
+    cityCctvList.forEach(item => {
+      if (!item.XCOORD || !item.YCOORD) return
+      const marker = new window.kakao.maps.Marker({ position: new window.kakao.maps.LatLng(item.YCOORD, item.XCOORD), image: markerImage, title: item.CCTVNAME })
+      window.kakao.maps.event.addListener(marker, 'click', () => { setSelectedCity(item); setSelected(null) })
+      markers.push(marker)
+    })
+    cityCctvClustererRef.current = new window.kakao.maps.MarkerClusterer({ map: mapInstanceRef.current, averageCenter: true, minLevel: 10, disableClickZoom: false, markers, styles: CITY_CLUSTER_STYLES })
+  }, [isMapReady, cityCctvList, zoomLevel, activeLayers])
+
+  const urbanActive = activeLayers.has('urban-cctv')
+  const cityActive = activeLayers.has('city-cctv')
+  const cadastralActive = activeLayers.has('cadastral')
+  const [showCctvDropdown, setShowCctvDropdown] = useState(false)
+  const cctvDropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!showCctvDropdown) return
+    const handler = (e: MouseEvent) => {
+      if (cctvDropdownRef.current && !cctvDropdownRef.current.contains(e.target as Node)) {
+        setShowCctvDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showCctvDropdown])
 
   return (
-    <div className="relative w-full min-w-0 overflow-hidden rounded-2xl border-4 border-gray-800/10 shadow-2xl bg-gray-200 h-[65dvh] md:h-[600px]">
+    <div className="relative w-full h-full bg-gray-950 overflow-hidden">
       <div ref={mapRef} className="absolute inset-0 w-full h-full" />
 
-      {/* 우측 하단 버튼 그룹 */}
-      <div
-        className="absolute bottom-4 right-4 flex flex-col items-end gap-2"
-        style={{ zIndex: 100 }}
-      >
-        {/* 4km 필터 버튼 */}
-        {myLocation && (
-          <button
-            onClick={() => setIs4kmFilterActive(!is4kmFilterActive)}
-            className={`px-3 py-1.5 text-xs font-bold rounded-full shadow-lg transition-all border whitespace-nowrap ${
-              is4kmFilterActive
-                ? 'bg-emerald-500 text-white border-emerald-400'
-                : 'bg-white text-indigo-600 border-indigo-300'
-            }`}
-          >
-            {is4kmFilterActive ? '전체 CCTV' : '주변 4km'}
-          </button>
-        )}
+      {/* ── 상단 메뉴 바 ── */}
+      <div className="absolute top-3 left-3 z-[200]" style={{ maxWidth: 'calc(100vw - 56px)' }}>
+        <div className="inline-flex items-center gap-1 bg-white/92 backdrop-blur-sm border border-black/8 rounded-xl px-2 py-1.5 shadow-lg">
 
-        {/* 내 위치 아이콘 버튼 */}
-        <button
-          onClick={handleMyLocation}
-          disabled={isLoadingLoc || !isMapReady}
-          title="내 위치 찾기"
-          className="w-11 h-11 bg-white rounded-full shadow-lg border border-gray-200 hover:bg-gray-50 active:scale-90 transition-all disabled:opacity-60 flex items-center justify-center"
-        >
-          {isLoadingLoc ? (
-            <svg className="animate-spin w-5 h-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"/>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3"/>
-              <line x1="12" y1="2" x2="12" y2="6"/>
-              <line x1="12" y1="18" x2="12" y2="22"/>
-              <line x1="2" y1="12" x2="6" y2="12"/>
-              <line x1="18" y1="12" x2="22" y2="12"/>
-            </svg>
-          )}
+          {/* 지도전환: 현재 반대 모드 표시 */}
+          <button onClick={() => setMapBaseType(v => v === 'normal' ? 'satellite' : 'normal')}
+            className="px-3 py-1 text-xs font-semibold rounded-lg bg-gray-900 text-white shadow-sm whitespace-nowrap flex-shrink-0 hover:bg-gray-700 transition-colors">
+            {mapBaseType === 'normal' ? '위성' : '일반'}
+          </button>
+
+          <div className="w-px h-4 bg-black/10 flex-shrink-0 mx-0.5" />
+
+          {/* CCTV 드롭다운 */}
+          <div className="relative flex-shrink-0" ref={cctvDropdownRef}>
+            <button onClick={() => setShowCctvDropdown(v => !v)}
+              className={['px-3 py-1 text-xs font-medium rounded-lg transition-all whitespace-nowrap flex items-center gap-1',
+                (urbanActive || cityActive) ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-black/5'].join(' ')}>
+              CCTV
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+            {showCctvDropdown && (
+              <div className="absolute top-full left-0 mt-1 bg-white border border-black/8 rounded-xl shadow-xl overflow-hidden min-w-[110px] z-10">
+                <button onClick={() => { toggleLayer('urban-cctv'); setShowCctvDropdown(false) }}
+                  className={['w-full text-left px-3 py-2 text-xs font-medium transition-all',
+                    urbanActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'].join(' ')}>
+                  {urbanActive ? '✓ ' : ''}고속{urbanCctvLoading ? ' (로딩)' : ''}
+                </button>
+                <div className="h-px bg-black/5" />
+                <button onClick={() => { toggleLayer('city-cctv'); setShowCctvDropdown(false) }}
+                  className={['w-full text-left px-3 py-2 text-xs font-medium transition-all',
+                    cityActive ? 'bg-teal-50 text-teal-700' : 'text-gray-700 hover:bg-gray-50'].join(' ')}>
+                  {cityActive ? '✓ ' : ''}시내{cityCctvLoading ? ' (로딩)' : ''}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* 지적도 토글 */}
+          <button onClick={() => toggleLayer('cadastral')}
+            className={['px-3 py-1 text-xs font-medium rounded-lg transition-all whitespace-nowrap flex-shrink-0',
+              cadastralActive ? 'bg-amber-500 text-white' : 'text-gray-700 hover:bg-black/5'].join(' ')}>
+            지적도
+          </button>
+
+          <div className="w-px h-4 bg-black/10 flex-shrink-0 mx-0.5" />
+
+          {/* 경로설정 */}
+          <button onClick={() => setShowRoutePanel(v => !v)}
+            className={['px-3 py-1 text-xs font-medium rounded-lg transition-all whitespace-nowrap flex-shrink-0',
+              showRoutePanel ? 'bg-gray-900 text-white' : 'text-gray-700 hover:bg-black/5'].join(' ')}>
+            경로설정
+          </button>
+        </div>
+      </div>
+
+      {/* ── 내 위치 버튼 (우측 상단, 완전 노출) ── */}
+      <div className="absolute top-3 right-3 z-[200]">
+        <button onClick={handleMyLocation} disabled={locationLoading || !isMapReady}
+          className="flex items-center justify-center w-10 h-10 bg-white/95 backdrop-blur-sm border border-black/8 rounded-xl shadow-lg transition-all hover:bg-white hover:shadow-xl active:scale-95 disabled:opacity-40"
+          title="내 위치">
+          {locationLoading
+            ? <svg className="animate-spin w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" /></svg>
+            : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-700">
+                <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" />
+                <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+                <circle cx="12" cy="12" r="8" />
+              </svg>
+          }
         </button>
       </div>
 
-      {locError && (
-        <div className="absolute top-4 left-4 right-4 z-[100] flex justify-center pointer-events-none">
-          <div className="px-4 py-2 bg-rose-600 text-white text-xs font-bold rounded-full shadow-lg border border-rose-400 pointer-events-auto">
-            {locError}
+      {/* ── 경로 패널 ── */}
+      {showRoutePanel && (
+        <RoutePanel
+          mapCenter={myLocation ?? undefined}
+          routes={routes} routeCctvMap={routeCctvCountMap}
+          isLoading={routeLoading} error={routeError}
+          onSearch={fetchRoutesByCoords} onSelectRoute={selectRoute}
+          onClear={() => { clearRoutes(); setSelected(null) }}
+        />
+      )}
+
+      {/* ── 경로 폴리라인 ── */}
+      {isMapReady && mapInstanceRef.current && (
+        <RouteLayer map={mapInstanceRef.current} routes={routes} />
+      )}
+
+      {/* ── 경로 CCTV 마커 ── */}
+      {isMapReady && mapInstanceRef.current && routeMode && (
+        <CctvLayer map={mapInstanceRef.current} cctvList={routeCctvList} zoomLevel={zoomLevel} onSelect={handleSelectCctv} />
+      )}
+
+      {/* ── 도시교통 CCTV 팝업 ── */}
+      {selected && (
+        <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-72 z-[100]">
+          <div className="bg-gray-950/95 border border-white/10 rounded-xl p-4 shadow-2xl backdrop-blur-xl">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] text-indigo-400 font-medium mb-0.5">도시교통 CCTV</p>
+                <h3 className="text-white text-sm font-semibold leading-tight truncate">{getCctvName(selected)}</h3>
+              </div>
+              <button onClick={() => { setSelected(null); setReconnectKey(0) }} className="text-gray-500 hover:text-white transition-colors flex-shrink-0 mt-0.5">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            </div>
+            <CctvMediaViewer url={getCctvUrl(selected)} name={getCctvName(selected)} reconnectKey={reconnectKey} />
           </div>
         </div>
       )}
 
-      {selected && (
-        <div className="absolute bottom-4 left-4 right-16 md:left-1/2 md:-translate-x-1/2 md:max-w-md z-[100] bg-[#1a1a24] border-2 border-indigo-500/30 rounded-2xl px-5 py-4 shadow-2xl backdrop-blur-xl">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <h3 className="text-white text-sm md:text-base font-black leading-tight mb-2">
-                {getName(selected)}
-              </h3>
-              <CctvMediaViewer
-                url={getBestMediaSource(selected)}
-                name={getName(selected)}
-              />
+      {/* ── 시내교통 CCTV 팝업 (iframe) ── */}
+      {selectedCity && (
+        <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 z-[100]">
+          <div className="bg-gray-950/95 border border-teal-500/20 rounded-xl p-4 shadow-2xl backdrop-blur-xl">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] text-teal-400 font-medium mb-0.5">
+                  시내교통 CCTV · {selectedCity.CENTERNAME}
+                </p>
+                <h3 className="text-white text-sm font-semibold leading-tight truncate">{selectedCity.CCTVNAME}</h3>
+              </div>
+              <button onClick={() => setSelectedCity(null)} className="text-gray-500 hover:text-white transition-colors flex-shrink-0 mt-0.5">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
             </div>
-            <button
-              onClick={() => setSelected(null)}
-              className="p-1.5 bg-gray-800/50 hover:bg-gray-700 rounded-full text-gray-400 hover:text-white transition-all shadow-inner flex-shrink-0"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
+            <iframe
+              src={buildCityCctvStreamUrl(selectedCity, mapBounds)}
+              className="w-full rounded-lg bg-black"
+              style={{ height: '200px', border: 'none' }}
+              title={selectedCity.CCTVNAME}
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+            />
+            <div className="flex items-center justify-between mt-2">
+              <p className="text-[10px] text-gray-600">영상 재생은 60초만 제공됩니다 (UTIC)</p>
+              <a href={buildCityCctvStreamUrl(selectedCity, mapBounds)} target="_blank" rel="noopener noreferrer"
+                className="text-[10px] text-teal-400 hover:text-teal-300 underline">새창으로 보기</a>
+            </div>
           </div>
         </div>
       )}
