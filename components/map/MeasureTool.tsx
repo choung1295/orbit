@@ -50,6 +50,7 @@ interface Props {
 export default function MeasureTool({ map, mode, onClose }: Props) {
   const [points, setPoints] = useState<Point[]>([])
   const [finished, setFinished] = useState(false)
+  const [mapLocked, setMapLocked] = useState(false)
   const overlaysRef = useRef<any[]>([])
   const dotMarkersRef = useRef<any[]>([])
   const previewLineRef = useRef<any>(null)
@@ -116,6 +117,12 @@ export default function MeasureTool({ map, mode, onClose }: Props) {
       overlaysRef.current.push(circle)
     }
   }
+
+  // 잠금 상태 → 지도 draggable 연동 + 해제 시 정리
+  useEffect(() => {
+    map.setDraggable(!mapLocked)
+    return () => { map.setDraggable(true) }
+  }, [map, mapLocked])
 
   // 지도 클릭 → 점 추가
   useEffect(() => {
@@ -200,13 +207,14 @@ export default function MeasureTool({ map, mode, onClose }: Props) {
 
     const touchMoveHandler = (e: TouchEvent) => {
       if (finishedRef.current) return
+      if (!mapLocked) return                // 잠금 해제 상태면 지도 이동 허용
       const pts = pointsRef.current
-      if (pts.length === 0) return          // 첫 점 없으면 지도 이동 허용
+      if (pts.length === 0) return
       if (mode === 'radius' && pts.length >= 2) return
       const touch = e.touches[0]
       if (!touch) return
       dragging = true
-      e.preventDefault()                    // 지도 이동 차단
+      e.preventDefault()
       const rect = mapNode.getBoundingClientRect()
       const latLng = map.getProjection().coordsFromContainerPoint(
         new window.kakao.maps.Point(touch.clientX - rect.left, touch.clientY - rect.top)
@@ -288,6 +296,25 @@ export default function MeasureTool({ map, mode, onClose }: Props) {
             : <p className="text-xs text-gray-400">{hint}</p>
           }
         </div>
+
+        {/* 지도 잠금 토글 (모바일용) */}
+        <button
+          onClick={() => setMapLocked(v => !v)}
+          title={mapLocked ? '지도 잠금 해제' : '지도 잠금 후 측정'}
+          className={[
+            'flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-lg transition-colors whitespace-nowrap',
+            mapLocked
+              ? 'bg-amber-400 text-white hover:bg-amber-500'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
+          ].join(' ')}
+        >
+          {mapLocked
+            ? <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6A5 5 0 0 0 7 6v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zm-6 9a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm3.1-9H8.9V6a3.1 3.1 0 0 1 6.2 0v2z"/></svg>
+            : <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+          }
+          {mapLocked ? '잠김' : '잠금'}
+        </button>
+
         <button
           onClick={() => { setPoints([]); finishedRef.current = false; setFinished(false) }}
           className="px-2.5 py-1 text-[11px] font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
