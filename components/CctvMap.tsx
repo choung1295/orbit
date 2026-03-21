@@ -395,14 +395,36 @@ export default function CctvMap() {
             <div className="w-px h-3.5 bg-black/15 flex-shrink-0 mx-0.5" />
 
             {/* CCTV 버튼 */}
-            <button onClick={() => setShowCctvDropdown(v => !v)}
-              className={['px-2.5 py-0.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap flex items-center gap-0.5',
-                (urbanActive || cityActive) ? 'bg-blue-600 text-white' : 'text-gray-800 bg-gray-100 hover:bg-gray-200'].join(' ')}>
-              CCTV
-              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </button>
+            <div className="relative">
+              <button onClick={() => setShowCctvDropdown(v => !v)}
+                className={['px-2.5 py-0.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap flex items-center gap-0.5',
+                  (urbanActive || cityActive) ? 'bg-blue-600 text-white' : 'text-gray-800 bg-gray-100 hover:bg-gray-200'].join(' ')}>
+                CCTV
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+
+              {/* CCTV 드롭다운 */}
+              {showCctvDropdown && (
+                <div className="absolute top-full left-0 mt-1 bg-white border border-black/10 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.15)] overflow-hidden z-[210] min-w-[110px]">
+                  <button
+                    onClick={() => toggleLayer('urban-cctv')}
+                    className={['flex items-center gap-2 w-full px-3 py-2 text-xs font-medium transition-colors',
+                      urbanActive ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'].join(' ')}>
+                    <span className={['w-2 h-2 rounded-full flex-shrink-0', urbanActive ? 'bg-blue-500' : 'bg-gray-300'].join(' ')} />
+                    고속도로
+                  </button>
+                  <button
+                    onClick={() => toggleLayer('city-cctv')}
+                    className={['flex items-center gap-2 w-full px-3 py-2 text-xs font-medium transition-colors',
+                      cityActive ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'].join(' ')}>
+                    <span className={['w-2 h-2 rounded-full flex-shrink-0', cityActive ? 'bg-blue-500' : 'bg-gray-300'].join(' ')} />
+                    시내
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* 지적도 */}
             <button onClick={() => toggleLayer('cadastral')}
@@ -430,25 +452,6 @@ export default function CctvMap() {
             </button>
           </div>
 
-          {/* CCTV 드롭다운 */}
-          {showCctvDropdown && (
-            <div className="absolute top-full left-0 mt-1 bg-white border border-black/10 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.15)] overflow-hidden z-[210] min-w-[110px]">
-              <button
-                onClick={() => toggleLayer('urban-cctv')}
-                className={['flex items-center gap-2 w-full px-3 py-2 text-xs font-medium transition-colors',
-                  urbanActive ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'].join(' ')}>
-                <span className={['w-2 h-2 rounded-full flex-shrink-0', urbanActive ? 'bg-blue-500' : 'bg-gray-300'].join(' ')} />
-                고속도로
-              </button>
-              <button
-                onClick={() => toggleLayer('city-cctv')}
-                className={['flex items-center gap-2 w-full px-3 py-2 text-xs font-medium transition-colors',
-                  cityActive ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'].join(' ')}>
-                <span className={['w-2 h-2 rounded-full flex-shrink-0', cityActive ? 'bg-blue-500' : 'bg-gray-300'].join(' ')} />
-                시내
-              </button>
-            </div>
-          )}
         </div>
 
         {/* 도구 버튼 */}
