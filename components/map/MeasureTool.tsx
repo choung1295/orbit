@@ -47,10 +47,12 @@ interface Props {
 
 export default function MeasureTool({ map, mode, onClose }: Props) {
   const [points, setPoints] = useState<Point[]>([])
+  const [finished, setFinished] = useState(false)
   const overlaysRef = useRef<any[]>([])
   const dotMarkersRef = useRef<any[]>([])
   const previewLineRef = useRef<any>(null)
   const pointsRef = useRef<Point[]>([])
+  const finishedRef = useRef(false)
 
   const clearAll = () => {
     overlaysRef.current.forEach(o => o.setMap(null))
@@ -115,6 +117,7 @@ export default function MeasureTool({ map, mode, onClose }: Props) {
   // 지도 클릭 → 점 추가
   useEffect(() => {
     const handler = (e: any) => {
+      if (finishedRef.current) return
       const lat = e.latLng.getLat()
       const lng = e.latLng.getLng()
       setPoints(prev => {
@@ -133,9 +136,24 @@ export default function MeasureTool({ map, mode, onClose }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, mode])
 
+  // 우클릭 → 미리보기 선 종료
+  useEffect(() => {
+    const rightClickHandler = () => {
+      finishedRef.current = true
+      setFinished(true)
+      clearPreview()
+    }
+    window.kakao.maps.event.addListener(map, 'rightclick', rightClickHandler)
+    return () => {
+      window.kakao.maps.event.removeListener(map, 'rightclick', rightClickHandler)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map])
+
   // 마우스 이동 → 미리보기 선
   useEffect(() => {
     const moveHandler = (e: any) => {
+      if (finishedRef.current) return
       const pts = pointsRef.current
       if (pts.length === 0) return
       if (mode === 'radius' && pts.length >= 2) return
@@ -187,8 +205,10 @@ export default function MeasureTool({ map, mode, onClose }: Props) {
     return null
   })()
 
-  const hint = mode === 'distance' ? '지도를 클릭해 거리를 측정하세요'
-    : mode === 'area' ? '지도를 클릭해 영역을 그리세요 (3점 이상)'
+  const hint = finished
+    ? '우클릭으로 완료 · 초기화로 다시 측정'
+    : mode === 'distance' ? '클릭으로 점 추가 · 우클릭으로 완료'
+    : mode === 'area' ? '클릭으로 점 추가 (3점 이상) · 우클릭으로 완료'
     : '중심점 → 반경점 순서로 클릭하세요'
 
   const modeLabel = mode === 'distance' ? '거리 측정' : mode === 'area' ? '면적 측정' : '반경 측정'
@@ -205,7 +225,7 @@ export default function MeasureTool({ map, mode, onClose }: Props) {
           }
         </div>
         <button
-          onClick={() => setPoints([])}
+          onClick={() => { setPoints([]); finishedRef.current = false; setFinished(false) }}
           className="px-2.5 py-1 text-[11px] font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
         >
           초기화
