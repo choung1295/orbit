@@ -153,45 +153,61 @@ export default function MeasureTool({ map, mode, onClose }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map])
 
-  // 마우스 이동 → 미리보기 선
+  // 미리보기 선 그리기 (공통)
+  const drawPreview = (latLng: any) => {
+    const pts = pointsRef.current
+    if (pts.length === 0) return
+    if (mode === 'radius' && pts.length >= 2) return
+    const last = pts[pts.length - 1]
+    const previewPath = [new window.kakao.maps.LatLng(last.lat, last.lng), latLng]
+    clearPreview()
+    const color = mode === 'distance' ? '#6366f1' : mode === 'area' ? '#f59e0b' : '#10b981'
+    const halo = new window.kakao.maps.Polyline({
+      path: previewPath, strokeWeight: 5, strokeColor: '#ffffff', strokeOpacity: 0.7, strokeStyle: 'dashed',
+    })
+    halo.setMap(map)
+    const line = new window.kakao.maps.Polyline({
+      path: previewPath, strokeWeight: 2, strokeColor: color, strokeOpacity: 0.9, strokeStyle: 'dashed',
+    })
+    line.setMap(map)
+    previewLineRef.current = { halo, line }
+  }
+
+  // PC: 마우스 이동 → 미리보기 선
   useEffect(() => {
     const moveHandler = (e: any) => {
       if (finishedRef.current) return
-      const pts = pointsRef.current
-      if (pts.length === 0) return
-      if (mode === 'radius' && pts.length >= 2) return
-
-      const mouse = e.latLng
-      const last = pts[pts.length - 1]
-      const previewPath = [new window.kakao.maps.LatLng(last.lat, last.lng), mouse]
-
-      clearPreview()
-      const color = mode === 'distance' ? '#6366f1' : mode === 'area' ? '#f59e0b' : '#10b981'
-      // 흰색 외곽선(halo) - 위성지도에서도 잘 보이게
-      const halo = new window.kakao.maps.Polyline({
-        path: previewPath,
-        strokeWeight: 5,
-        strokeColor: '#ffffff',
-        strokeOpacity: 0.7,
-        strokeStyle: 'dashed',
-      })
-      halo.setMap(map)
-      const line = new window.kakao.maps.Polyline({
-        path: previewPath,
-        strokeWeight: 2,
-        strokeColor: color,
-        strokeOpacity: 0.9,
-        strokeStyle: 'dashed',
-      })
-      line.setMap(map)
-      // halo와 line 둘 다 저장 (clearPreview에서 제거)
-      previewLineRef.current = { halo, line }
+      drawPreview(e.latLng)
     }
-
     window.kakao.maps.event.addListener(map, 'mousemove', moveHandler)
     return () => {
       window.kakao.maps.event.removeListener(map, 'mousemove', moveHandler)
       clearPreview()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, mode])
+
+  // 모바일: 터치 이동 → 미리보기 선
+  useEffect(() => {
+    const mapNode = map.getNode?.() as HTMLElement | null
+    if (!mapNode) return
+
+    const touchMoveHandler = (e: TouchEvent) => {
+      if (finishedRef.current) return
+      const touch = e.touches[0]
+      if (!touch) return
+      const rect = mapNode.getBoundingClientRect()
+      const x = touch.clientX - rect.left
+      const y = touch.clientY - rect.top
+      const point = new window.kakao.maps.Point(x, y)
+      const latLng = map.getProjection().coordsFromContainerPoint(point)
+      if (!latLng) return
+      drawPreview(latLng)
+    }
+
+    mapNode.addEventListener('touchmove', touchMoveHandler)
+    return () => {
+      mapNode.removeEventListener('touchmove', touchMoveHandler)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, mode])
