@@ -370,6 +370,11 @@ export default function CctvMap() {
     return () => document.removeEventListener('mousedown', handler)
   }, [showCctvDropdown])
 
+  // 고속·시내 둘 다 해제되면 드롭다운 자동 닫힘
+  useEffect(() => {
+    if (!urbanActive && !cityActive) setShowCctvDropdown(false)
+  }, [urbanActive, cityActive])
+
   return (
     <div className="relative w-full h-full bg-gray-950 overflow-hidden">
       <div ref={mapRef} className="absolute inset-0 w-full h-full" />
@@ -400,17 +405,25 @@ export default function CctvMap() {
                 </svg>
               </button>
               {showCctvDropdown && (
-                <div className="absolute top-full left-0 mt-1 bg-white border border-black/8 rounded-xl shadow-xl overflow-hidden min-w-[110px] z-10">
-                  <button onClick={() => { toggleLayer('urban-cctv'); setShowCctvDropdown(false) }}
-                    className={['w-full text-left px-3 py-2 text-xs font-medium transition-all',
+                <div className="absolute top-full left-0 mt-1 bg-white border border-black/8 rounded-xl shadow-xl overflow-hidden min-w-[110px] z-[210]">
+                  <button onClick={() => toggleLayer('urban-cctv')}
+                    className={['w-full text-left px-3 py-2 text-xs font-medium transition-all flex items-center gap-2',
                       urbanActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'].join(' ')}>
-                    {urbanActive ? '✓ ' : ''}고속{urbanCctvLoading ? ' (로딩)' : ''}
+                    <span className={['w-3.5 h-3.5 rounded flex items-center justify-center flex-shrink-0 border',
+                      urbanActive ? 'bg-blue-600 border-blue-600' : 'border-gray-300'].join(' ')}>
+                      {urbanActive && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                    </span>
+                    고속{urbanCctvLoading ? ' (로딩)' : ''}
                   </button>
                   <div className="h-px bg-black/5" />
-                  <button onClick={() => { toggleLayer('city-cctv'); setShowCctvDropdown(false) }}
-                    className={['w-full text-left px-3 py-2 text-xs font-medium transition-all',
+                  <button onClick={() => toggleLayer('city-cctv')}
+                    className={['w-full text-left px-3 py-2 text-xs font-medium transition-all flex items-center gap-2',
                       cityActive ? 'bg-teal-50 text-teal-700' : 'text-gray-700 hover:bg-gray-50'].join(' ')}>
-                    {cityActive ? '✓ ' : ''}시내{cityCctvLoading ? ' (로딩)' : ''}
+                    <span className={['w-3.5 h-3.5 rounded flex items-center justify-center flex-shrink-0 border',
+                      cityActive ? 'bg-teal-500 border-teal-500' : 'border-gray-300'].join(' ')}>
+                      {cityActive && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                    </span>
+                    시내{cityCctvLoading ? ' (로딩)' : ''}
                   </button>
                 </div>
               )}
