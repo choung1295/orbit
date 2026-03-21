@@ -374,97 +374,107 @@ export default function CctvMap() {
     <div className="relative w-full h-full bg-gray-950 overflow-hidden">
       <div ref={mapRef} className="absolute inset-0 w-full h-full" />
 
-      {/* ── 상단 메뉴 바 ── */}
-      <div className="absolute top-3 left-3 z-[200]" style={{ maxWidth: 'calc(100vw - 90px)' }}>
-        <div className="inline-flex items-center gap-1 bg-white border border-black/12 rounded-xl px-2 py-1.5 shadow-[0_2px_12px_rgba(0,0,0,0.18)]">
+      {/* ── 좌측 상단: 메뉴바 + 도구버튼 컬럼 ── */}
+      <div className="absolute top-3 left-0 z-[200] flex flex-col items-start gap-1.5">
 
-          {/* 지도전환: 현재 반대 모드 표시 */}
-          <button onClick={() => setMapBaseType(v => v === 'normal' ? 'satellite' : 'normal')}
-            className="px-3 py-1 text-xs font-semibold rounded-lg bg-gray-900 text-white shadow-sm whitespace-nowrap flex-shrink-0 hover:bg-gray-700 transition-colors">
-            {mapBaseType === 'normal' ? '위성' : '일반'}
-          </button>
+        {/* 메뉴 바 */}
+        <div className="overflow-x-auto" style={{ maxWidth: '100vw' }}>
+          <div className="inline-flex items-center gap-0.5 bg-white border border-black/12 border-l-0 rounded-r-xl pl-3 pr-2 py-1 shadow-[0_2px_12px_rgba(0,0,0,0.18)]">
 
-          <div className="w-px h-4 bg-black/15 flex-shrink-0 mx-0.5" />
-
-          {/* CCTV 드롭다운 */}
-          <div className="relative flex-shrink-0" ref={cctvDropdownRef}>
-            <button onClick={() => setShowCctvDropdown(v => !v)}
-              className={['px-3 py-1 text-xs font-semibold rounded-lg transition-all whitespace-nowrap flex items-center gap-1',
-                (urbanActive || cityActive) ? 'bg-blue-600 text-white' : 'text-gray-800 bg-gray-100 hover:bg-gray-200'].join(' ')}>
-              CCTV
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
+            {/* 지도전환 */}
+            <button onClick={() => setMapBaseType(v => v === 'normal' ? 'satellite' : 'normal')}
+              className="px-2.5 py-0.5 text-xs font-semibold rounded-lg bg-gray-900 text-white shadow-sm whitespace-nowrap flex-shrink-0 hover:bg-gray-700 transition-colors">
+              {mapBaseType === 'normal' ? '위성' : '일반'}
             </button>
-            {showCctvDropdown && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-black/8 rounded-xl shadow-xl overflow-hidden min-w-[110px] z-10">
-                <button onClick={() => { toggleLayer('urban-cctv'); setShowCctvDropdown(false) }}
-                  className={['w-full text-left px-3 py-2 text-xs font-medium transition-all',
-                    urbanActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'].join(' ')}>
-                  {urbanActive ? '✓ ' : ''}고속{urbanCctvLoading ? ' (로딩)' : ''}
-                </button>
-                <div className="h-px bg-black/5" />
-                <button onClick={() => { toggleLayer('city-cctv'); setShowCctvDropdown(false) }}
-                  className={['w-full text-left px-3 py-2 text-xs font-medium transition-all',
-                    cityActive ? 'bg-teal-50 text-teal-700' : 'text-gray-700 hover:bg-gray-50'].join(' ')}>
-                  {cityActive ? '✓ ' : ''}시내{cityCctvLoading ? ' (로딩)' : ''}
-                </button>
-              </div>
-            )}
+
+            <div className="w-px h-3.5 bg-black/15 flex-shrink-0 mx-0.5" />
+
+            {/* CCTV 드롭다운 */}
+            <div className="relative flex-shrink-0" ref={cctvDropdownRef}>
+              <button onClick={() => setShowCctvDropdown(v => !v)}
+                className={['px-2.5 py-0.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap flex items-center gap-0.5',
+                  (urbanActive || cityActive) ? 'bg-blue-600 text-white' : 'text-gray-800 bg-gray-100 hover:bg-gray-200'].join(' ')}>
+                CCTV
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+              {showCctvDropdown && (
+                <div className="absolute top-full left-0 mt-1 bg-white border border-black/8 rounded-xl shadow-xl overflow-hidden min-w-[110px] z-10">
+                  <button onClick={() => { toggleLayer('urban-cctv'); setShowCctvDropdown(false) }}
+                    className={['w-full text-left px-3 py-2 text-xs font-medium transition-all',
+                      urbanActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'].join(' ')}>
+                    {urbanActive ? '✓ ' : ''}고속{urbanCctvLoading ? ' (로딩)' : ''}
+                  </button>
+                  <div className="h-px bg-black/5" />
+                  <button onClick={() => { toggleLayer('city-cctv'); setShowCctvDropdown(false) }}
+                    className={['w-full text-left px-3 py-2 text-xs font-medium transition-all',
+                      cityActive ? 'bg-teal-50 text-teal-700' : 'text-gray-700 hover:bg-gray-50'].join(' ')}>
+                    {cityActive ? '✓ ' : ''}시내{cityCctvLoading ? ' (로딩)' : ''}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* 지적도 */}
+            <button onClick={() => toggleLayer('cadastral')}
+              className={['px-2.5 py-0.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap flex-shrink-0',
+                cadastralActive ? 'bg-amber-500 text-white' : 'text-gray-800 bg-gray-100 hover:bg-gray-200'].join(' ')}>
+              지적도
+            </button>
+
+            <div className="w-px h-3.5 bg-black/15 flex-shrink-0 mx-0.5" />
+
+            {/* 경로설정 */}
+            <button onClick={() => setShowRoutePanel(v => !v)}
+              className={['px-2.5 py-0.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap flex-shrink-0',
+                showRoutePanel ? 'bg-gray-900 text-white' : 'text-gray-800 bg-gray-100 hover:bg-gray-200'].join(' ')}>
+              경로설정
+            </button>
+
+            <div className="w-px h-3.5 bg-black/15 flex-shrink-0 mx-0.5" />
+
+            {/* 위치기억 */}
+            <button onClick={toggleLocationMemory}
+              className={['px-2 py-0.5 text-[10px] font-medium rounded-md transition-all whitespace-nowrap flex-shrink-0',
+                locationMemory ? 'bg-emerald-500 text-white' : 'text-gray-500 bg-gray-100 hover:bg-gray-200'].join(' ')}>
+              {locationMemory ? '위치기억 ON' : '위치기억 OFF'}
+            </button>
           </div>
-
-          {/* 지적도 토글 */}
-          <button onClick={() => toggleLayer('cadastral')}
-            className={['px-3 py-1 text-xs font-semibold rounded-lg transition-all whitespace-nowrap flex-shrink-0',
-              cadastralActive ? 'bg-amber-500 text-white' : 'text-gray-800 bg-gray-100 hover:bg-gray-200'].join(' ')}>
-            지적도
-          </button>
-
-          <div className="w-px h-4 bg-black/15 flex-shrink-0 mx-0.5" />
-
-          {/* 경로설정 */}
-          <button onClick={() => setShowRoutePanel(v => !v)}
-            className={['px-3 py-1 text-xs font-semibold rounded-lg transition-all whitespace-nowrap flex-shrink-0',
-              showRoutePanel ? 'bg-gray-900 text-white' : 'text-gray-800 bg-gray-100 hover:bg-gray-200'].join(' ')}>
-            경로설정
-          </button>
-
-          <div className="w-px h-4 bg-black/15 flex-shrink-0 mx-0.5" />
-
-          {/* 위치기억 토글 (보조 기능 - 작게) */}
-          <button onClick={toggleLocationMemory}
-            className={['px-2 py-0.5 text-[10px] font-medium rounded-md transition-all whitespace-nowrap flex-shrink-0',
-              locationMemory ? 'bg-emerald-500 text-white' : 'text-gray-500 bg-gray-100 hover:bg-gray-200'].join(' ')}>
-            {locationMemory ? '위치기억 ON' : '위치기억 OFF'}
-          </button>
         </div>
-      </div>
 
-      {/* ── 도구 버튼 (상단 우측, 메뉴바와 같은 높이) ── */}
-      <button
-        onClick={() => setToolDrawerOpen(o => !o)}
-        className="absolute top-3 right-3 z-[210] flex items-center gap-1.5 px-3 py-1.5 active:scale-95 transition-all"
-        style={{
-          borderRadius: 12,
-          background: 'rgba(255,255,255,0.88)',
-          color: '#111827',
-          fontSize: 12,
-          fontWeight: 600,
-          boxShadow: '0 2px 12px rgba(0,0,0,0.22)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          border: '1px solid rgba(0,0,0,0.10)',
-          cursor: 'pointer',
-          userSelect: 'none',
-          whiteSpace: 'nowrap',
-        }}
-        aria-label="도구 열기"
-      >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-        </svg>
-        도구
-      </button>
+        {/* 도구 버튼 (메뉴바 바로 아래, 좌측벽 붙음) */}
+        <button
+          onClick={() => setToolDrawerOpen(o => !o)}
+          className="flex items-center gap-1.5 active:scale-95 transition-all"
+          style={{
+            borderRadius: '0 10px 10px 0',
+            background: 'rgba(255,255,255,0.90)',
+            color: '#111827',
+            fontSize: 12,
+            fontWeight: 600,
+            paddingLeft: 12,
+            paddingRight: 14,
+            paddingTop: 6,
+            paddingBottom: 6,
+            boxShadow: '0 2px 12px rgba(0,0,0,0.22)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid rgba(0,0,0,0.10)',
+            borderLeft: 'none',
+            cursor: 'pointer',
+            userSelect: 'none',
+            whiteSpace: 'nowrap',
+          }}
+          aria-label="도구 열기"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+          </svg>
+          도구
+        </button>
+
+      </div>
 
       {/* ── 배경 딤 (서랍 열릴 때) ── */}
       {toolDrawerOpen && (
