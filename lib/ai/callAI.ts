@@ -22,8 +22,8 @@ export type AITask =
     | "video_read"
 
 const TASK_PROVIDER_MAP: Record<AITask, AIProvider> = {
-    text: "openai",
-    reasoning: "openai",
+    text: "anthropic",
+    reasoning: "anthropic",
     image_gen: "openai",
     image_read: "openai",
     video_gen: "openai",
