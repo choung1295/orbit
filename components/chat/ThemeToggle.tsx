@@ -68,7 +68,24 @@ export default function ThemeToggle() {
   const isDark = variant === 'dark'
   const [pickerOpen, setPickerOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const autoCloseRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const d = theme.isDark
+
+  // 자동 닫힘 타이머
+  const startAutoClose = () => {
+    if (autoCloseRef.current) clearTimeout(autoCloseRef.current)
+    autoCloseRef.current = setTimeout(() => setPickerOpen(false), 3000)
+  }
+  const cancelAutoClose = () => {
+    if (autoCloseRef.current) { clearTimeout(autoCloseRef.current); autoCloseRef.current = null }
+  }
+
+  useEffect(() => {
+    if (pickerOpen) startAutoClose()
+    else cancelAutoClose()
+    return () => cancelAutoClose()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickerOpen])
 
   // 외부 클릭 시 닫기
   useEffect(() => {
@@ -195,6 +212,8 @@ export default function ThemeToggle() {
 
       {/* ── 컬러 선택창 (작은 원형 4개) ── */}
       <div
+        onMouseEnter={cancelAutoClose}
+        onMouseLeave={startAutoClose}
         style={{
           position: 'absolute',
           top: 'calc(100% + 8px)',
