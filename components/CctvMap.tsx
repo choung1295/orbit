@@ -443,20 +443,26 @@ export default function CctvMap() {
       {/* ── 도구 손잡이 버튼 ── */}
       <button
         onClick={() => setToolDrawerOpen(o => !o)}
-        className="absolute bottom-24 right-0 z-[210] flex items-center justify-center"
+        className="absolute bottom-24 right-0 z-[210] flex items-center justify-center active:brightness-125 transition-[filter]"
         style={{
           writingMode: 'vertical-rl',
-          width: 28,
-          height: 72,
-          borderRadius: '8px 0 0 8px',
-          background: 'rgba(30,30,36,0.78)',
-          color: '#fff',
+          width: 30,
+          height: 76,
+          borderRadius: '10px 0 0 10px',
+          background: mapBaseType === 'satellite'
+            ? 'rgba(15,15,20,0.62)'
+            : 'rgba(255,255,255,0.72)',
+          color: mapBaseType === 'satellite' ? '#fff' : '#1a1a2e',
           fontSize: 13,
-          fontWeight: 500,
-          letterSpacing: '0.08em',
-          boxShadow: '-2px 2px 10px rgba(0,0,0,0.22)',
-          backdropFilter: 'blur(6px)',
-          border: 'none',
+          fontWeight: 600,
+          letterSpacing: '0.1em',
+          boxShadow: '-2px 2px 14px rgba(0,0,0,0.28)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          border: mapBaseType === 'satellite'
+            ? '1px solid rgba(255,255,255,0.18)'
+            : '1px solid rgba(0,0,0,0.10)',
+          borderRight: 'none',
           cursor: 'pointer',
           userSelect: 'none',
         }}
