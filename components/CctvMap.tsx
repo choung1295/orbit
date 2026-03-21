@@ -16,6 +16,7 @@ import { useCctvFilter } from './cctv/useCctvFilter'
 import RouteLayer from './map/RouteLayer'
 import RoutePanel from './map/RoutePanel'
 import CctvLayer from './cctv/CctvLayer'
+import MeasureTool from './map/MeasureTool'
 
 declare global {
   interface Window { kakao: any }
@@ -63,6 +64,11 @@ function CctvMediaViewer({ url, name, reconnectKey }: { url: string; name: strin
   )
 }
 
+// ── 상수 ──────────────────────────────────────────────────────────────────
+const DEFAULT_VIEW = { lat: 39.2, lng: 127.5, level: 13 }
+const MAP_VIEW_KEY = 'orbit_map_view'
+const MAP_MEMORY_KEY = 'orbit_map_memory'
+
 // ── 타입 ──────────────────────────────────────────────────────────────────
 type MapBaseType = 'normal' | 'satellite'
 type LayerId = 'urban-cctv' | 'city-cctv' | 'cadastral'
@@ -78,10 +84,16 @@ export default function CctvMap() {
   const reconnectTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const cityFetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const locationMemoryRef = useRef(true)
   const [isMapReady, setIsMapReady] = useState(false)
-  const [mapBaseType, setMapBaseType] = useState<MapBaseType>('normal')
+  const [mapBaseType, setMapBaseType] = useState<MapBaseType>('satellite')
+  const [locationMemory, setLocationMemory] = useState(() => {
+    if (typeof window === 'undefined') return true
+    return localStorage.getItem(MAP_MEMORY_KEY) !== 'false'
+  })
   const [activeLayers, setActiveLayers] = useState<Set<LayerId>>(new Set())
   const [showRoutePanel, setShowRoutePanel] = useState(false)
+  const [measureMode, setMeasureMode] = useState<'distance' | 'area' | 'radius' | null>(null)
 
   // 도시교통 CCTV
   const [urbanCctvList, setUrbanCctvList] = useState<CctvItem[]>([])
@@ -115,18 +127,36 @@ export default function CctvMap() {
     setSelectedCity(null)
   }, [])
 
+  // ── locationMemory ref 동기화 ────────────────────────────────────────────
+  useEffect(() => { locationMemoryRef.current = locationMemory }, [locationMemory])
+
   // ── 지도 초기화 ──────────────────────────────────────────────────────────
   useEffect(() => {
     const createMap = () => {
       if (mapInstanceRef.current || !mapRef.current) return
+      // 저장된 위치 복원 or 초기값
+      const memOn = localStorage.getItem(MAP_MEMORY_KEY) !== 'false'
+      let initView = DEFAULT_VIEW
+      if (memOn) {
+        try {
+          const saved = JSON.parse(localStorage.getItem(MAP_VIEW_KEY) || 'null')
+          if (saved?.lat && saved?.lng && saved?.level) initView = saved
+        } catch { /* 무시 */ }
+      }
       const map = new window.kakao.maps.Map(mapRef.current, {
-        center: new window.kakao.maps.LatLng(36.5, 127.5),
-        level: 13,
+        center: new window.kakao.maps.LatLng(initView.lat, initView.lng),
+        level: initView.level,
       })
       mapInstanceRef.current = map
       map.relayout()
       requestAnimationFrame(() => mapInstanceRef.current?.relayout())
       window.kakao.maps.event.addListener(map, 'zoom_changed', () => setZoomLevel(map.getLevel()))
+      // idle 시 위치 저장
+      window.kakao.maps.event.addListener(map, 'idle', () => {
+        if (!locationMemoryRef.current) return
+        const c = map.getCenter()
+        localStorage.setItem(MAP_VIEW_KEY, JSON.stringify({ lat: c.getLat(), lng: c.getLng(), level: map.getLevel() }))
+      })
       setIsMapReady(true)
     }
     const tryInit = () => {
@@ -161,6 +191,22 @@ export default function CctvMap() {
     updateBounds()
     return () => window.kakao.maps.event.removeListener(map, 'idle', updateBounds)
   }, [isMapReady])
+
+  // ── 위치기억 OFF 시 초기 화면 강제 복원 ─────────────────────────────────
+  useEffect(() => {
+    if (!isMapReady || !mapInstanceRef.current || locationMemory) return
+    mapInstanceRef.current.setCenter(new window.kakao.maps.LatLng(DEFAULT_VIEW.lat, DEFAULT_VIEW.lng))
+    mapInstanceRef.current.setLevel(DEFAULT_VIEW.level)
+  }, [isMapReady, locationMemory])
+
+  // ── 위치기억 토글 ────────────────────────────────────────────────────────
+  const toggleLocationMemory = useCallback(() => {
+    setLocationMemory(prev => {
+      const next = !prev
+      localStorage.setItem(MAP_MEMORY_KEY, String(next))
+      return next
+    })
+  }, [])
 
   // ── 지도 타입 ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -251,16 +297,23 @@ export default function CctvMap() {
     mapInstanceRef.current.setLevel(5)
   }, [isMapReady, myLocation])
 
-  // ── 내 위치 버튼 ─────────────────────────────────────────────────────────
+  // ── 내 위치 버튼 (토글) ───────────────────────────────────────────────────
   const handleMyLocation = useCallback(() => {
-    if (!isMapReady || !navigator.geolocation) return
+    if (!isMapReady) return
+    // 이미 위치 표시 중이면 → 끄기
+    if (myLocation) {
+      if (myMarkerRef.current) { myMarkerRef.current.setMap(null); myMarkerRef.current = null }
+      setMyLocation(null)
+      return
+    }
+    if (!navigator.geolocation) return
     setLocationLoading(true)
     navigator.geolocation.getCurrentPosition(
       pos => { setMyLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setLocationLoading(false) },
       () => setLocationLoading(false),
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     )
-  }, [isMapReady])
+  }, [isMapReady, myLocation])
 
   // ── 도시교통 CCTV 클러스터러 ─────────────────────────────────────────────
   useEffect(() => {
@@ -322,7 +375,7 @@ export default function CctvMap() {
 
       {/* ── 상단 메뉴 바 ── */}
       <div className="absolute top-3 left-3 z-[200]" style={{ maxWidth: 'calc(100vw - 56px)' }}>
-        <div className="inline-flex items-center gap-1 bg-white/92 backdrop-blur-sm border border-black/8 rounded-xl px-2 py-1.5 shadow-lg">
+        <div className="inline-flex items-center gap-1 bg-white border border-black/12 rounded-xl px-2 py-1.5 shadow-[0_2px_12px_rgba(0,0,0,0.18)]">
 
           {/* 지도전환: 현재 반대 모드 표시 */}
           <button onClick={() => setMapBaseType(v => v === 'normal' ? 'satellite' : 'normal')}
@@ -330,13 +383,13 @@ export default function CctvMap() {
             {mapBaseType === 'normal' ? '위성' : '일반'}
           </button>
 
-          <div className="w-px h-4 bg-black/10 flex-shrink-0 mx-0.5" />
+          <div className="w-px h-4 bg-black/15 flex-shrink-0 mx-0.5" />
 
           {/* CCTV 드롭다운 */}
           <div className="relative flex-shrink-0" ref={cctvDropdownRef}>
             <button onClick={() => setShowCctvDropdown(v => !v)}
-              className={['px-3 py-1 text-xs font-medium rounded-lg transition-all whitespace-nowrap flex items-center gap-1',
-                (urbanActive || cityActive) ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-black/5'].join(' ')}>
+              className={['px-3 py-1 text-xs font-semibold rounded-lg transition-all whitespace-nowrap flex items-center gap-1',
+                (urbanActive || cityActive) ? 'bg-blue-600 text-white' : 'text-gray-800 bg-gray-100 hover:bg-gray-200'].join(' ')}>
               CCTV
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="6 9 12 15 18 9" />
@@ -361,37 +414,117 @@ export default function CctvMap() {
 
           {/* 지적도 토글 */}
           <button onClick={() => toggleLayer('cadastral')}
-            className={['px-3 py-1 text-xs font-medium rounded-lg transition-all whitespace-nowrap flex-shrink-0',
-              cadastralActive ? 'bg-amber-500 text-white' : 'text-gray-700 hover:bg-black/5'].join(' ')}>
+            className={['px-3 py-1 text-xs font-semibold rounded-lg transition-all whitespace-nowrap flex-shrink-0',
+              cadastralActive ? 'bg-amber-500 text-white' : 'text-gray-800 bg-gray-100 hover:bg-gray-200'].join(' ')}>
             지적도
           </button>
 
-          <div className="w-px h-4 bg-black/10 flex-shrink-0 mx-0.5" />
+          <div className="w-px h-4 bg-black/15 flex-shrink-0 mx-0.5" />
 
           {/* 경로설정 */}
           <button onClick={() => setShowRoutePanel(v => !v)}
-            className={['px-3 py-1 text-xs font-medium rounded-lg transition-all whitespace-nowrap flex-shrink-0',
-              showRoutePanel ? 'bg-gray-900 text-white' : 'text-gray-700 hover:bg-black/5'].join(' ')}>
+            className={['px-3 py-1 text-xs font-semibold rounded-lg transition-all whitespace-nowrap flex-shrink-0',
+              showRoutePanel ? 'bg-gray-900 text-white' : 'text-gray-800 bg-gray-100 hover:bg-gray-200'].join(' ')}>
             경로설정
+          </button>
+
+          <div className="w-px h-4 bg-black/15 flex-shrink-0 mx-0.5" />
+
+          {/* 위치기억 토글 (보조 기능 - 작게) */}
+          <button onClick={toggleLocationMemory}
+            className={['px-2 py-0.5 text-[10px] font-medium rounded-md transition-all whitespace-nowrap flex-shrink-0',
+              locationMemory ? 'bg-emerald-500 text-white' : 'text-gray-500 bg-gray-100 hover:bg-gray-200'].join(' ')}>
+            {locationMemory ? '위치기억 ON' : '위치기억 OFF'}
           </button>
         </div>
       </div>
 
-      {/* ── 내 위치 버튼 (우측 상단, 완전 노출) ── */}
-      <div className="absolute top-3 right-3 z-[200]">
+      {/* ── 우측 버튼 그룹 (내위치 + 줌) ── */}
+      <div className="absolute top-3 right-3 z-[200] flex flex-col bg-white border border-black/12 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.18)] overflow-hidden">
+        {/* 내 위치 */}
         <button onClick={handleMyLocation} disabled={locationLoading || !isMapReady}
-          className="flex items-center justify-center w-10 h-10 bg-white/95 backdrop-blur-sm border border-black/8 rounded-xl shadow-lg transition-all hover:bg-white hover:shadow-xl active:scale-95 disabled:opacity-40"
-          title="내 위치">
+          className={`flex items-center justify-center w-11 h-11 transition-all active:scale-95 disabled:opacity-40 ${myLocation ? 'bg-blue-500 hover:bg-blue-600' : 'hover:bg-gray-50'}`}
+          title={myLocation ? '내 위치 끄기' : '내 위치'}>
           {locationLoading
-            ? <svg className="animate-spin w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" /></svg>
-            : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-700">
-                <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" />
+            ? <svg className="animate-spin w-5 h-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" /></svg>
+            : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={myLocation ? '#ffffff' : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={myLocation ? '' : 'text-blue-600'}>
+                <circle cx="12" cy="12" r="3" fill={myLocation ? '#ffffff' : 'currentColor'} stroke="none" />
                 <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
                 <circle cx="12" cy="12" r="8" />
               </svg>
           }
         </button>
+        <div className="h-px bg-black/8 mx-2" />
+        {/* 줌 인 */}
+        <button
+          onClick={() => { if (mapInstanceRef.current) mapInstanceRef.current.setLevel(mapInstanceRef.current.getLevel() - 1) }}
+          disabled={!isMapReady}
+          className="flex items-center justify-center w-11 h-10 text-gray-700 text-lg font-light transition-all hover:bg-gray-50 active:scale-95 disabled:opacity-40"
+          title="확대">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <div className="h-px bg-black/8 mx-2" />
+        {/* 줌 아웃 */}
+        <button
+          onClick={() => { if (mapInstanceRef.current) mapInstanceRef.current.setLevel(mapInstanceRef.current.getLevel() + 1) }}
+          disabled={!isMapReady}
+          className="flex items-center justify-center w-11 h-10 text-gray-700 transition-all hover:bg-gray-50 active:scale-95 disabled:opacity-40"
+          title="축소">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+
+        <div className="h-px bg-black/8 mx-2" />
+
+        {/* 거리 측정 */}
+        <button
+          onClick={() => setMeasureMode(m => m === 'distance' ? null : 'distance')}
+          disabled={!isMapReady}
+          className={['flex items-center justify-center w-11 h-10 transition-all hover:bg-gray-50 active:scale-95 disabled:opacity-40',
+            measureMode === 'distance' ? 'text-indigo-600 bg-indigo-50' : 'text-gray-600'].join(' ')}
+          title="거리 측정">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2 12h20M2 12l4-4M2 12l4 4M22 12l-4-4M22 12l-4 4"/>
+            <line x1="8" y1="9" x2="8" y2="15" strokeWidth="1.4"/>
+            <line x1="12" y1="9" x2="12" y2="15" strokeWidth="1.4"/>
+            <line x1="16" y1="9" x2="16" y2="15" strokeWidth="1.4"/>
+          </svg>
+        </button>
+
+        {/* 면적 측정 */}
+        <button
+          onClick={() => setMeasureMode(m => m === 'area' ? null : 'area')}
+          disabled={!isMapReady}
+          className={['flex items-center justify-center w-11 h-10 transition-all hover:bg-gray-50 active:scale-95 disabled:opacity-40',
+            measureMode === 'area' ? 'text-amber-500 bg-amber-50' : 'text-gray-600'].join(' ')}
+          title="면적 측정">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="12,3 21,9 18,20 6,20 3,9"/>
+          </svg>
+        </button>
+
+        {/* 반경 측정 */}
+        <button
+          onClick={() => setMeasureMode(m => m === 'radius' ? null : 'radius')}
+          disabled={!isMapReady}
+          className={['flex items-center justify-center w-11 h-10 transition-all hover:bg-gray-50 active:scale-95 disabled:opacity-40',
+            measureMode === 'radius' ? 'text-emerald-600 bg-emerald-50' : 'text-gray-600'].join(' ')}
+          title="반경 측정">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+            <circle cx="12" cy="12" r="9"/>
+            <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+            <line x1="12" y1="12" x2="21" y2="12"/>
+          </svg>
+        </button>
       </div>
+
+      {/* ── 측정 도구 ── */}
+      {measureMode && isMapReady && mapInstanceRef.current && (
+        <MeasureTool
+          map={mapInstanceRef.current}
+          mode={measureMode}
+          onClose={() => setMeasureMode(null)}
+        />
+      )}
 
       {/* ── 경로 패널 ── */}
       {showRoutePanel && (
