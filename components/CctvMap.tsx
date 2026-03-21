@@ -383,7 +383,7 @@ export default function CctvMap() {
       <div className="absolute top-3 left-0 z-[200] flex flex-col items-start gap-1.5">
 
         {/* 메뉴 바 */}
-        <div className="overflow-x-auto" style={{ maxWidth: '100vw' }}>
+        <div ref={cctvDropdownRef} className="relative">
           <div className="inline-flex items-center gap-0.5 bg-white border border-black/12 border-l-0 rounded-r-xl pl-3 pr-2 py-1 shadow-[0_2px_12px_rgba(0,0,0,0.18)]">
 
             {/* 지도전환 */}
@@ -394,40 +394,15 @@ export default function CctvMap() {
 
             <div className="w-px h-3.5 bg-black/15 flex-shrink-0 mx-0.5" />
 
-            {/* CCTV 드롭다운 */}
-            <div className="relative flex-shrink-0" ref={cctvDropdownRef}>
-              <button onClick={() => setShowCctvDropdown(v => !v)}
-                className={['px-2.5 py-0.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap flex items-center gap-0.5',
-                  (urbanActive || cityActive) ? 'bg-blue-600 text-white' : 'text-gray-800 bg-gray-100 hover:bg-gray-200'].join(' ')}>
-                CCTV
-                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              </button>
-              {showCctvDropdown && (
-                <div className="absolute top-full left-0 mt-1 bg-white border border-black/8 rounded-xl shadow-xl overflow-hidden min-w-[110px] z-[210]">
-                  <button onClick={() => toggleLayer('urban-cctv')}
-                    className={['w-full text-left px-3 py-2 text-xs font-medium transition-all flex items-center gap-2',
-                      urbanActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'].join(' ')}>
-                    <span className={['w-3.5 h-3.5 rounded flex items-center justify-center flex-shrink-0 border',
-                      urbanActive ? 'bg-blue-600 border-blue-600' : 'border-gray-300'].join(' ')}>
-                      {urbanActive && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
-                    </span>
-                    고속{urbanCctvLoading ? ' (로딩)' : ''}
-                  </button>
-                  <div className="h-px bg-black/5" />
-                  <button onClick={() => toggleLayer('city-cctv')}
-                    className={['w-full text-left px-3 py-2 text-xs font-medium transition-all flex items-center gap-2',
-                      cityActive ? 'bg-teal-50 text-teal-700' : 'text-gray-700 hover:bg-gray-50'].join(' ')}>
-                    <span className={['w-3.5 h-3.5 rounded flex items-center justify-center flex-shrink-0 border',
-                      cityActive ? 'bg-teal-500 border-teal-500' : 'border-gray-300'].join(' ')}>
-                      {cityActive && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
-                    </span>
-                    시내{cityCctvLoading ? ' (로딩)' : ''}
-                  </button>
-                </div>
-              )}
-            </div>
+            {/* CCTV 버튼 */}
+            <button onClick={() => setShowCctvDropdown(v => !v)}
+              className={['px-2.5 py-0.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap flex items-center gap-0.5',
+                (urbanActive || cityActive) ? 'bg-blue-600 text-white' : 'text-gray-800 bg-gray-100 hover:bg-gray-200'].join(' ')}>
+              CCTV
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
 
             {/* 지적도 */}
             <button onClick={() => toggleLayer('cadastral')}
@@ -454,6 +429,26 @@ export default function CctvMap() {
               {locationMemory ? '위치기억 ON' : '위치기억 OFF'}
             </button>
           </div>
+
+          {/* CCTV 드롭다운 */}
+          {showCctvDropdown && (
+            <div className="absolute top-full left-0 mt-1 bg-white border border-black/10 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.15)] overflow-hidden z-[210] min-w-[110px]">
+              <button
+                onClick={() => toggleLayer('urban-cctv')}
+                className={['flex items-center gap-2 w-full px-3 py-2 text-xs font-medium transition-colors',
+                  urbanActive ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'].join(' ')}>
+                <span className={['w-2 h-2 rounded-full flex-shrink-0', urbanActive ? 'bg-blue-500' : 'bg-gray-300'].join(' ')} />
+                고속도로
+              </button>
+              <button
+                onClick={() => toggleLayer('city-cctv')}
+                className={['flex items-center gap-2 w-full px-3 py-2 text-xs font-medium transition-colors',
+                  cityActive ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'].join(' ')}>
+                <span className={['w-2 h-2 rounded-full flex-shrink-0', cityActive ? 'bg-blue-500' : 'bg-gray-300'].join(' ')} />
+                시내
+              </button>
+            </div>
+          )}
         </div>
 
         {/* 도구 버튼 */}
