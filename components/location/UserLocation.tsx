@@ -31,6 +31,15 @@ export default function UserLocation({
   const [accuracy, setAccuracy] = useState<number | null>(null)
   const watchIdRef = useRef<number | null>(null)
 
+  const clearLocation = () => {
+    if (myMarkerRef.current) { myMarkerRef.current.setMap(null); myMarkerRef.current = null }
+    if (accuracyCircleRef.current) { accuracyCircleRef.current.setMap(null); accuracyCircleRef.current = null }
+    if (watchIdRef.current !== null) { navigator.geolocation.clearWatch(watchIdRef.current); watchIdRef.current = null }
+    setAccuracy(null)
+    onLocationChange(null)
+    if (is4kmFilterActive) onFilterChange(false)
+  }
+
   // 위치 마커 + 정확도 원 지도에 표시
   useEffect(() => {
     if (!map || !myLocation) return
@@ -200,10 +209,12 @@ export default function UserLocation({
         )}
 
         <button
-          onClick={handleMyLocation}
+          onClick={myLocation ? clearLocation : handleMyLocation}
           disabled={isLoading || !isMapReady}
-          title="내 위치 찾기"
-          className="w-11 h-11 bg-white rounded-full shadow-lg border border-gray-200 hover:bg-gray-50 active:scale-90 transition-all disabled:opacity-60 flex items-center justify-center"
+          title={myLocation ? '내 위치 끄기' : '내 위치 찾기'}
+          className={`w-11 h-11 rounded-full shadow-lg border active:scale-90 transition-all disabled:opacity-60 flex items-center justify-center ${
+            myLocation ? 'bg-indigo-500 border-indigo-400' : 'bg-white border-gray-200 hover:bg-gray-50'
+          }`}
         >
           {isLoading ? (
             <svg className="animate-spin w-5 h-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -211,7 +222,7 @@ export default function UserLocation({
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
             </svg>
           ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={myLocation ? '#ffffff' : '#6366f1'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="3" />
               <line x1="12" y1="2" x2="12" y2="6" />
               <line x1="12" y1="18" x2="12" y2="22" />
