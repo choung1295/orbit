@@ -80,6 +80,7 @@ export default function CctvMap() {
   const mapInstanceRef = useRef<any>(null)
   const clustererRef = useRef<any>(null)
   const cityCctvClustererRef = useRef<any>(null)
+  const fakeCityOverlaysRef = useRef<any[]>([])
   const myMarkerRef = useRef<any>(null)
   const reconnectTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const cityFetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -243,18 +244,75 @@ export default function CctvMap() {
     finally { setUrbanCctvLoading(false) }
   }, [urbanCctvLoaded, urbanCctvLoading])
 
-  // ── 시내교통 CCTV 로딩 (지도 범위 기반, 디바운스) ────────────────────────
+  // ── 시내교통 CCTV 가짜 클러스터 (줌아웃 시 정적 표시, API 부하 없음) ──
+  const FAKE_CITY_CLUSTERS = [
+    { lat: 37.5665, lng: 126.9780, count: 448 }, // 서울 중심
+    { lat: 37.6200, lng: 127.0600, count: 198 }, // 서울 북동
+    { lat: 37.5100, lng: 127.0600, count: 163 }, // 서울 동
+    { lat: 37.5500, lng: 126.8500, count: 109 }, // 서울 서
+    { lat: 37.4563, lng: 126.7052, count: 196 }, // 인천
+    { lat: 37.7500, lng: 126.8500, count: 149 }, // 고양
+    { lat: 37.4100, lng: 127.5200, count: 235 }, // 경기 동부
+    { lat: 37.2636, lng: 127.0286, count: 250 }, // 수원
+    { lat: 37.1500, lng: 127.0700, count: 219 }, // 화성
+    { lat: 37.3200, lng: 127.1100, count: 160 }, // 용인
+    { lat: 37.0500, lng: 127.2000, count: 129 }, // 평택
+    { lat: 36.8151, lng: 127.1139, count: 117 }, // 천안
+    { lat: 36.3504, lng: 127.3845, count: 180 }, // 대전
+    { lat: 36.6424, lng: 127.4890, count: 105 }, // 청주
+    { lat: 35.8714, lng: 128.6014, count: 320 }, // 대구
+    { lat: 35.5384, lng: 129.3114, count: 140 }, // 울산
+    { lat: 35.1796, lng: 129.0756, count: 380 }, // 부산
+    { lat: 35.2200, lng: 128.6800, count: 120 }, // 창원
+    { lat: 35.1595, lng: 126.8526, count: 210 }, // 광주
+    { lat: 35.8242, lng: 127.1480, count: 96 },  // 전주
+    { lat: 34.8118, lng: 126.3922, count: 58 },  // 목포
+    { lat: 34.7604, lng: 127.6622, count: 67 },  // 여수
+    { lat: 35.1800, lng: 128.1080, count: 72 },  // 진주
+    { lat: 36.0190, lng: 129.3430, count: 83 },  // 포항
+    { lat: 36.5684, lng: 128.7294, count: 53 },  // 안동
+    { lat: 37.3422, lng: 127.9201, count: 77 },  // 원주
+    { lat: 37.7519, lng: 128.8761, count: 69 },  // 강릉
+    { lat: 33.4996, lng: 126.5312, count: 104 }, // 제주
+  ]
+
+  useEffect(() => {
+    // 가짜 오버레이 정리
+    fakeCityOverlaysRef.current.forEach(o => o.setMap(null))
+    fakeCityOverlaysRef.current = []
+    if (!isMapReady || !mapInstanceRef.current) return
+    if (!activeLayers.has('city-cctv') || zoomLevel <= 9) return
+
+    FAKE_CITY_CLUSTERS.forEach(({ lat, lng, count }) => {
+      const size = count >= 200 ? 68 : count >= 100 ? 60 : count >= 50 ? 52 : 44
+      const line = size - 4
+      const fs = count >= 200 ? 16 : count >= 100 ? 15 : count >= 50 ? 14 : 13
+      const bg = count >= 200 ? '#115e59' : count >= 100 ? '#0f766e' : count >= 50 ? '#0d9488' : '#0d9488'
+      const html = `<div style="width:${size}px;height:${size}px;background:${bg};border:2px solid rgba(255,255,255,0.9);border-radius:50%;text-align:center;line-height:${line}px;font-size:${fs}px;font-weight:bold;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.4);transform:translate(-50%,-50%);cursor:pointer">${count}</div>`
+      const overlay = new window.kakao.maps.CustomOverlay({
+        position: new window.kakao.maps.LatLng(lat, lng),
+        content: html,
+        zIndex: 3,
+      })
+      overlay.setMap(mapInstanceRef.current)
+      fakeCityOverlaysRef.current.push(overlay)
+    })
+    return () => {
+      fakeCityOverlaysRef.current.forEach(o => o.setMap(null))
+      fakeCityOverlaysRef.current = []
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMapReady, activeLayers, zoomLevel])
+
+  // ── 시내교통 CCTV 로딩 (줌인 시에만 실제 데이터, 디바운스) ──────────────
   useEffect(() => {
     if (!activeLayers.has('city-cctv') || !mapBounds) return
+    if (zoomLevel > 9) { setCityCctvList([]); return }
     if (cityFetchTimerRef.current) clearTimeout(cityFetchTimerRef.current)
     cityFetchTimerRef.current = setTimeout(async () => {
       setCityCctvLoading(true)
       try {
-        // 줌아웃 시 전국 범위로 조회해 클러스터 숫자 표시
-        const bounds = zoomLevel > 9
-          ? { minX: 124.0, minY: 33.0, maxX: 132.0, maxY: 43.0 }
-          : mapBounds
-        const { minX, minY, maxX, maxY } = bounds
+        const { minX, minY, maxX, maxY } = mapBounds
         const r = await fetch(`/api/traffic/city-cctv?minX=${minX}&minY=${minY}&maxX=${maxX}&maxY=${maxY}`)
         const data = await r.json()
         setCityCctvList(Array.isArray(data?.data) ? data.data : [])
