@@ -38,8 +38,9 @@ export async function runTools(ctx: ToolContext): Promise<string> {
         tasks.push(getRealEstate("41220", yearMonth))
     }
 
-    // 검색 감지
-    if (/최신|뉴스|검색|알려줘|찾아|찾아봐|요즘|최근|지금|어때|어떤|궁금|정보/.test(message)) {
+    // 검색 감지 — 날씨/교통/부동산이 아닌 실시간 정보 질문
+    const isWeatherOrTrafficOrRE = /날씨|기온|비|눈|맑|흐|바람|우산|교통|차\s*밀려|사고|정체|실거래|거래가|매매가|시세/.test(message)
+    if (!isWeatherOrTrafficOrRE && /최신|뉴스|검색|알려줘|찾아|찾아봐|요즘|최근|지금|어때|어떤|궁금|정보|오늘|언제|몇\s*시|어디|뭐야|뭔지|어디서|어떻게|누가|공연|행사|이벤트|개봉|출시|경기|결과|가격/.test(message)) {
         tasks.push(searchWeb(message))
     }
 
