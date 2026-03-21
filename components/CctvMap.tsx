@@ -441,7 +441,7 @@ export default function CctvMap() {
       <div ref={mapRef} className="absolute inset-0 w-full h-full" />
 
       {/* ── 출처 표기 ── */}
-      <div className="absolute bottom-1 right-2 z-[100] text-[10px] text-white/50 pointer-events-none select-none">
+      <div className="absolute bottom-1 right-2 z-[100] text-[10px] text-white/70 pointer-events-none select-none">
         교통정보 © ITS · UTIC
       </div>
 
