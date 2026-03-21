@@ -105,9 +105,9 @@ async function callAnthropic(
             { role: "user", content: user },
         ],
     })
-    return response.content[0].type === "text"
-        ? response.content[0].text
-        : ""
+    const text = response.content[0].type === "text" ? response.content[0].text : ""
+    // <thinking>...</thinking> 태그 제거
+    return text.replace(/<thinking>[\s\S]*?<\/thinking>/g, "").trim()
 }
 
 export interface PromptInput {
