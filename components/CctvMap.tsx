@@ -105,7 +105,7 @@ export default function CctvMap() {
 
   // 시내교통 CCTV
   const [cityCctvList, setCityCctvList] = useState<CityCctvItem[]>([])
-  const [cityCctvLoading, setCityCctvLoading] = useState(false)
+  const [, setCityCctvLoading] = useState(false)
   const [selectedCity, setSelectedCity] = useState<CityCctvItem | null>(null)
   const [mapBounds, setMapBounds] = useState<MapBounds | null>(null)
 
