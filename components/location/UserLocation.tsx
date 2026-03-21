@@ -92,13 +92,9 @@ export default function UserLocation({
     }
   }, [])
 
-  const handleMyLocation = () => {
+  const handleMyLocation = async () => {
     if (!isMapReady || !window.kakao?.maps) {
       setError('지도가 아직 준비되지 않았습니다.')
-      return
-    }
-    if (!navigator.geolocation) {
-      setError('위치 기능을 지원하지 않습니다.')
       return
     }
 
@@ -110,12 +106,32 @@ export default function UserLocation({
 
     setIsLoading(true)
     let bestAccuracy = Infinity
+    let geoReturned = false
 
-    // watchPosition으로 정확도가 개선될 때마다 업데이트
+    // 1) IP 기반 위치를 먼저 빠르게 가져옴 (브라우저 위치 오기 전 초기값으로 사용)
+    fetch('/api/geoip')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data || data.error) return
+        // 브라우저 위치가 아직 안 왔거나, IP 위치가 더 정확할 때만 사용
+        if (!geoReturned || data.accuracy < bestAccuracy) {
+          bestAccuracy = data.accuracy
+          setAccuracy(data.accuracy)
+          onLocationChange({ lat: data.lat, lng: data.lng })
+        }
+      })
+      .catch(() => null)
+
+    if (!navigator.geolocation) {
+      setIsLoading(false)
+      return
+    }
+
+    // 2) 브라우저 geolocation으로 더 정확한 위치 획득 시 덮어씀
     watchIdRef.current = navigator.geolocation.watchPosition(
       pos => {
         const acc = pos.coords.accuracy
-        // 더 정확한 위치가 오면 업데이트
+        geoReturned = true
         if (acc < bestAccuracy) {
           bestAccuracy = acc
           setAccuracy(acc)
@@ -123,24 +139,24 @@ export default function UserLocation({
         }
         setIsLoading(false)
 
-        // 정확도 50m 이하면 충분히 정확 → watch 중단
+        // 정확도 50m 이하면 충분 → watch 중단
         if (acc <= 50 && watchIdRef.current !== null) {
           navigator.geolocation.clearWatch(watchIdRef.current)
           watchIdRef.current = null
         }
       },
-      err => {
+      () => {
+        // 브라우저 위치 실패해도 IP 위치가 있으면 그냥 사용
         setIsLoading(false)
         if (watchIdRef.current !== null) {
           navigator.geolocation.clearWatch(watchIdRef.current)
           watchIdRef.current = null
         }
-        setError(err.code === 1 ? '위치 권한이 거부되었습니다.' : '위치를 가져올 수 없습니다.')
       },
       { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
     )
 
-    // 20초 후 강제 종료 (충분히 기다린 것으로 간주)
+    // 20초 후 강제 종료
     setTimeout(() => {
       if (watchIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchIdRef.current)
