@@ -187,27 +187,62 @@ export default function MeasureTool({ map, mode, onClose }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, mode])
 
-  // 모바일: 터치 이동 → 미리보기 선
+  // 모바일: 터치로 미리보기 선 + 점 추가
+  // - 첫 점 없으면: 드래그 허용(지도 이동), 탭으로 첫 점 추가(Kakao click)
+  // - 첫 점 있으면: 드래그 시 지도 이동 차단 + 미리보기 선 표시, 손가락 떼면 점 추가
   useEffect(() => {
     const mapNode = map.getNode?.() as HTMLElement | null
     if (!mapNode) return
 
+    let dragging = false
+
+    const touchStartHandler = () => { dragging = false }
+
     const touchMoveHandler = (e: TouchEvent) => {
       if (finishedRef.current) return
+      const pts = pointsRef.current
+      if (pts.length === 0) return          // 첫 점 없으면 지도 이동 허용
+      if (mode === 'radius' && pts.length >= 2) return
       const touch = e.touches[0]
       if (!touch) return
+      dragging = true
+      e.preventDefault()                    // 지도 이동 차단
       const rect = mapNode.getBoundingClientRect()
-      const x = touch.clientX - rect.left
-      const y = touch.clientY - rect.top
-      const point = new window.kakao.maps.Point(x, y)
-      const latLng = map.getProjection().coordsFromContainerPoint(point)
-      if (!latLng) return
-      drawPreview(latLng)
+      const latLng = map.getProjection().coordsFromContainerPoint(
+        new window.kakao.maps.Point(touch.clientX - rect.left, touch.clientY - rect.top)
+      )
+      if (latLng) drawPreview(latLng)
     }
 
-    mapNode.addEventListener('touchmove', touchMoveHandler)
+    const touchEndHandler = (e: TouchEvent) => {
+      if (!dragging) return                  // 탭이면 Kakao click이 처리
+      dragging = false
+      if (finishedRef.current) return
+      const pts = pointsRef.current
+      if (mode === 'radius' && pts.length >= 2) return
+      const touch = e.changedTouches[0]
+      if (!touch) return
+      const rect = mapNode.getBoundingClientRect()
+      const latLng = map.getProjection().coordsFromContainerPoint(
+        new window.kakao.maps.Point(touch.clientX - rect.left, touch.clientY - rect.top)
+      )
+      if (!latLng) return
+      const next: Point = { lat: latLng.getLat(), lng: latLng.getLng() }
+      setPoints(prev => {
+        if (mode === 'radius' && prev.length >= 2) return prev
+        const arr = [...prev, next]
+        pointsRef.current = arr
+        return arr
+      })
+    }
+
+    mapNode.addEventListener('touchstart', touchStartHandler, { passive: true })
+    mapNode.addEventListener('touchmove', touchMoveHandler, { passive: false })
+    mapNode.addEventListener('touchend', touchEndHandler, { passive: true })
     return () => {
+      mapNode.removeEventListener('touchstart', touchStartHandler)
       mapNode.removeEventListener('touchmove', touchMoveHandler)
+      mapNode.removeEventListener('touchend', touchEndHandler)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, mode])
