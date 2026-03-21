@@ -243,15 +243,18 @@ export default function CctvMap() {
     finally { setUrbanCctvLoading(false) }
   }, [urbanCctvLoaded, urbanCctvLoading])
 
-  // ── 시내교통 CCTV 로딩 (지도 범위 기반, 디바운스, 줌 레벨 9 이하만) ────
+  // ── 시내교통 CCTV 로딩 (지도 범위 기반, 디바운스) ────────────────────────
   useEffect(() => {
     if (!activeLayers.has('city-cctv') || !mapBounds) return
-    if (zoomLevel > 9) { setCityCctvList([]); return }
     if (cityFetchTimerRef.current) clearTimeout(cityFetchTimerRef.current)
     cityFetchTimerRef.current = setTimeout(async () => {
       setCityCctvLoading(true)
       try {
-        const { minX, minY, maxX, maxY } = mapBounds
+        // 줌아웃 시 전국 범위로 조회해 클러스터 숫자 표시
+        const bounds = zoomLevel > 9
+          ? { minX: 124.0, minY: 33.0, maxX: 132.0, maxY: 43.0 }
+          : mapBounds
+        const { minX, minY, maxX, maxY } = bounds
         const r = await fetch(`/api/traffic/city-cctv?minX=${minX}&minY=${minY}&maxX=${maxX}&maxY=${maxY}`)
         const data = await r.json()
         setCityCctvList(Array.isArray(data?.data) ? data.data : [])
@@ -350,7 +353,7 @@ export default function CctvMap() {
       window.kakao.maps.event.addListener(marker, 'click', () => { setSelectedCity(item); setSelected(null) })
       markers.push(marker)
     })
-    cityCctvClustererRef.current = new window.kakao.maps.MarkerClusterer({ map: mapInstanceRef.current, averageCenter: true, minLevel: 10, disableClickZoom: false, markers, styles: CITY_CLUSTER_STYLES })
+    cityCctvClustererRef.current = new window.kakao.maps.MarkerClusterer({ map: mapInstanceRef.current, averageCenter: true, minLevel: 6, disableClickZoom: false, markers, styles: CITY_CLUSTER_STYLES })
   }, [isMapReady, cityCctvList, zoomLevel, activeLayers])
 
   const urbanActive = activeLayers.has('urban-cctv')
