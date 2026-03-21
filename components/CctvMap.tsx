@@ -443,160 +443,114 @@ export default function CctvMap() {
           </div>
         </div>
 
-        {/* 도구 버튼 (메뉴바 바로 아래, 좌측벽 붙음) */}
-        <button
-          onClick={() => setToolDrawerOpen(o => !o)}
-          className="flex items-center gap-1.5 active:scale-95 transition-all"
-          style={{
-            borderRadius: '0 10px 10px 0',
-            background: 'rgba(255,255,255,0.90)',
-            color: '#111827',
-            fontSize: 12,
-            fontWeight: 600,
-            paddingLeft: 12,
-            paddingRight: 14,
-            paddingTop: 6,
-            paddingBottom: 6,
-            boxShadow: '0 2px 12px rgba(0,0,0,0.22)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            border: '1px solid rgba(0,0,0,0.10)',
-            borderLeft: 'none',
-            cursor: 'pointer',
-            userSelect: 'none',
-            whiteSpace: 'nowrap',
-          }}
-          aria-label="도구 열기"
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-          </svg>
-          도구
-        </button>
-
-      </div>
-
-      {/* ── 배경 딤 (서랍 열릴 때) ── */}
-      {toolDrawerOpen && (
-        <div
-          className="absolute inset-0 z-[205]"
-          onClick={() => setToolDrawerOpen(false)}
-        />
-      )}
-
-      {/* ── 작업 서랍 ── */}
-      <div
-        className="absolute top-0 right-0 bottom-0 z-[210] flex flex-col bg-white shadow-[-4px_0_24px_rgba(0,0,0,0.18)]"
-        style={{
-          width: 200,
-          transform: toolDrawerOpen ? 'translateX(0)' : 'translateX(100%)',
-          transition: 'transform 0.28s cubic-bezier(0.4,0,0.2,1)',
-          borderRadius: '12px 0 0 12px',
-          pointerEvents: toolDrawerOpen ? 'auto' : 'none',
-        }}
-      >
-        {/* 서랍 헤더 */}
-        <div className="flex items-center justify-between px-4 pt-5 pb-3 border-b border-black/8">
-          <span className="text-sm font-semibold text-gray-800">도구</span>
-          <button onClick={() => setToolDrawerOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        {/* 도구 버튼 + 팝업 (메뉴바 바로 아래, 좌측벽 붙음) */}
+        <div className="relative">
+          <button
+            onClick={() => setToolDrawerOpen(o => !o)}
+            className="flex items-center gap-1.5 active:scale-95 transition-all"
+            style={{
+              borderRadius: '0 10px 10px 0',
+              background: 'rgba(255,255,255,0.90)',
+              color: '#111827',
+              fontSize: 12,
+              fontWeight: 600,
+              paddingLeft: 12,
+              paddingRight: 14,
+              paddingTop: 6,
+              paddingBottom: 6,
+              boxShadow: '0 2px 12px rgba(0,0,0,0.22)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              border: '1px solid rgba(0,0,0,0.10)',
+              borderLeft: 'none',
+              cursor: 'pointer',
+              userSelect: 'none',
+              whiteSpace: 'nowrap',
+            }}
+            aria-label="도구 열기"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+            </svg>
+            도구
           </button>
-        </div>
 
-        <div className="flex-1 overflow-y-auto py-2">
+          {/* ── 작은 팝업 ── */}
+          {toolDrawerOpen && (
+            <>
+              {/* 바깥 클릭 닫기 */}
+              <div className="fixed inset-0 z-[208]" onClick={() => setToolDrawerOpen(false)} />
 
-          {/* 구역 1: 지도 이동 */}
-          <div className="px-3 pt-2 pb-1">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1 px-1">지도 이동</p>
-            <div className="flex flex-col gap-0.5">
-              {/* 내 위치 */}
-              <button onClick={() => { handleMyLocation(); setToolDrawerOpen(false) }} disabled={locationLoading || !isMapReady}
-                className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm transition-all active:scale-[0.97] disabled:opacity-40 ${myLocation ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'}`}>
-                {locationLoading
-                  ? <svg className="animate-spin w-4 h-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" /></svg>
-                  : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" />
-                      <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
-                      <circle cx="12" cy="12" r="8" />
+              <div
+                className="absolute left-full top-0 ml-1.5 z-[210] bg-white border border-black/8 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.18)] overflow-hidden"
+                style={{ width: 156, minWidth: 156 }}
+              >
+                {/* 지도 이동 */}
+                <div className="px-2 pt-2 pb-1">
+                  <p className="text-[9px] font-semibold text-gray-400 tracking-widest px-1 mb-0.5">지도 이동</p>
+                  {/* 내 위치 */}
+                  <button onClick={() => { handleMyLocation(); setToolDrawerOpen(false) }} disabled={locationLoading || !isMapReady}
+                    className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-xs transition-all active:scale-95 disabled:opacity-40 ${myLocation ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'}`}>
+                    {locationLoading
+                      ? <svg className="animate-spin w-3.5 h-3.5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" /></svg>
+                      : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="8"/></svg>
+                    }
+                    <span>내 위치</span>
+                    {myLocation && <span className="ml-auto text-[9px] text-blue-400">ON</span>}
+                  </button>
+                  {/* 확대 */}
+                  <button onClick={() => { if (mapInstanceRef.current) mapInstanceRef.current.setLevel(mapInstanceRef.current.getLevel() - 1) }} disabled={!isMapReady}
+                    className="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-xs text-gray-700 hover:bg-gray-50 transition-all active:scale-95 disabled:opacity-40">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>확대</span>
+                  </button>
+                  {/* 축소 */}
+                  <button onClick={() => { if (mapInstanceRef.current) mapInstanceRef.current.setLevel(mapInstanceRef.current.getLevel() + 1) }} disabled={!isMapReady}
+                    className="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-xs text-gray-700 hover:bg-gray-50 transition-all active:scale-95 disabled:opacity-40">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>축소</span>
+                  </button>
+                </div>
+
+                <div className="mx-2 border-t border-black/6" />
+
+                {/* 측정 */}
+                <div className="px-2 pt-1 pb-2">
+                  <p className="text-[9px] font-semibold text-gray-400 tracking-widest px-1 mb-0.5">측정</p>
+                  {/* 거리 */}
+                  <button onClick={() => { setMeasureMode(m => m === 'distance' ? null : 'distance'); setToolDrawerOpen(false) }} disabled={!isMapReady}
+                    className={['flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-xs transition-all active:scale-95 disabled:opacity-40',
+                      measureMode === 'distance' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700 hover:bg-gray-50'].join(' ')}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="9" width="20" height="7" rx="1.2" strokeWidth="1.6"/>
+                      <line x1="7" y1="9" x2="7" y2="13" strokeWidth="1.4"/><line x1="12" y1="9" x2="12" y2="13" strokeWidth="1.4"/><line x1="17" y1="9" x2="17" y2="13" strokeWidth="1.4"/>
+                      <line x1="4.5" y1="9" x2="4.5" y2="11.2" strokeWidth="1.1"/><line x1="9.5" y1="9" x2="9.5" y2="11.2" strokeWidth="1.1"/><line x1="14.5" y1="9" x2="14.5" y2="11.2" strokeWidth="1.1"/><line x1="19.5" y1="9" x2="19.5" y2="11.2" strokeWidth="1.1"/>
                     </svg>
-                }
-                <span>내 위치</span>
-                {myLocation && <span className="ml-auto text-[10px] text-blue-400">ON</span>}
-              </button>
-              {/* 확대 */}
-              <button
-                onClick={() => { if (mapInstanceRef.current) mapInstanceRef.current.setLevel(mapInstanceRef.current.getLevel() - 1) }}
-                disabled={!isMapReady}
-                className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-all active:scale-[0.97] disabled:opacity-40">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                <span>확대</span>
-              </button>
-              {/* 축소 */}
-              <button
-                onClick={() => { if (mapInstanceRef.current) mapInstanceRef.current.setLevel(mapInstanceRef.current.getLevel() + 1) }}
-                disabled={!isMapReady}
-                className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-all active:scale-[0.97] disabled:opacity-40">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                <span>축소</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="mx-3 my-1 border-t border-black/6" />
-
-          {/* 구역 2: 측정 */}
-          <div className="px-3 pt-1 pb-1">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1 px-1">측정</p>
-            <div className="flex flex-col gap-0.5">
-              {/* 거리 측정 */}
-              <button
-                onClick={() => { setMeasureMode(m => m === 'distance' ? null : 'distance'); setToolDrawerOpen(false) }}
-                disabled={!isMapReady}
-                className={['flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm transition-all active:scale-[0.97] disabled:opacity-40',
-                  measureMode === 'distance' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700 hover:bg-gray-50'].join(' ')}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="9" width="20" height="7" rx="1.2" strokeWidth="1.6"/>
-                  <line x1="7"  y1="9" x2="7"  y2="13" strokeWidth="1.4"/>
-                  <line x1="12" y1="9" x2="12" y2="13" strokeWidth="1.4"/>
-                  <line x1="17" y1="9" x2="17" y2="13" strokeWidth="1.4"/>
-                  <line x1="4.5"  y1="9" x2="4.5"  y2="11.2" strokeWidth="1.1"/>
-                  <line x1="9.5"  y1="9" x2="9.5"  y2="11.2" strokeWidth="1.1"/>
-                  <line x1="14.5" y1="9" x2="14.5" y2="11.2" strokeWidth="1.1"/>
-                  <line x1="19.5" y1="9" x2="19.5" y2="11.2" strokeWidth="1.1"/>
-                </svg>
-                <span>거리 측정</span>
-                {measureMode === 'distance' && <span className="ml-auto text-[10px] text-indigo-400">ON</span>}
-              </button>
-              {/* 면적 측정 */}
-              <button
-                onClick={() => { setMeasureMode(m => m === 'area' ? null : 'area'); setToolDrawerOpen(false) }}
-                disabled={!isMapReady}
-                className={['flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm transition-all active:scale-[0.97] disabled:opacity-40',
-                  measureMode === 'area' ? 'bg-amber-50 text-amber-500' : 'text-gray-700 hover:bg-gray-50'].join(' ')}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <polygon points="12,3 21,9 18,20 6,20 3,9"/>
-                </svg>
-                <span>면적 측정</span>
-                {measureMode === 'area' && <span className="ml-auto text-[10px] text-amber-400">ON</span>}
-              </button>
-              {/* 반경 측정 */}
-              <button
-                onClick={() => { setMeasureMode(m => m === 'radius' ? null : 'radius'); setToolDrawerOpen(false) }}
-                disabled={!isMapReady}
-                className={['flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm transition-all active:scale-[0.97] disabled:opacity-40',
-                  measureMode === 'radius' ? 'bg-emerald-50 text-emerald-600' : 'text-gray-700 hover:bg-gray-50'].join(' ')}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                  <circle cx="12" cy="12" r="9"/>
-                  <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
-                  <line x1="12" y1="12" x2="21" y2="12"/>
-                </svg>
-                <span>반경 측정</span>
-                {measureMode === 'radius' && <span className="ml-auto text-[10px] text-emerald-400">ON</span>}
-              </button>
-            </div>
-          </div>
-
+                    <span>거리 측정</span>
+                    {measureMode === 'distance' && <span className="ml-auto text-[9px] text-indigo-400">ON</span>}
+                  </button>
+                  {/* 면적 */}
+                  <button onClick={() => { setMeasureMode(m => m === 'area' ? null : 'area'); setToolDrawerOpen(false) }} disabled={!isMapReady}
+                    className={['flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-xs transition-all active:scale-95 disabled:opacity-40',
+                      measureMode === 'area' ? 'bg-amber-50 text-amber-500' : 'text-gray-700 hover:bg-gray-50'].join(' ')}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="12,3 21,9 18,20 6,20 3,9"/></svg>
+                    <span>면적 측정</span>
+                    {measureMode === 'area' && <span className="ml-auto text-[9px] text-amber-400">ON</span>}
+                  </button>
+                  {/* 반경 */}
+                  <button onClick={() => { setMeasureMode(m => m === 'radius' ? null : 'radius'); setToolDrawerOpen(false) }} disabled={!isMapReady}
+                    className={['flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-xs transition-all active:scale-95 disabled:opacity-40',
+                      measureMode === 'radius' ? 'bg-emerald-50 text-emerald-600' : 'text-gray-700 hover:bg-gray-50'].join(' ')}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><line x1="12" y1="12" x2="21" y2="12"/></svg>
+                    <span>반경 측정</span>
+                    {measureMode === 'radius' && <span className="ml-auto text-[9px] text-emerald-400">ON</span>}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
+
       </div>
 
       {/* ── 측정 도구 ── */}
