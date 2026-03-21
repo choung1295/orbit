@@ -20,9 +20,11 @@ function fmtDist(m: number): string {
 }
 
 function fmtArea(m2: number): string {
-  if (m2 >= 1_000_000) return `${(m2 / 1_000_000).toFixed(2)}km²`
-  if (m2 >= 10_000) return `${(m2 / 10_000).toFixed(2)}ha`
-  return `${Math.round(m2).toLocaleString()}m²`
+  const pyeong = (m2 * 0.3025).toFixed(1)
+  const pyeongStr = ` (구)${Number(pyeong).toLocaleString()}평`
+  if (m2 >= 1_000_000) return `${(m2 / 1_000_000).toFixed(2)}km²${pyeongStr}`
+  if (m2 >= 10_000) return `${(m2 / 10_000).toFixed(2)}ha${pyeongStr}`
+  return `${Math.round(m2).toLocaleString()}㎡${pyeongStr}`
 }
 
 function polygonAreaM2(pts: Point[]): number {
