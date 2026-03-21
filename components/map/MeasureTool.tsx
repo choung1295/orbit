@@ -63,7 +63,8 @@ export default function MeasureTool({ map, mode, onClose }: Props) {
 
   const clearPreview = () => {
     if (previewLineRef.current) {
-      previewLineRef.current.setMap(null)
+      previewLineRef.current.halo?.setMap(null)
+      previewLineRef.current.line?.setMap(null)
       previewLineRef.current = null
     }
   }
@@ -164,15 +165,25 @@ export default function MeasureTool({ map, mode, onClose }: Props) {
 
       clearPreview()
       const color = mode === 'distance' ? '#6366f1' : mode === 'area' ? '#f59e0b' : '#10b981'
+      // 흰색 외곽선(halo) - 위성지도에서도 잘 보이게
+      const halo = new window.kakao.maps.Polyline({
+        path: previewPath,
+        strokeWeight: 5,
+        strokeColor: '#ffffff',
+        strokeOpacity: 0.7,
+        strokeStyle: 'dashed',
+      })
+      halo.setMap(map)
       const line = new window.kakao.maps.Polyline({
         path: previewPath,
         strokeWeight: 2,
         strokeColor: color,
-        strokeOpacity: 0.5,
+        strokeOpacity: 0.9,
         strokeStyle: 'dashed',
       })
       line.setMap(map)
-      previewLineRef.current = line
+      // halo와 line 둘 다 저장 (clearPreview에서 제거)
+      previewLineRef.current = { halo, line }
     }
 
     window.kakao.maps.event.addListener(map, 'mousemove', moveHandler)
