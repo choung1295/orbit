@@ -485,7 +485,7 @@ export default function CctvMap() {
           {/* 팝업 본체: 도구 버튼 바로 아래 좌측에서 열림 */}
           <div
             className="absolute z-[299] bg-white border border-black/8 rounded-r-xl shadow-[0_4px_20px_rgba(0,0,0,0.18)] overflow-hidden animate-slide-from-wall"
-            style={{ top: 74, left: 0, width: 160 }}
+            style={{ top: 88, left: 0, width: 160 }}
           >
             {/* 지도 이동 */}
             <div className="px-2 pt-2 pb-1">
