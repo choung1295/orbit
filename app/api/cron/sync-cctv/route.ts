@@ -5,16 +5,31 @@ import { createClient } from '@supabase/supabase-js'
 export const maxDuration = 300
 export const preferredRegion = 'icn1'
 
-function httpsGetJson(url: string): Promise<{ status: number; body: unknown }> {
-  return new Promise((resolve, reject) => {
-    const req = https.get(url, { rejectUnauthorized: false, timeout: 60000 } as Parameters<typeof https.get>[1], (res) => {
-      let data = ''
-      res.on('data', (chunk: string) => { data += chunk })
-      res.on('end', () => {
-        try { resolve({ status: res.statusCode ?? 0, body: JSON.parse(data) }) }
-        catch { resolve({ status: res.statusCode ?? 0, body: data.slice(0, 300) }) }
-      })
+async function fetchItsData(): Promise<{ status: number; body: unknown }> {
+  const proxyUrl = process.env.ITS_PROXY_URL
+  if (proxyUrl) {
+    // 카페24 프록시 경유 (허용 IP)
+    const res = await fetch(proxyUrl, {
+      headers: { 'x-proxy-secret': process.env.CRON_SECRET ?? '' },
+      signal: AbortSignal.timeout(60000),
     })
+    const body = await res.json().catch(() => null)
+    return { status: res.status, body }
+  }
+  // 프록시 없으면 직접 호출 (로컬 개발용)
+  return new Promise((resolve, reject) => {
+    const req = https.get(
+      `https://openapi.its.go.kr:9443/cctvInfo?apiKey=${process.env.MOLIT_API_KEY}&type=all&cctvType=1&minX=124.0&maxX=132.0&minY=33.0&maxY=43.0&getType=json`,
+      { rejectUnauthorized: false, timeout: 60000 } as Parameters<typeof https.get>[1],
+      (res) => {
+        let data = ''
+        res.on('data', (chunk: string) => { data += chunk })
+        res.on('end', () => {
+          try { resolve({ status: res.statusCode ?? 0, body: JSON.parse(data) }) }
+          catch { resolve({ status: res.statusCode ?? 0, body: data.slice(0, 300) }) }
+        })
+      }
+    )
     req.on('timeout', () => { req.destroy(); reject(new Error('Request timeout')) })
     req.on('error', reject)
   })
@@ -32,17 +47,14 @@ export async function GET(request: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  const ITS_API_KEY = process.env.MOLIT_API_KEY
-  if (!ITS_API_KEY) {
-    return NextResponse.json({ error: 'MOLIT_API_KEY 누락' }, { status: 500 })
+  if (!process.env.MOLIT_API_KEY && !process.env.ITS_PROXY_URL) {
+    return NextResponse.json({ error: 'MOLIT_API_KEY 또는 ITS_PROXY_URL 누락' }, { status: 500 })
   }
-
-  const url = `https://openapi.its.go.kr:9443/cctvInfo?apiKey=${ITS_API_KEY}&type=all&cctvType=1&minX=124.0&maxX=132.0&minY=33.0&maxY=43.0&getType=json`
 
   let httpStatus: number
   let rawData: unknown
   try {
-    const result = await httpsGetJson(url)
+    const result = await fetchItsData()
     httpStatus = result.status
     rawData = result.body
   } catch (e: unknown) {

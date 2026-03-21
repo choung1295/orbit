@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Copy, Check, Pencil, RotateCcw, Paperclip } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import { Message } from "./useChat"
+import { useTheme } from "@/components/chat/ThemeContext"
 
 export default function MessageBubble({
     message,
@@ -14,6 +15,8 @@ export default function MessageBubble({
     onRetry?: (content: string) => void
     onRegenerate?: () => void
 }) {
+    const { theme } = useTheme()
+    const d = theme.isDark
     const isUser = message.role === "user"
     const [copied, setCopied] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
@@ -28,6 +31,11 @@ export default function MessageBubble({
             console.error("클립보드 복사 실패")
         }
     }
+
+    // 액션 버튼 공통 스타일
+    const actionBtnClass = d
+        ? "p-1.5 rounded-lg text-[#404050] hover:text-[#a0a0b8] hover:bg-[#1e1e28] transition-colors"
+        : "p-1.5 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-black/[0.06] transition-colors"
 
     if (isUser) {
         return (
@@ -58,29 +66,16 @@ export default function MessageBubble({
                 </div>
 
                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                        onClick={() => setIsEditing(!isEditing)}
-                        className="p-1.5 rounded-lg text-[#404050] hover:text-[#a0a0b8] hover:bg-[#1e1e28] transition-colors"
-                    >
+                    <button onClick={() => setIsEditing(!isEditing)} className={actionBtnClass}>
                         <Pencil className="w-3.5 h-3.5" />
                     </button>
-
-                    <button
-                        onClick={() => onRetry?.(message.content)}
-                        className="p-1.5 rounded-lg text-[#404050] hover:text-[#a0a0b8] hover:bg-[#1e1e28] transition-colors"
-                    >
+                    <button onClick={() => onRetry?.(message.content)} className={actionBtnClass}>
                         <RotateCcw className="w-3.5 h-3.5" />
                     </button>
-
-                    <button
-                        onClick={handleCopy}
-                        className="p-1.5 rounded-lg text-[#404050] hover:text-[#a0a0b8] hover:bg-[#1e1e28] transition-colors"
-                    >
-                        {copied ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
-                        ) : (
-                            <Copy className="w-3.5 h-3.5" />
-                        )}
+                    <button onClick={handleCopy} className={actionBtnClass}>
+                        {copied
+                            ? <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            : <Copy className="w-3.5 h-3.5" />}
                     </button>
                 </div>
             </div>
@@ -89,27 +84,13 @@ export default function MessageBubble({
 
     return (
         <div className="flex flex-row items-start gap-2 w-full group -mt-2">
-
-            {/* AI Avatar 임시 숨김
-            <div className="relative shrink-0 mt-1">
-                <div className="transition-transform duration-300 group-hover:scale-105">
-                    <DelphaiAvatar size={30} />
-                </div>
-
-                thinking orbit animation
-                <div className="absolute inset-0 animate-spin-slow opacity-40">
-                    <div className="absolute w-2 h-2 bg-violet-400 rounded-full top-0 left-1/2 -translate-x-1/2 blur-[1px]" />
-                </div>
-            </div>
-            */}
-
             <div className="flex-1 flex flex-col gap-1.5">
                 <div
-                    className="px-4 py-3 rounded-2xl rounded-tl-sm text-sm leading-[1.7] prose prose-invert prose-sm max-w-none"
+                    className={`px-4 py-3 rounded-2xl rounded-tl-sm text-sm leading-[1.7] max-w-none ${d ? 'prose prose-invert prose-sm' : 'prose prose-sm'}`}
                     style={{
-                        backgroundColor: "#16161e",
-                        border: "1px solid #22222e",
-                        color: "#ceceda",
+                        backgroundColor: theme.msgAi,
+                        border: `1px solid ${theme.msgAiBorder}`,
+                        color: theme.msgAiText,
                     }}
                 >
                     <ReactMarkdown
@@ -119,7 +100,7 @@ export default function MessageBubble({
                                     href={href}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    style={{ color: "#818cf8", textDecoration: "underline" }}
+                                    style={{ color: theme.link, textDecoration: "underline" }}
                                 >
                                     {children}
                                 </a>
@@ -134,12 +115,17 @@ export default function MessageBubble({
                                 <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>
                             ),
                             code: ({ children }) => (
-                                <code className="px-1.5 py-0.5 rounded bg-[#1e1e2e] text-indigo-300 text-xs font-mono">
+                                <code
+                                    className="px-1.5 py-0.5 rounded text-xs font-mono"
+                                    style={{ backgroundColor: theme.codeBg, color: theme.codeText }}
+                                >
                                     {children}
                                 </code>
                             ),
                             strong: ({ children }) => (
-                                <strong className="font-semibold text-[#e0e0ec]">{children}</strong>
+                                <strong className="font-semibold" style={{ color: theme.strong }}>
+                                    {children}
+                                </strong>
                             ),
                         }}
                     >
@@ -148,21 +134,12 @@ export default function MessageBubble({
                 </div>
 
                 <div className="flex items-center gap-0.5 pl-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                        onClick={handleCopy}
-                        className="p-1.5 rounded-lg text-[#404050] hover:text-[#a0a0b8] hover:bg-[#1e1e28] transition-colors"
-                    >
-                        {copied ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
-                        ) : (
-                            <Copy className="w-3.5 h-3.5" />
-                        )}
+                    <button onClick={handleCopy} className={actionBtnClass}>
+                        {copied
+                            ? <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            : <Copy className="w-3.5 h-3.5" />}
                     </button>
-
-                    <button
-                        onClick={() => onRegenerate?.()}
-                        className="p-1.5 rounded-lg text-[#404050] hover:text-[#a0a0b8] hover:bg-[#1e1e28] transition-colors"
-                    >
+                    <button onClick={() => onRegenerate?.()} className={actionBtnClass}>
                         <RotateCcw className="w-3.5 h-3.5" />
                     </button>
                 </div>

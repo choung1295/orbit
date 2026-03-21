@@ -14,6 +14,7 @@ import {
     type Conversation,
 } from "@/lib/supabase/queries/conversations"
 import ProjectCreateInput from "@/components/chat/ProjectCreateInput"
+import { useTheme } from "@/components/chat/ThemeContext"
 
 interface ProjectsSectionProps {
     projects: Project[]
@@ -30,6 +31,8 @@ interface ProjectsSectionProps {
 function InlineRename({
     initialValue, onSave, onCancel,
 }: { initialValue: string; onSave: (v: string) => void; onCancel: () => void }) {
+    const { theme } = useTheme()
+    const d = theme.isDark
     const [value, setValue] = useState(initialValue)
     const ref = useRef<HTMLInputElement>(null)
 
@@ -53,7 +56,10 @@ function InlineRename({
             onBlur={save}
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
-            className="flex-1 min-w-0 bg-white/5 border border-indigo-500/60 rounded-md px-2 py-0.5 text-xs text-white outline-none focus:border-indigo-400 transition-colors"
+            className={`flex-1 min-w-0 rounded-md px-2 py-0.5 text-xs outline-none transition-colors ${d
+                ? 'bg-white/5 border border-indigo-500/60 text-white focus:border-indigo-400'
+                : 'border border-indigo-500 text-gray-800 focus:border-indigo-600'}`}
+            style={d ? {} : { backgroundColor: theme.inlineInput }}
         />
     )
 }
@@ -63,6 +69,8 @@ function InlineRename({
 function ProjectItemMenu({
     onShare, onRename, onDelete,
 }: { onShare: () => void; onRename: () => void; onDelete: () => void }) {
+    const { theme } = useTheme()
+    const d = theme.isDark
     const [open, setOpen] = useState(false)
     const ref = useRef<HTMLDivElement>(null)
 
@@ -82,23 +90,42 @@ function ProjectItemMenu({
         >
             <button
                 onClick={() => setOpen((v) => !v)}
-                className="p-1 rounded-md text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                className={`p-1 rounded-md transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 ${d
+                    ? 'text-zinc-600 hover:text-zinc-300 hover:bg-white/5'
+                    : 'text-gray-400 hover:text-gray-600 hover:bg-black/5'}`}
             >
                 <MoreHorizontal className="w-3.5 h-3.5" />
             </button>
             {open && (
-                <div className="absolute right-0 top-7 z-50 w-36 rounded-xl bg-[#1a1a24] border border-white/10 shadow-xl shadow-black/40 py-1 text-xs">
-                    <button onClick={() => { onShare(); setOpen(false) }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-zinc-300 hover:text-white hover:bg-white/5 transition-colors">
+                <div
+                    className="absolute right-0 top-7 z-50 w-36 rounded-xl py-1 text-xs shadow-xl"
+                    style={{
+                        backgroundColor: theme.dropdown,
+                        border: `1px solid ${theme.dropdownBorder}`,
+                        boxShadow: d ? '0 8px 32px rgba(0,0,0,0.5)' : '0 4px 20px rgba(0,0,0,0.12)',
+                    }}
+                >
+                    <button
+                        onClick={() => { onShare(); setOpen(false) }}
+                        className={`w-full flex items-center gap-2 px-3 py-2 transition-colors ${d
+                            ? 'text-zinc-300 hover:text-white hover:bg-white/5'
+                            : 'text-gray-600 hover:text-gray-800 hover:bg-black/5'}`}
+                    >
                         <Share2 className="w-3.5 h-3.5" /><span>공유</span>
                     </button>
-                    <button onClick={() => { onRename(); setOpen(false) }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-zinc-300 hover:text-white hover:bg-white/5 transition-colors">
+                    <button
+                        onClick={() => { onRename(); setOpen(false) }}
+                        className={`w-full flex items-center gap-2 px-3 py-2 transition-colors ${d
+                            ? 'text-zinc-300 hover:text-white hover:bg-white/5'
+                            : 'text-gray-600 hover:text-gray-800 hover:bg-black/5'}`}
+                    >
                         <Pencil className="w-3.5 h-3.5" /><span>이름 변경</span>
                     </button>
-                    <div className="border-t border-white/5 my-1" />
-                    <button onClick={() => { onDelete(); setOpen(false) }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors">
+                    <div className="my-1" style={{ height: '1px', backgroundColor: d ? 'rgba(255,255,255,0.05)' : theme.panelBorder }} />
+                    <button
+                        onClick={() => { onDelete(); setOpen(false) }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                    >
                         <Trash className="w-3.5 h-3.5" /><span>삭제</span>
                     </button>
                 </div>
@@ -112,6 +139,8 @@ function ProjectItemMenu({
 function ProjectHeaderMenu({
     onRename, onDelete,
 }: { onRename: () => void; onDelete: () => void }) {
+    const { theme } = useTheme()
+    const d = theme.isDark
     const [open, setOpen] = useState(false)
     const ref = useRef<HTMLDivElement>(null)
 
@@ -131,19 +160,34 @@ function ProjectHeaderMenu({
         >
             <button
                 onClick={() => setOpen((v) => !v)}
-                className="p-0.5 rounded text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-colors opacity-0 group-hover/proj:opacity-100 focus:opacity-100"
+                className={`p-0.5 rounded transition-colors opacity-0 group-hover/proj:opacity-100 focus:opacity-100 ${d
+                    ? 'text-zinc-600 hover:text-zinc-300 hover:bg-white/5'
+                    : 'text-gray-400 hover:text-gray-600 hover:bg-black/5'}`}
             >
                 <MoreHorizontal className="w-3.5 h-3.5" />
             </button>
             {open && (
-                <div className="absolute right-0 top-6 z-50 w-36 rounded-xl bg-[#1a1a24] border border-white/10 shadow-xl shadow-black/40 py-1 text-xs">
-                    <button onClick={() => { onRename(); setOpen(false) }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-zinc-300 hover:text-white hover:bg-white/5 transition-colors">
+                <div
+                    className="absolute right-0 top-6 z-50 w-36 rounded-xl py-1 text-xs shadow-xl"
+                    style={{
+                        backgroundColor: theme.dropdown,
+                        border: `1px solid ${theme.dropdownBorder}`,
+                        boxShadow: d ? '0 8px 32px rgba(0,0,0,0.5)' : '0 4px 20px rgba(0,0,0,0.12)',
+                    }}
+                >
+                    <button
+                        onClick={() => { onRename(); setOpen(false) }}
+                        className={`w-full flex items-center gap-2 px-3 py-2 transition-colors ${d
+                            ? 'text-zinc-300 hover:text-white hover:bg-white/5'
+                            : 'text-gray-600 hover:text-gray-800 hover:bg-black/5'}`}
+                    >
                         <Pencil className="w-3.5 h-3.5" /><span>이름 변경</span>
                     </button>
-                    <div className="border-t border-white/5 my-1" />
-                    <button onClick={() => { onDelete(); setOpen(false) }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors">
+                    <div className="my-1" style={{ height: '1px', backgroundColor: d ? 'rgba(255,255,255,0.05)' : theme.panelBorder }} />
+                    <button
+                        onClick={() => { onDelete(); setOpen(false) }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                    >
                         <Trash2 className="w-3.5 h-3.5" /><span>삭제</span>
                     </button>
                 </div>
@@ -158,6 +202,9 @@ export default function ProjectsSection({
     projects, conversations, activeChatId,
     onProjectsChange, onConversationsChange, onConversationMove, onSelectChat,
 }: ProjectsSectionProps) {
+    const { theme } = useTheme()
+    const d = theme.isDark
+
     const [creating, setCreating] = useState(false)
     const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set())
     const [dragOverProjectId, setDragOverProjectId] = useState<string | null>(null)
@@ -221,8 +268,6 @@ export default function ProjectsSection({
         })
     }
 
-    // ─── 드롭 핸들러 ─────────────────────────────────────────────────────────
-
     const handleDragOver = (e: React.DragEvent, projectId: string) => {
         e.preventDefault()
         e.dataTransfer.dropEffect = "move"
@@ -247,12 +292,19 @@ export default function ProjectsSection({
             {/* 섹션 헤더 */}
             <div className="flex items-center justify-between px-2 py-1.5 group/header">
                 <div className="flex items-center gap-1.5">
-                    <FolderOpen className="w-3 h-3 text-zinc-500" />
-                    <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">Projects</p>
+                    <FolderOpen className="w-3 h-3" style={{ color: theme.textMuted }} />
+                    <p
+                        className="text-[10px] font-semibold uppercase tracking-widest"
+                        style={{ color: theme.textMuted }}
+                    >
+                        Projects
+                    </p>
                 </div>
                 <button
                     onClick={() => setCreating(true)}
-                    className="p-0.5 rounded text-zinc-500 hover:text-zinc-200 hover:bg-white/5 transition-colors opacity-0 group-hover/header:opacity-100"
+                    className={`p-0.5 rounded transition-colors opacity-0 group-hover/header:opacity-100 ${d
+                        ? 'text-zinc-500 hover:text-zinc-200 hover:bg-white/5'
+                        : 'text-gray-400 hover:text-gray-700 hover:bg-black/5'}`}
                 >
                     <Plus className="w-3.5 h-3.5" />
                 </button>
@@ -263,7 +315,7 @@ export default function ProjectsSection({
             )}
 
             {projects.length === 0 && !creating ? (
-                <p className="px-3 py-1 text-[11px] text-zinc-600 italic">프로젝트 없음</p>
+                <p className="px-3 py-1 text-[11px] italic" style={{ color: theme.textMuted }}>프로젝트 없음</p>
             ) : (
                 <div className="space-y-0.5">
                     {projects.map((project) => {
@@ -280,17 +332,19 @@ export default function ProjectsSection({
                                     onDragLeave={() => setDragOverProjectId(null)}
                                     onDrop={(e) => handleDrop(e, project.id)}
                                     className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-all group/proj ${isDragOver
-                                            ? "bg-indigo-500/20 ring-1 ring-indigo-500/50"
-                                            : "hover:bg-white/[0.04]"
-                                        }`}
+                                        ? "bg-indigo-500/20 ring-1 ring-indigo-500/50"
+                                        : ""}`}
+                                    style={isDragOver ? {} : { cursor: 'default' }}
+                                    onMouseEnter={e => { if (!isDragOver) e.currentTarget.style.backgroundColor = theme.hover }}
+                                    onMouseLeave={e => { if (!isDragOver) e.currentTarget.style.backgroundColor = 'transparent' }}
                                 >
                                     <button
                                         onClick={() => !isRenamingProject && toggleCollapse(project.id)}
                                         className="flex items-center gap-1.5 flex-1 min-w-0 text-left"
                                     >
                                         {isCollapsed
-                                            ? <ChevronRight className="w-3 h-3 text-zinc-500 shrink-0" />
-                                            : <ChevronDown className="w-3 h-3 text-zinc-500 shrink-0" />
+                                            ? <ChevronRight className="w-3 h-3 shrink-0" style={{ color: theme.textMuted }} />
+                                            : <ChevronDown className="w-3 h-3 shrink-0" style={{ color: theme.textMuted }} />
                                         }
                                         {isRenamingProject ? (
                                             <InlineRename
@@ -300,11 +354,17 @@ export default function ProjectsSection({
                                             />
                                         ) : (
                                             <>
-                                                <span className="text-xs text-zinc-300 group-hover/proj:text-zinc-100 truncate transition-colors font-medium">
+                                                <span
+                                                    className="text-xs truncate transition-colors font-medium"
+                                                    style={{ color: d ? '#c0c0d0' : theme.textSub }}
+                                                >
                                                     {project.name}
                                                 </span>
                                                 {projectChats.length > 0 && (
-                                                    <span className="text-[10px] text-zinc-600 ml-auto shrink-0 tabular-nums">
+                                                    <span
+                                                        className="text-[10px] ml-auto shrink-0 tabular-nums"
+                                                        style={{ color: theme.textMuted }}
+                                                    >
                                                         {projectChats.length}
                                                     </span>
                                                 )}
@@ -322,9 +382,12 @@ export default function ProjectsSection({
 
                                 {/* 프로젝트 내 대화 목록 */}
                                 {!isCollapsed && (
-                                    <div className="ml-3 pl-2 border-l border-white/5 space-y-0.5 mt-0.5 mb-1">
+                                    <div
+                                        className="ml-3 pl-2 space-y-0.5 mt-0.5 mb-1"
+                                        style={{ borderLeft: `1px solid ${d ? 'rgba(255,255,255,0.05)' : theme.panelBorder}` }}
+                                    >
                                         {projectChats.length === 0 ? (
-                                            <p className="px-2 py-1 text-[11px] text-zinc-600 italic">대화 없음</p>
+                                            <p className="px-2 py-1 text-[11px] italic" style={{ color: theme.textMuted }}>대화 없음</p>
                                         ) : projectChats.map((chat) => {
                                             const isActive = activeChatId === chat.id
                                             const isRenaming = renamingConvId === chat.id
@@ -332,11 +395,15 @@ export default function ProjectsSection({
                                             return (
                                                 <div
                                                     key={chat.id}
-                                                    className={`flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors group ${isActive ? "bg-[#1e1e2e]" : "hover:bg-white/[0.04]"
-                                                        }`}
+                                                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors group"
+                                                    style={{ backgroundColor: isActive ? theme.active : undefined }}
+                                                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.backgroundColor = theme.hover }}
+                                                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.backgroundColor = 'transparent' }}
                                                 >
-                                                    <span className={`w-1 h-1 rounded-full shrink-0 ${isActive ? "bg-violet-400" : "bg-zinc-600 group-hover:bg-zinc-500"
-                                                        }`} />
+                                                    <span
+                                                        className="w-1 h-1 rounded-full shrink-0"
+                                                        style={{ backgroundColor: isActive ? '#a78bfa' : (d ? '#52525b' : '#d1d5db') }}
+                                                    />
 
                                                     {isRenaming ? (
                                                         <InlineRename
@@ -350,10 +417,13 @@ export default function ProjectsSection({
                                                             onClick={() => onSelectChat(chat.id)}
                                                             title={chat.title}
                                                         >
-                                                            <span className={`text-xs truncate block transition-colors ${isActive
-                                                                    ? "text-zinc-100 font-medium"
-                                                                    : "text-zinc-400 group-hover:text-zinc-200"
-                                                                }`}>
+                                                            <span
+                                                                className="text-xs truncate block transition-colors"
+                                                                style={{
+                                                                    color: isActive ? theme.text : theme.textSub,
+                                                                    fontWeight: isActive ? 500 : 400,
+                                                                }}
+                                                            >
                                                                 {chat.title}
                                                             </span>
                                                         </button>

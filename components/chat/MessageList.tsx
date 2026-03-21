@@ -3,8 +3,12 @@
 import { useRef, useEffect, useState } from "react"
 import { Message } from "./useChat"
 import { ThinkingStatus } from "./useChat"
+import dynamic from "next/dynamic"
 import MessageBubble from "./MessageBubble"
-import PlanetAvatar from "./PlanetAvatar"
+import { useTheme } from "@/components/chat/ThemeContext"
+
+// SSR에서 렌더링하지 않음 → 서버 기본값(dark)으로 orbit SVG가 먼저 그려지는 현상 방지
+const PlanetAvatar = dynamic(() => import("./PlanetAvatar"), { ssr: false })
 
 interface MessageListProps {
     messages: Message[]
@@ -22,10 +26,10 @@ const ANALYZING_LABELS = [
 ]
 
 function ThinkingIndicator({ thinkingStatus }: { thinkingStatus: ThinkingStatus }) {
+    const { theme } = useTheme()
     const [analyzingIdx, setAnalyzingIdx] = useState(0)
     const [visible, setVisible] = useState(true)
 
-    // "analyzing" 상태에서 텍스트 순환 (fade 효과)
     useEffect(() => {
         if (thinkingStatus !== "analyzing") return
         const interval = setInterval(() => {
@@ -38,7 +42,6 @@ function ThinkingIndicator({ thinkingStatus }: { thinkingStatus: ThinkingStatus 
         return () => clearInterval(interval)
     }, [thinkingStatus])
 
-    // 상태 변경 시 인덱스 리셋
     useEffect(() => {
         if (thinkingStatus === "analyzing") {
             setAnalyzingIdx(0)
@@ -49,9 +52,11 @@ function ThinkingIndicator({ thinkingStatus }: { thinkingStatus: ThinkingStatus 
     return (
         <div
             className="px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-2.5"
-            style={{ backgroundColor: '#16161e', border: '1px solid #22222e' }}
+            style={{
+                backgroundColor: theme.msgAi,
+                border: `1px solid ${theme.msgAiBorder}`,
+            }}
         >
-            {/* 점 3개 - 항상 표시 */}
             <div className="flex gap-1.5 items-center shrink-0">
                 {[0, 1, 2].map((i) => (
                     <div
@@ -62,7 +67,6 @@ function ThinkingIndicator({ thinkingStatus }: { thinkingStatus: ThinkingStatus 
                 ))}
             </div>
 
-            {/* 텍스트 레이블 - thinking 이상에서만 표시 */}
             {thinkingStatus !== "idle" && (
                 <span
                     className="text-xs font-medium transition-opacity duration-300"
@@ -81,6 +85,8 @@ function ThinkingIndicator({ thinkingStatus }: { thinkingStatus: ThinkingStatus 
 }
 
 export default function MessageList({ messages, loading, streamingText, thinkingStatus, onRetry, onRegenerate }: MessageListProps) {
+    const { theme } = useTheme()
+    const d = theme.isDark
     const bottomRef = useRef<HTMLDivElement | null>(null)
 
     useEffect(() => {
@@ -91,19 +97,27 @@ export default function MessageList({ messages, loading, streamingText, thinking
         <div className="max-w-3xl mx-auto w-full px-4 py-4">
             {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-start min-h-[65vh] pt-52 gap-3 text-center px-6">
-                    <div className="transform hover:scale-110 transition-transform duration-700 ease-in-out">
-                        <PlanetAvatar size={72} />
+                    <div className="planet-wrap">
+                        <PlanetAvatar key={d ? 'dark' : 'light'} size={72} isDark={d} />
                     </div>
-                    <div className="transition-all duration-700 delay-100 ease-out">
-                        <h1 className="text-xl md:text-2xl font-bold mb-3 tracking-tight"
-                            style={{
-                                background: 'linear-gradient(to bottom, #ffffff, #a0a0b0)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent'
-                            }}>
+                    <div>
+                        <h1
+                            className="text-xl md:text-2xl font-bold mb-3 tracking-tight"
+                            style={d
+                                ? {
+                                    background: 'linear-gradient(to bottom, #ffffff, #a0a0b0)',
+                                    WebkitBackgroundClip: 'text',
+                                    WebkitTextFillColor: 'transparent',
+                                    backgroundClip: 'text',
+                                }
+                                : {
+                                    color: theme.text,
+                                }
+                            }
+                        >
                             어떤 도움이 필요하신가요?
                         </h1>
-                        <p className="text-[#606070] text-xs md:text-sm font-medium">
+                        <p className="text-xs md:text-sm font-medium" style={{ color: theme.textMuted }}>
                             Orbit 비서가 항상 대기하고 있습니다
                         </p>
                     </div>
@@ -120,19 +134,23 @@ export default function MessageList({ messages, loading, streamingText, thinking
                         </div>
                     ))}
 
-                    {/* 스트리밍 중 텍스트 표시 */}
+                    {/* 스트리밍 중 텍스트 */}
                     {loading && streamingText && (
                         <div className="flex flex-row items-start gap-2 w-full">
                             <div
                                 className="flex-1 px-4 py-3 rounded-2xl rounded-tl-sm text-sm leading-[1.7] whitespace-pre-wrap break-words"
-                                style={{ backgroundColor: '#16161e', border: '1px solid #22222e', color: '#ceceda' }}
+                                style={{
+                                    backgroundColor: theme.msgAi,
+                                    border: `1px solid ${theme.msgAiBorder}`,
+                                    color: theme.msgAiText,
+                                }}
                             >
                                 {streamingText}
                             </div>
                         </div>
                     )}
 
-                    {/* 응답 대기 중 단계별 상태 표시 */}
+                    {/* 응답 대기 단계별 상태 */}
                     {loading && !streamingText && (
                         <div className="flex flex-row items-start gap-2 w-full">
                             <ThinkingIndicator thinkingStatus={thinkingStatus} />

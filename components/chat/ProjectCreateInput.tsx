@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useTheme } from "@/components/chat/ThemeContext"
 
 interface ProjectCreateInputProps {
     onSave: (name: string) => void
@@ -8,6 +9,8 @@ interface ProjectCreateInputProps {
 }
 
 export default function ProjectCreateInput({ onSave, onCancel }: ProjectCreateInputProps) {
+    const { theme } = useTheme()
+    const d = theme.isDark
     const [value, setValue] = useState("")
     const inputRef = useRef<HTMLInputElement>(null)
 
@@ -37,7 +40,10 @@ export default function ProjectCreateInput({ onSave, onCancel }: ProjectCreateIn
                     if (e.key === "Escape") { e.preventDefault(); onCancel() }
                 }}
                 onBlur={save}
-                className="w-full bg-[#22222e] border border-indigo-500/60 rounded-md px-2 py-1 text-xs text-[#f0f0f5] outline-none focus:border-indigo-400 transition-colors placeholder:text-[#505060]"
+                className={`w-full rounded-md px-2 py-1 text-xs outline-none transition-colors ${d
+                    ? 'bg-[#22222e] border border-indigo-500/60 text-[#f0f0f5] focus:border-indigo-400 placeholder:text-[#505060]'
+                    : 'border border-indigo-500 text-gray-800 focus:border-indigo-600'}`}
+                style={d ? {} : { backgroundColor: theme.inlineInput, color: theme.text }}
             />
         </div>
     )

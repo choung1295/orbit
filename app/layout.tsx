@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
-import SplashIntro from '@/components/SplashIntro'
 
 export const viewport: Viewport = {
   themeColor: '#0f0f11',
@@ -56,8 +55,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
+      <head>
+        {/* localStorage 테마를 JS 로드 전에 적용 → SSR dark SVG가 light 배경에 잠깐 보이는 현상 방지 */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('orbit-theme');if(t&&t!=='dark'){document.documentElement.setAttribute('data-orbit-theme',t);}}catch(e){}})();` }} />
+      </head>
       <body>
-        <SplashIntro />
         {children}
       </body>
     </html>

@@ -23,6 +23,7 @@ import SearchBar from "@/components/chat/SearchBar"
 import SearchResults from "@/components/chat/SearchResults"
 import ProjectsSection from "@/components/chat/ProjectsSection"
 import ProjectMoveMenu from "@/components/chat/ProjectMoveMenu"
+import { useTheme } from "@/components/chat/ThemeContext"
 
 interface ChatSidebarProps {
     activeChatId?: string
@@ -45,6 +46,8 @@ function classifyConversation(c: Conversation): "project" | "recent" | "archive"
 function InlineRenameInput({
     initialValue, onSave, onCancel,
 }: { initialValue: string; onSave: (v: string) => void; onCancel: () => void }) {
+    const { theme } = useTheme()
+    const d = theme.isDark
     const [value, setValue] = useState(initialValue)
     const inputRef = useRef<HTMLInputElement>(null)
 
@@ -57,14 +60,19 @@ function InlineRenameInput({
     }, [value, initialValue, onSave, onCancel])
 
     return (
-        <input ref={inputRef} value={value}
+        <input
+            ref={inputRef}
+            value={value}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={(e) => {
                 if (e.key === "Enter") { e.preventDefault(); save() }
                 if (e.key === "Escape") { e.preventDefault(); onCancel() }
             }}
             onBlur={save}
-            className="flex-1 min-w-0 bg-white/5 border border-indigo-500/60 rounded-md px-2 py-0.5 text-xs text-white outline-none focus:border-indigo-400 transition-colors"
+            className={`flex-1 min-w-0 rounded-md px-2 py-0.5 text-xs outline-none transition-colors ${d
+                ? 'bg-white/5 border border-indigo-500/60 text-white focus:border-indigo-400'
+                : 'border border-indigo-500 text-gray-800 focus:border-indigo-600'}`}
+            style={d ? {} : { backgroundColor: theme.inlineInput }}
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
         />
@@ -76,13 +84,17 @@ function InlineRenameInput({
 function MenuItem({ icon, label, onClick, danger = false }: {
     icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean
 }) {
+    const { theme } = useTheme()
+    const d = theme.isDark
     return (
         <button
             onClick={onClick}
             onMouseDown={(e) => e.stopPropagation()}
             className={`w-full flex items-center gap-2.5 px-3 py-2 transition-colors text-xs ${danger
-                    ? "text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                    : "text-zinc-300 hover:text-white hover:bg-white/5"
+                ? "text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                : d
+                    ? "text-zinc-300 hover:text-white hover:bg-white/5"
+                    : "text-gray-600 hover:text-gray-800 hover:bg-black/5"
                 }`}
         >
             {icon}<span>{label}</span>
@@ -90,7 +102,7 @@ function MenuItem({ icon, label, onClick, danger = false }: {
     )
 }
 
-// ─── 점세개 메뉴 — click 기반 서브패널 ───────────────────────────────────────
+// ─── 점세개 메뉴 ──────────────────────────────────────────────────────────────
 
 function ConversationMenu({
     onRename, onDelete, onShare, projects, currentProjectId,
@@ -104,8 +116,9 @@ function ConversationMenu({
     onMoveToProject: (projectId: string) => Promise<void>
     onProjectCreated: (project: Project) => void
 }) {
+    const { theme } = useTheme()
+    const d = theme.isDark
     const [open, setOpen] = useState(false)
-    // "main" | "project" — 서브메뉴를 같은 패널에서 전환
     const [panel, setPanel] = useState<"main" | "project">("main")
     const menuRef = useRef<HTMLDivElement>(null)
 
@@ -132,45 +145,55 @@ function ConversationMenu({
         >
             <button
                 onClick={() => { setOpen((v) => !v); setPanel("main") }}
-                className="p-1 rounded-md text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                className={`p-1 rounded-md transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 ${d
+                    ? 'text-zinc-600 hover:text-zinc-300 hover:bg-white/5'
+                    : 'text-gray-400 hover:text-gray-600 hover:bg-black/5'}`}
                 aria-label="메뉴"
             >
                 <MoreHorizontal className="w-3.5 h-3.5" />
             </button>
 
             {open && (
-                <div className="absolute right-0 top-7 z-50 w-48 rounded-xl bg-[#1a1a24] border border-white/10 shadow-xl shadow-black/50 py-1 text-xs">
+                <div
+                    className="absolute right-0 top-7 z-50 w-48 rounded-xl shadow-xl py-1 text-xs"
+                    style={{
+                        backgroundColor: theme.dropdown,
+                        border: `1px solid ${theme.dropdownBorder}`,
+                        boxShadow: d ? '0 8px 32px rgba(0,0,0,0.5)' : '0 4px 20px rgba(0,0,0,0.12)',
+                    }}
+                >
                     {panel === "main" ? (
                         <>
                             <MenuItem icon={<Share2 className="w-3.5 h-3.5" />} label="공유"
                                 onClick={() => { onShare(); close() }} />
                             <MenuItem icon={<Pencil className="w-3.5 h-3.5" />} label="이름 변경"
                                 onClick={() => { onRename(); close() }} />
-
-                            {/* 프로젝트로 이동 — click으로 패널 전환 */}
                             <button
                                 onClick={(e) => { e.stopPropagation(); setPanel("project") }}
                                 onMouseDown={(e) => e.stopPropagation()}
-                                className="w-full flex items-center gap-2.5 px-3 py-2 text-zinc-300 hover:text-white hover:bg-white/5 transition-colors text-xs"
+                                className={`w-full flex items-center gap-2.5 px-3 py-2 transition-colors text-xs ${d
+                                    ? 'text-zinc-300 hover:text-white hover:bg-white/5'
+                                    : 'text-gray-600 hover:text-gray-800 hover:bg-black/5'}`}
                             >
                                 <FolderInput className="w-3.5 h-3.5" />
                                 <span className="flex-1 text-left">프로젝트로 이동</span>
-                                <span className="text-zinc-600 text-[10px]">▶</span>
+                                <span className={d ? 'text-zinc-600' : 'text-gray-400'} style={{ fontSize: '10px' }}>▶</span>
                             </button>
-
-                            <div className="border-t border-white/5 my-1" />
+                            <div className="my-1" style={{ height: '1px', backgroundColor: d ? 'rgba(255,255,255,0.05)' : theme.panelBorder }} />
                             <MenuItem icon={<Trash2 className="w-3.5 h-3.5" />} label="삭제" danger
                                 onClick={() => { onDelete(); close() }} />
                         </>
                     ) : (
                         <>
-                            {/* 프로젝트 목록 패널 */}
                             <button
                                 onClick={(e) => { e.stopPropagation(); setPanel("main") }}
                                 onMouseDown={(e) => e.stopPropagation()}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-colors text-xs border-b border-white/5 mb-1"
+                                className={`w-full flex items-center gap-2 px-3 py-2 transition-colors text-xs mb-1 ${d
+                                    ? 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5 border-b border-white/5'
+                                    : 'text-gray-500 hover:text-gray-700 hover:bg-black/5'}`}
+                                style={d ? {} : { borderBottom: `1px solid ${theme.panelBorder}` }}
                             >
-                                <span className="text-[10px]">◀</span>
+                                <span style={{ fontSize: '10px' }}>◀</span>
                                 <span>프로젝트 선택</span>
                             </button>
                             <ProjectMoveMenu
@@ -192,7 +215,7 @@ function ConversationMenu({
     )
 }
 
-// ─── 대화 항목 행 (draggable) ─────────────────────────────────────────────────
+// ─── 대화 항목 행 ─────────────────────────────────────────────────────────────
 
 function ConversationItem({
     chat, isActive, isRenaming,
@@ -212,6 +235,8 @@ function ConversationItem({
     onMoveToProject: (projectId: string) => Promise<void>
     onProjectCreated: (project: Project) => void
 }) {
+    const { theme } = useTheme()
+    const d = theme.isDark
     const [isDragging, setIsDragging] = useState(false)
 
     return (
@@ -223,11 +248,13 @@ function ConversationItem({
                 setIsDragging(true)
             }}
             onDragEnd={() => setIsDragging(false)}
-            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all group cursor-grab active:cursor-grabbing select-none ${isActive ? "bg-[#1e1e2e]" : "hover:bg-white/[0.04]"
-                } ${isDragging ? "opacity-40" : ""}`}
+            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all group cursor-grab active:cursor-grabbing select-none ${isDragging ? "opacity-40" : ""}`}
+            style={{ backgroundColor: isActive ? theme.active : undefined }}
         >
-            <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${isActive ? "bg-violet-400" : "bg-zinc-600 group-hover:bg-zinc-500"
-                }`} />
+            {!isActive && (
+                <style>{`.conv-item-${chat.id.replace(/-/g, '')}:hover { background-color: ${theme.hover}; }`}</style>
+            )}
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${isActive ? "bg-violet-400" : d ? "bg-zinc-600 group-hover:bg-zinc-500" : "bg-gray-300 group-hover:bg-gray-400"}`} />
 
             {isRenaming ? (
                 <InlineRenameInput
@@ -236,9 +263,18 @@ function ConversationItem({
                     onCancel={onRenameCancel}
                 />
             ) : (
-                <button className="flex-1 min-w-0 text-left" onClick={onSelect} title={chat.title}>
-                    <span className={`text-xs truncate block transition-colors ${isActive ? "text-zinc-100 font-medium" : "text-zinc-400 group-hover:text-zinc-200"
-                        }`}>
+                <button
+                    className="flex-1 min-w-0 text-left"
+                    onClick={onSelect}
+                    title={chat.title}
+                    style={{ backgroundColor: 'transparent' }}
+                    onMouseEnter={e => { if (!isActive) (e.currentTarget.parentElement as HTMLElement).style.backgroundColor = theme.hover }}
+                    onMouseLeave={e => { if (!isActive) (e.currentTarget.parentElement as HTMLElement).style.backgroundColor = 'transparent' }}
+                >
+                    <span
+                        className="text-xs truncate block transition-colors"
+                        style={{ color: isActive ? (d ? '#f0f0f5' : '#1f2937') : (d ? '#a0a0b0' : '#6b7280'), fontWeight: isActive ? 500 : 400 }}
+                    >
                         {chat.title}
                     </span>
                 </button>
@@ -262,10 +298,16 @@ function ConversationItem({
 // ─── 섹션 헤더 ────────────────────────────────────────────────────────────────
 
 function SectionHeader({ icon, label }: { icon?: React.ReactNode; label: string }) {
+    const { theme } = useTheme()
     return (
         <div className="flex items-center gap-1.5 px-2 py-1.5 mt-3">
-            {icon && <span className="text-zinc-500">{icon}</span>}
-            <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">{label}</p>
+            {icon && <span style={{ color: theme.textMuted }}>{icon}</span>}
+            <p
+                className="text-[10px] font-semibold uppercase tracking-widest"
+                style={{ color: theme.textMuted }}
+            >
+                {label}
+            </p>
         </div>
     )
 }
@@ -273,6 +315,9 @@ function SectionHeader({ icon, label }: { icon?: React.ReactNode; label: string 
 // ─── 메인 ─────────────────────────────────────────────────────────────────────
 
 export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: ChatSidebarProps) {
+    const { theme } = useTheme()
+    const d = theme.isDark
+
     const [conversations, setConversations] = useState<Conversation[]>([])
     const [projects, setProjects] = useState<Project[]>([])
     const [isLoading, setIsLoading] = useState(true)
@@ -322,7 +367,6 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
     }, [])
 
     const handleMoveToProject = useCallback(async (chatId: string, projectId: string) => {
-        // optimistic update
         setConversations((prev) => prev.map((c) =>
             c.id === chatId ? { ...c, project_id: projectId, storage_type: "project" } : c
         ))
@@ -389,20 +433,30 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
     )
 
     const SidebarContent = ({ onClose }: { onClose?: () => void }) => (
-        <aside className="flex flex-col w-64 bg-[#111116] border-r border-[#1e1e28] h-full">
+        <aside
+            className={`flex flex-col w-full h-full ${d ? 'border-r' : ''}`}
+            style={{ backgroundColor: theme.panel, borderColor: d ? theme.panelBorder : 'transparent' }}
+        >
             <div className="px-4 pt-5 pb-3">
                 <div className="flex items-center justify-between mb-4">
                     <Link href="/orbit" className="flex items-center gap-2 group">
                         <div className="w-6 h-6 shrink-0" aria-hidden="true" />
-                        <span className="font-semibold text-zinc-100 text-sm group-hover:text-violet-300 transition-colors tracking-wide">
+                        <span
+                            className="font-semibold text-sm tracking-wide transition-colors"
+                            style={{ color: d ? '#e4e4f0' : '#1f2937' }}
+                        >
                             Orbit
                         </span>
                     </Link>
                     <div className="flex items-center gap-1">
-                        <ChevronDown className="w-4 h-4 text-zinc-600" />
+                        <ChevronDown className="w-4 h-4" style={{ color: theme.textMuted }} />
                         {onClose && (
-                            <button onClick={onClose}
-                                className="p-1 rounded-md text-zinc-600 hover:text-zinc-200 hover:bg-white/5 transition-colors">
+                            <button
+                                onClick={onClose}
+                                className={`p-1 rounded-md transition-colors ${d
+                                    ? 'text-zinc-600 hover:text-zinc-200 hover:bg-white/5'
+                                    : 'text-gray-400 hover:text-gray-700 hover:bg-black/5'}`}
+                            >
                                 <X className="w-4 h-4" />
                             </button>
                         )}
@@ -431,7 +485,9 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                         activeId={activeChatId}
                     />
                 ) : isLoading ? (
-                    <p className="px-2 py-2 text-xs text-zinc-500 animate-pulse italic">Thinking...</p>
+                    <p className="px-2 py-2 text-xs animate-pulse italic" style={{ color: theme.textMuted }}>
+                        Thinking...
+                    </p>
                 ) : (
                     <>
                         <ProjectsSection
@@ -459,25 +515,36 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                         )}
 
                         {conversations.length === 0 && projects.length === 0 && (
-                            <p className="px-2 py-2 text-xs text-zinc-500">대화가 없습니다.</p>
+                            <p className="px-2 py-2 text-xs" style={{ color: theme.textMuted }}>대화가 없습니다.</p>
                         )}
                     </>
                 )}
             </div>
 
-            <div className="px-3 py-3 border-t border-[#1e1e28] space-y-0.5">
-                <Link 
+            <div
+                className="px-3 py-3 space-y-0.5"
+                style={{ borderTop: `1px solid ${theme.panelBorder}` }}
+            >
+                <Link
                     href="/orbit/cctv"
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-indigo-400 hover:bg-white/[0.04] hover:text-indigo-300 transition-colors text-xs font-medium"
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-indigo-400 hover:bg-indigo-500/10 hover:text-indigo-300 transition-colors text-xs font-medium"
                 >
                     <FolderInput className="w-3.5 h-3.5 shrink-0" />
                     실시간 CCTV 지도
                 </Link>
-                <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-200 transition-colors text-xs">
+                <button
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-xs ${d
+                        ? 'text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-200'
+                        : 'text-gray-400 hover:bg-black/[0.04] hover:text-gray-700'}`}
+                >
                     <MessageSquare className="w-3.5 h-3.5 shrink-0" />
                     제안하기
                 </button>
-                <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-200 transition-colors text-xs">
+                <button
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-xs ${d
+                        ? 'text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-200'
+                        : 'text-gray-400 hover:bg-black/[0.04] hover:text-gray-700'}`}
+                >
                     <Settings className="w-3.5 h-3.5 shrink-0" />
                     Settings
                 </button>
@@ -489,7 +556,10 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
         <>
             <button
                 onClick={() => setMobileOpen(!mobileOpen)}
-                className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-xl bg-[#1e1e26] border border-white/10 text-zinc-400 hover:text-white transition-colors shadow-lg"
+                className={`md:hidden fixed top-4 left-4 z-50 p-2 rounded-xl border transition-colors shadow-lg ${d
+                    ? 'bg-[#1e1e26] border-white/10 text-zinc-400 hover:text-white'
+                    : 'border-gray-200 text-gray-500 hover:text-gray-800'}`}
+                style={d ? {} : { backgroundColor: theme.panel }}
             >
                 {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -500,7 +570,7 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
 
             {mobileOpen && (
                 <div className="md:hidden fixed inset-0 z-40 flex">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
+                    <div className={`absolute inset-0 ${d ? 'bg-black/60' : 'bg-black/30'}`} onClick={() => setMobileOpen(false)} />
                     <div className="relative z-50 h-full animate-in slide-in-from-left duration-300">
                         <SidebarContent onClose={() => setMobileOpen(false)} />
                     </div>

@@ -2,6 +2,7 @@
 
 import { Clock, Archive, FolderOpen } from "lucide-react"
 import type { SearchResult, StorageType } from "@/lib/supabase/queries/searchConversations"
+import { useTheme } from "@/components/chat/ThemeContext"
 
 interface SearchResultsProps {
     results: SearchResult[]
@@ -13,8 +14,8 @@ interface SearchResultsProps {
 
 const STORAGE_LABEL: Record<StorageType, { label: string; icon: React.ReactNode; color: string }> = {
     project: { label: "Project", icon: <FolderOpen className="w-3 h-3" />, color: "text-indigo-400" },
-    recent: { label: "Recent", icon: <Clock className="w-3 h-3" />, color: "text-emerald-400" },
-    archive: { label: "Archive", icon: <Archive className="w-3 h-3" />, color: "text-[#606070]" },
+    recent:  { label: "Recent",  icon: <Clock className="w-3 h-3" />,      color: "text-emerald-400" },
+    archive: { label: "Archive", icon: <Archive className="w-3 h-3" />,    color: "text-[#606070]" },
 }
 
 function HighlightText({ text, keyword }: { text: string; keyword: string }) {
@@ -25,7 +26,7 @@ function HighlightText({ text, keyword }: { text: string; keyword: string }) {
         <>
             {parts.map((part, i) =>
                 regex.test(part) ? (
-                    <mark key={i} className="bg-indigo-500/30 text-indigo-200 rounded-sm px-0.5">{part}</mark>
+                    <mark key={i} className="bg-indigo-500/30 text-indigo-300 rounded-sm px-0.5">{part}</mark>
                 ) : (
                     <span key={i}>{part}</span>
                 )
@@ -37,10 +38,15 @@ function HighlightText({ text, keyword }: { text: string; keyword: string }) {
 export default function SearchResults({
     results, isSearching, keyword, onSelect, activeId,
 }: SearchResultsProps) {
+    const { theme } = useTheme()
+    const d = theme.isDark
+
     if (isSearching) {
         return (
             <div className="px-3 py-4">
-                <p className="text-xs text-[#404050] animate-pulse italic text-center">Searching...</p>
+                <p className="text-xs animate-pulse italic text-center" style={{ color: theme.textMuted }}>
+                    Searching...
+                </p>
             </div>
         )
     }
@@ -50,14 +56,19 @@ export default function SearchResults({
     if (results.length === 0) {
         return (
             <div className="px-3 py-4">
-                <p className="text-xs text-[#404050] text-center">No conversations found</p>
+                <p className="text-xs text-center" style={{ color: theme.textMuted }}>
+                    No conversations found
+                </p>
             </div>
         )
     }
 
     return (
         <div className="px-2 pb-2">
-            <p className="px-2 py-1.5 text-[10px] font-semibold text-[#404050] uppercase tracking-widest">
+            <p
+                className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-widest"
+                style={{ color: theme.textMuted }}
+            >
                 Results · {results.length}
             </p>
             <div className="space-y-0.5">
@@ -68,15 +79,19 @@ export default function SearchResults({
                         <button
                             key={result.conversation_id}
                             onClick={() => onSelect(result.conversation_id)}
-                            className={`w-full text-left px-2 py-2 rounded-lg transition-colors group ${isActive ? "bg-[#1e1e2e]" : "hover:bg-[#18181f]"
-                                }`}
+                            className="w-full text-left px-2 py-2 rounded-lg transition-colors group"
+                            style={{ backgroundColor: isActive ? theme.active : undefined }}
+                            onMouseEnter={e => { if (!isActive) e.currentTarget.style.backgroundColor = theme.hover }}
+                            onMouseLeave={e => { if (!isActive) e.currentTarget.style.backgroundColor = 'transparent' }}
                         >
-                            <p className={`text-xs font-medium truncate mb-0.5 ${isActive ? "text-[#f0f0f5]" : "text-[#b0b0c0] group-hover:text-[#e0e0e8]"
-                                }`}>
+                            <p
+                                className="text-xs font-medium truncate mb-0.5"
+                                style={{ color: isActive ? theme.text : (d ? '#b0b0c0' : theme.textSub) }}
+                            >
                                 <HighlightText text={result.title} keyword={keyword} />
                             </p>
                             {result.snippet && (
-                                <p className="text-[11px] text-[#505060] line-clamp-1 mb-1">
+                                <p className="text-[11px] line-clamp-1 mb-1" style={{ color: theme.textMuted }}>
                                     <HighlightText text={result.snippet} keyword={keyword} />
                                 </p>
                             )}

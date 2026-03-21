@@ -19,6 +19,65 @@
   --success: #10b981;
   --warning: #f59e0b;
   --danger: #ef4444;
+  /* 테마 전환용 */
+  --placeholder-color: #50505e;
+  --scrollbar-track: #1a1a1f;
+  --scrollbar-thumb: #35353f;
+  --scrollbar-thumb-hover: #606070;
+}
+
+/* ─── 라이트 모드 공통 오버라이드 ─────────────────────────────────────────── */
+[data-orbit-theme^="light"] {
+  --placeholder-color: #9ca3af;
+  --scrollbar-track: #f0f0f0;
+  --scrollbar-thumb: #d1d5db;
+  --scrollbar-thumb-hover: #9ca3af;
+}
+
+/* placeholder 색상 (CSS 변수로 제어) */
+[data-orbit-theme^="light"] input::placeholder,
+[data-orbit-theme^="light"] textarea::placeholder {
+  color: #9ca3af !important;
+}
+
+/* 라이트 모드 배경 장식 차단 */
+[data-orbit-theme^="light"] canvas,
+[data-orbit-theme^="light"] .background-effect,
+[data-orbit-theme^="light"] svg.bg-decoration {
+  display: none !important;
+}
+
+/* SSR dark-mode SVG가 light 배경에 새어나오는 것 방지 */
+html[data-orbit-theme^="light"] svg,
+[data-orbit-theme^="light"] svg {
+  overflow: hidden !important;
+}
+
+/* 라이트 모드 GPU 합성 잔상 완전 차단 */
+html[data-orbit-theme^="light"] *,
+[data-orbit-theme^="light"] * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  will-change: auto !important;
+}
+
+/* 라이트 모드: SplashIntro 포함 전체 페이지 GPU 레이어 억제 */
+html[data-orbit-theme^="light"] .orbit-splash {
+  display: none !important;
+}
+
+/* 라이트 모드: PlanetAvatar SVG orbit 경로(path) 강제 숨김 - 캐시된 구 버전 코드 대비 */
+html[data-orbit-theme^="light"] .planet-wrap svg path,
+[data-orbit-theme^="light"] .planet-wrap svg path {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* 라이트 모드: PlanetAvatar SVG 모든 animation 중단 */
+html[data-orbit-theme^="light"] .planet-wrap svg *,
+[data-orbit-theme^="light"] .planet-wrap svg * {
+  animation: none !important;
+  transition: none !important;
 }
 
 * {
@@ -43,14 +102,14 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
+  background: var(--scrollbar-track);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-light);
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* 글로벌 애니메이션 */
@@ -71,6 +130,11 @@ body {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+@keyframes voiceWave {
+  0% { height: 4px; }
+  100% { height: 16px; }
 }
 
 @layer utilities {

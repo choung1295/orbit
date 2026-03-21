@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { Send, Plus, Paperclip, ImageIcon, X, Mic, Square } from "lucide-react"
 import { useChat } from "./useChat"
 import MessageList from "./MessageList"
+import { useTheme } from "@/components/chat/ThemeContext"
 
 interface ChatWindowProps {
     conversationId: string | null
@@ -34,6 +35,9 @@ export default function ChatWindow({ conversationId, onConversationCreated }: Ch
         loadMessages, handleSend, handleStop, toggleRecording
     } = useChat(conversationId, onConversationCreated)
 
+    const { theme } = useTheme()
+    const d = theme.isDark
+
     const [plusMenuOpen, setPlusMenuOpen] = useState(false)
     const plusMenuRef = useRef<HTMLDivElement | null>(null)
     const fileInputRef = useRef<HTMLInputElement | null>(null)
@@ -58,10 +62,6 @@ export default function ChatWindow({ conversationId, onConversationCreated }: Ch
 
     return (
         <div className="flex flex-col h-full">
-            <style jsx>{`
-        @keyframes voiceWave { 0% { height: 4px; } 100% { height: 16px; } }
-      `}</style>
-
             <div className="flex-1 overflow-y-auto">
                 <MessageList
                     messages={messages}
@@ -75,32 +75,62 @@ export default function ChatWindow({ conversationId, onConversationCreated }: Ch
 
             <div className="shrink-0">
                 <div className="max-w-4xl mx-auto w-full px-3 md:px-6 pb-3 md:pb-6 pt-2 md:pt-4">
+                    {/* 첨부 파일 칩 */}
                     {selectedFile && (
-                        <div className="flex items-center gap-2 mb-2 px-4 py-2 rounded-xl bg-[#1a1a1f] border border-[#2a2a35] text-sm text-[#a0a0b0]">
+                        <div
+                            className="flex items-center gap-2 mb-2 px-4 py-2 rounded-xl text-sm"
+                            style={{
+                                backgroundColor: theme.input,
+                                border: `1px solid ${theme.inputBorder}`,
+                                color: theme.textSub,
+                            }}
+                        >
                             <Paperclip className="w-4 h-4 text-indigo-400 shrink-0" />
                             <span className="truncate flex-1">{selectedFile.name}</span>
                             <button
                                 onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = "" }}
-                                className="p-1 rounded-md hover:bg-[#2a2a35] transition-colors"
+                                className="p-1 rounded-md transition-colors"
+                                style={{ color: theme.textMuted }}
+                                onMouseEnter={e => (e.currentTarget.style.backgroundColor = theme.hover)}
+                                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                             >
-                                <X className="w-3.5 h-3.5 text-[#606070] hover:text-[#f0f0f5]" />
+                                <X className="w-3.5 h-3.5" />
                             </button>
                         </div>
                     )}
 
-                    <div className="flex items-end gap-2 md:gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-[24px] bg-[#18181f] border border-[#2e2e3a] focus-within:border-indigo-500/50 transition-colors">
+                    {/* 입력 컨테이너 */}
+                    <div
+                        className="flex items-end gap-2 md:gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-[24px]"
+                        style={{
+                            backgroundColor: theme.input,
+                            border: `1px solid ${theme.inputBorder}`,
+                        }}
+                    >
+                        {/* Plus 버튼 */}
                         <div className="relative" ref={plusMenuRef}>
                             <button
                                 onClick={() => setPlusMenuOpen(!plusMenuOpen)}
-                                className="h-9 w-9 rounded-full flex items-center justify-center text-[#606070] hover:text-[#f0f0f5] hover:bg-[#2a2a35] transition-colors shrink-0"
+                                className={`h-9 w-9 rounded-full flex items-center justify-center transition-colors shrink-0 ${d
+                                    ? 'text-[#606070] hover:text-[#f0f0f5] hover:bg-[#2a2a35]'
+                                    : 'text-gray-400 hover:text-gray-700 hover:bg-black/[0.06]'}`}
                             >
                                 <Plus className={`w-5 h-5 transition-transform duration-200 ${plusMenuOpen ? "rotate-45" : ""}`} />
                             </button>
                             {plusMenuOpen && (
-                                <div className="absolute bottom-full left-0 mb-2 w-52 py-2 rounded-xl bg-[#1e1e26] border border-[#2a2a35] shadow-2xl shadow-black/50 z-50">
+                                <div
+                                    className="absolute bottom-full left-0 mb-2 w-52 py-2 rounded-xl shadow-2xl z-50"
+                                    style={{
+                                        backgroundColor: theme.dropdown,
+                                        border: `1px solid ${theme.dropdownBorder}`,
+                                        boxShadow: d ? '0 8px 40px rgba(0,0,0,0.6)' : '0 4px 20px rgba(0,0,0,0.12)',
+                                    }}
+                                >
                                     <button
                                         onClick={() => { fileInputRef.current?.click(); setPlusMenuOpen(false) }}
-                                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#c0c0c8] hover:bg-[#2a2a35] transition-colors"
+                                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${d
+                                            ? 'text-[#c0c0c8] hover:bg-[#2a2a35]'
+                                            : 'text-gray-600 hover:bg-black/[0.04]'}`}
                                     >
                                         <ImageIcon className="w-4 h-4 text-indigo-400" />
                                         사진 및 파일 추가
@@ -117,6 +147,7 @@ export default function ChatWindow({ conversationId, onConversationCreated }: Ch
                             onChange={(e) => { const file = e.target.files?.[0] ?? null; setSelectedFile(file) }}
                         />
 
+                        {/* 텍스트 입력 */}
                         <textarea
                             ref={textareaRef}
                             placeholder="메시지를 입력하세요..."
@@ -128,13 +159,22 @@ export default function ChatWindow({ conversationId, onConversationCreated }: Ch
                             }}
                             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend() } }}
                             rows={1}
-                            className="flex-1 min-w-0 bg-transparent text-[15px] md:text-sm text-[#f0f0f5] placeholder:text-[#50505e] resize-none outline-none max-h-48 py-2 md:py-1.5 leading-relaxed [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                            className="flex-1 min-w-0 bg-transparent text-[15px] md:text-sm resize-none outline-none max-h-48 py-2 md:py-1.5 leading-relaxed [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                            style={{
+                                color: theme.text,
+                            }}
+                            // placeholder 색상은 CSS global에서 처리하거나 inline style 직접 지정 불가 → tailwind 조건부
                         />
 
+                        {/* 우측 버튼 그룹 */}
                         <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
                             <button
                                 onClick={toggleRecording}
-                                className={`h-9 w-9 rounded-full flex items-center justify-center transition-all duration-300 ${isRecording ? "bg-emerald-500 shadow-[0_0_16px_rgba(34,197,94,0.4)] scale-105" : "text-[#606070] hover:text-[#f0f0f5] hover:bg-[#2a2a35]"}`}
+                                className={`h-9 w-9 rounded-full flex items-center justify-center transition-all duration-300 ${isRecording
+                                    ? "bg-emerald-500 shadow-[0_0_16px_rgba(34,197,94,0.4)] scale-105"
+                                    : d
+                                        ? "text-[#606070] hover:text-[#f0f0f5] hover:bg-[#2a2a35]"
+                                        : "text-gray-400 hover:text-gray-700 hover:bg-black/[0.06]"}`}
                             >
                                 {isRecording ? <VoiceWaveIcon /> : <Mic className="w-4 h-4" />}
                             </button>
@@ -158,7 +198,11 @@ export default function ChatWindow({ conversationId, onConversationCreated }: Ch
                         </div>
                     </div>
 
-                    <p className="hidden md:block text-center text-xs text-[#404050] mt-3">
+                    {/* 하단 안내 문구 */}
+                    <p
+                        className="hidden md:block text-center text-xs mt-3"
+                        style={{ color: d ? '#404050' : theme.textMuted }}
+                    >
                         Orbit AI는 실수를 할 수 있습니다. 중요한 내용은 직접 확인하세요.
                     </p>
                 </div>

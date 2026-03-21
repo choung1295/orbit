@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 
 interface SplashIntroProps {
-    onlyOnce?: boolean; // true이면 localStorage 기반으로 첫 실행에만 표시
-    duration?: number;  // 전체 표시 시간 (ms), 기본 1100
+    onlyOnce?: boolean;
+    duration?: number;
 }
 
 export default function SplashIntro({
@@ -24,12 +24,10 @@ export default function SplashIntro({
 
         setVisible(true);
 
-        // fade-out 시작 타이밍 (duration - 300ms 지점)
         const fadeTimer = setTimeout(() => {
             setFading(true);
         }, duration - 300);
 
-        // 완전 제거
         const removeTimer = setTimeout(() => {
             setVisible(false);
         }, duration + 100);
@@ -53,13 +51,12 @@ export default function SplashIntro({
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                background: "rgba(10, 26, 18, 0.96)",
-                backdropFilter: "blur(12px)",
-                WebkitBackdropFilter: "blur(12px)",
+                // backdrop-filter 제거 → GPU 합성 레이어 생성 차단
+                background: "#0a1a12",
                 opacity: fading ? 0 : 1,
                 transition: "opacity 0.38s cubic-bezier(0.4, 0, 0.2, 1)",
                 pointerEvents: "none",
-                willChange: "opacity",
+                // will-change 제거 → GPU 레이어 잔상 방지
             }}
         >
             {/* 아이콘 */}
@@ -67,7 +64,7 @@ export default function SplashIntro({
                 style={{
                     animation: "splash-icon-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards",
                     opacity: 0,
-                    willChange: "transform, opacity",
+                    // will-change 제거
                 }}
             >
                 <Image
@@ -79,10 +76,9 @@ export default function SplashIntro({
                     style={{
                         borderRadius: "16px",
                         display: "block",
-                        filter: "drop-shadow(0 0 18px rgba(74, 222, 128, 0.22))",
+                        // filter: drop-shadow 제거 → GPU 합성 레이어 차단
                     }}
                     onError={(e) => {
-                        // 512 없으면 192로 폴백
                         const target = e.target as HTMLImageElement;
                         if (target.src.includes("512")) {
                             target.src = "/icon-192x192.png";
@@ -110,14 +106,14 @@ export default function SplashIntro({
                         animation: "splash-text-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0s forwards",
                         opacity: 0,
                         transform: "translateX(-14px)",
-                        willChange: "transform, opacity",
+                        // will-change 제거
                     }}
                 >
                     Orbit AI
                 </span>
             </div>
 
-            {/* 하단 가느다란 진행 라인 */}
+            {/* 하단 진행 라인 - will-change 제거 */}
             <div
                 style={{
                     position: "absolute",
@@ -126,33 +122,18 @@ export default function SplashIntro({
                     height: "2px",
                     background: "linear-gradient(90deg, transparent, #4ade80 40%, #86efac, transparent)",
                     animation: `splash-line ${duration}ms linear forwards`,
-                    willChange: "width",
                 }}
             />
 
             <style>{`
         @keyframes splash-icon-in {
-          from {
-            opacity: 0;
-            transform: scale(0.82) translateY(6px);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-          }
+          from { opacity: 0; transform: scale(0.82) translateY(6px); }
+          to   { opacity: 1; transform: scale(1) translateY(0); }
         }
-
         @keyframes splash-text-in {
-          from {
-            opacity: 0;
-            transform: translateX(-14px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
+          from { opacity: 0; transform: translateX(-14px); }
+          to   { opacity: 1; transform: translateX(0); }
         }
-
         @keyframes splash-line {
           from { width: 0%; }
           to   { width: 100%; }

@@ -1,21 +1,24 @@
+import Link from 'next/link'
 import CctvMap from "@/components/CctvMap"
 
 export default function CctvPage() {
   return (
-    <main className="min-h-screen bg-[#0f0f11] p-4 md:p-8">
-      <div className="max-w-6xl mx-auto space-y-8">
-        <header className="space-y-2">
-          <h1 className="text-3xl font-bold gradient-text">실시간 교통 CCTV</h1>
-          <p className="text-gray-400">국가교통정보센터(ITS)에서 제공하는 실시간 전국 도로 상황입니다.</p>
-        </header>
+    <main className="h-screen flex flex-col bg-[#0f0f11] overflow-hidden">
+      {/* 헤더 */}
+      <header className="flex items-center h-14 px-4 border-b border-[#1e1e26] flex-shrink-0">
+        <Link
+          href="/orbit"
+          className="text-sm font-medium text-[#888899] hover:opacity-70 transition-opacity"
+        >
+          Orbit AI
+        </Link>
+        <span className="mx-2 text-[#333340] text-sm">/</span>
+        <span className="text-sm font-medium text-white">교통 CCTV</span>
+      </header>
 
-        <section className="animate-fade-in">
-          <CctvMap />
-        </section>
-
-        <footer className="text-center text-xs text-gray-600">
-          &copy; Orbit AI - Data provided by ITS
-        </footer>
+      {/* 지도 (나머지 전체 높이) */}
+      <div className="flex-1 min-h-0">
+        <CctvMap />
       </div>
     </main>
   )
