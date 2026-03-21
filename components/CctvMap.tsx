@@ -482,11 +482,18 @@ export default function CctvMap() {
           className={['flex items-center justify-center w-11 h-10 transition-all hover:bg-gray-50 active:scale-95 disabled:opacity-40',
             measureMode === 'distance' ? 'text-indigo-600 bg-indigo-50' : 'text-gray-600'].join(' ')}
           title="거리 측정">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M2 12h20M2 12l4-4M2 12l4 4M22 12l-4-4M22 12l-4 4"/>
-            <line x1="8" y1="9" x2="8" y2="15" strokeWidth="1.4"/>
-            <line x1="12" y1="9" x2="12" y2="15" strokeWidth="1.4"/>
-            <line x1="16" y1="9" x2="16" y2="15" strokeWidth="1.4"/>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+            {/* 자 몸통 */}
+            <rect x="2" y="9" width="20" height="7" rx="1.2" strokeWidth="1.6"/>
+            {/* 긴 눈금 */}
+            <line x1="7"  y1="9" x2="7"  y2="13" strokeWidth="1.4"/>
+            <line x1="12" y1="9" x2="12" y2="13" strokeWidth="1.4"/>
+            <line x1="17" y1="9" x2="17" y2="13" strokeWidth="1.4"/>
+            {/* 짧은 눈금 */}
+            <line x1="4.5"  y1="9" x2="4.5"  y2="11.2" strokeWidth="1.1"/>
+            <line x1="9.5"  y1="9" x2="9.5"  y2="11.2" strokeWidth="1.1"/>
+            <line x1="14.5" y1="9" x2="14.5" y2="11.2" strokeWidth="1.1"/>
+            <line x1="19.5" y1="9" x2="19.5" y2="11.2" strokeWidth="1.1"/>
           </svg>
         </button>
 
