@@ -35,7 +35,7 @@ export function buildPrompt({
 
     if (memories.length > 0) {
         const memoryBlock = memories.map(m => `(기억-${m.type}): ${m.content}`).join("\n")
-        parts.push(`### [사용자 관련 기억]\n${memoryBlock}\n---`)
+        parts.push(`### [배경 참고 — 과거 기록, 현재 대화 아님]\n${memoryBlock}\n[주의: 이 기억을 현재 대화에서 직접 언급하거나 참조하지 마라. 사용자 맥락 이해에만 활용하라.]\n---`)
     }
 
     if (ragContext) {

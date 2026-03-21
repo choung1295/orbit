@@ -82,11 +82,14 @@ export async function recallMemory(
 
         if (all.length === 0) return []
 
-        // user/project scope 기억은 항상 포함 (명시적으로 저장된 중요 기억)
+        // user/project scope의 선호·원칙·결정·제약은 항상 포함 (명시적 배경 정보)
+        // episodic_note(대화 스니펫)는 scope 무관하게 관련성 필터 필수 적용
         // session/summary scope는 keyword 관련성 필터 적용
+        const ALWAYS_INCLUDE_TYPES = ["user_preference", "project_principle", "project_decision", "constraint"]
         const relevant = all
             .filter((m) => {
-                if (m.scope === "user" || m.scope === "project") return true
+                if (m.type === "episodic_note") return isRelevant(m.content, message, m.tags)
+                if (m.scope === "user" || m.scope === "project") return ALWAYS_INCLUDE_TYPES.includes(m.type)
                 return isRelevant(m.content, message, m.tags)
             })
             .sort((a, b) => calculateRecallScore(b) - calculateRecallScore(a))
