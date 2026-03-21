@@ -375,7 +375,7 @@ export default function CctvMap() {
       <div ref={mapRef} className="absolute inset-0 w-full h-full" />
 
       {/* ── 상단 메뉴 바 ── */}
-      <div className="absolute top-3 left-3 z-[200]" style={{ maxWidth: 'calc(100vw - 56px)' }}>
+      <div className="absolute top-3 left-3 z-[200]" style={{ maxWidth: 'calc(100vw - 90px)' }}>
         <div className="inline-flex items-center gap-1 bg-white border border-black/12 rounded-xl px-2 py-1.5 shadow-[0_2px_12px_rgba(0,0,0,0.18)]">
 
           {/* 지도전환: 현재 반대 모드 표시 */}
@@ -440,34 +440,29 @@ export default function CctvMap() {
         </div>
       </div>
 
-      {/* ── 도구 손잡이 버튼 ── */}
+      {/* ── 도구 버튼 (상단 우측, 메뉴바와 같은 높이) ── */}
       <button
         onClick={() => setToolDrawerOpen(o => !o)}
-        className="absolute bottom-24 right-0 z-[210] flex items-center justify-center active:brightness-125 transition-[filter]"
+        className="absolute top-3 right-3 z-[210] flex items-center gap-1.5 px-3 py-1.5 active:scale-95 transition-all"
         style={{
-          writingMode: 'vertical-rl',
-          width: 30,
-          height: 76,
-          borderRadius: '10px 0 0 10px',
-          background: mapBaseType === 'satellite'
-            ? 'rgba(15,15,20,0.62)'
-            : 'rgba(255,255,255,0.72)',
-          color: mapBaseType === 'satellite' ? '#fff' : '#1a1a2e',
-          fontSize: 13,
+          borderRadius: 12,
+          background: 'rgba(255,255,255,0.88)',
+          color: '#111827',
+          fontSize: 12,
           fontWeight: 600,
-          letterSpacing: '0.1em',
-          boxShadow: '-2px 2px 14px rgba(0,0,0,0.28)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          border: mapBaseType === 'satellite'
-            ? '1px solid rgba(255,255,255,0.18)'
-            : '1px solid rgba(0,0,0,0.10)',
-          borderRight: 'none',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.22)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          border: '1px solid rgba(0,0,0,0.10)',
           cursor: 'pointer',
           userSelect: 'none',
+          whiteSpace: 'nowrap',
         }}
         aria-label="도구 열기"
       >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+        </svg>
         도구
       </button>
 
