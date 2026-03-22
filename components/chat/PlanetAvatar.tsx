@@ -6,7 +6,7 @@ interface PlanetAvatarProps {
 }
 
 export default function PlanetAvatar({ size = 140, isDark = true }: PlanetAvatarProps) {
-    const uid = `pa${size}${isDark ? "d" : "l"}`
+    const uid = `pa${size}`
     const s = size
     const cx = s / 2
     const cy = s / 2
