@@ -21,13 +21,13 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "lat, lng 파라미터가 필요합니다." }, { status: 400 })
     }
 
-    const zoom = 17
+    const zoom = 18
     const cx = lngToTileX(lng, zoom)
     const cy = latToTileY(lat, zoom)
 
-    // 3×2 그리드 — URL은 서버 프록시 경로로 반환
+    // 3×3 그리드 — 타겟이 중앙 타일에 위치
     const tiles = []
-    for (let row = 0; row < 2; row++) {
+    for (let row = 0; row < 3; row++) {
         for (let col = 0; col < 3; col++) {
             const tx = cx - 1 + col
             const ty = cy - 1 + row

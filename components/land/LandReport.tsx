@@ -113,7 +113,7 @@ export default function LandReport() {
             {/* 로딩 스켈레톤 */}
             {loading && (
                 <div className="flex flex-col gap-3">
-                    <div className="w-full aspect-[3/2] rounded-2xl bg-gray-100 animate-pulse" />
+                    <div className="w-full aspect-square rounded-2xl bg-gray-100 animate-pulse" />
                     <div className="w-full h-20 rounded-2xl bg-gray-100 animate-pulse" />
                 </div>
             )}
@@ -123,7 +123,7 @@ export default function LandReport() {
                 <div className="flex flex-col gap-3">
                     {/* 위성 이미지 카드 */}
                     <div className="rounded-2xl overflow-hidden shadow-sm border border-gray-100 bg-white">
-                        <div className="relative w-full aspect-[3/2] bg-gray-100 overflow-hidden">
+                        <div className="relative w-full aspect-square bg-gray-100 overflow-hidden">
 
                             {imageLoading && (
                                 <div className="absolute inset-0 flex items-center justify-center animate-pulse">
@@ -139,7 +139,7 @@ export default function LandReport() {
                             )}
 
                             {!imageLoading && tiles && (
-                                <div className="w-full h-full grid grid-cols-3 grid-rows-2">
+                                <div className="w-full h-full grid grid-cols-3 grid-rows-3">
                                     {[...tiles]
                                         .sort((a, b) => a.row * 3 + a.col - (b.row * 3 + b.col))
                                         .map((tile, i) => (
