@@ -84,10 +84,7 @@ function ThinkingIndicator({ thinkingStatus }: { thinkingStatus: ThinkingStatus 
 export default function MessageList({ messages, loading, streamingText, thinkingStatus, onRetry, onRegenerate }: MessageListProps) {
     const { theme } = useTheme()
     const d = theme.isDark
-    const [mounted, setMounted] = useState(false)
     const bottomRef = useRef<HTMLDivElement | null>(null)
-
-    useEffect(() => { setMounted(true) }, [])
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -98,7 +95,7 @@ export default function MessageList({ messages, loading, streamingText, thinking
             {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-start min-h-[65vh] pt-52 gap-3 text-center px-6">
                     <div className="planet-wrap">
-                        {mounted && <PlanetAvatar size={72} isDark={d} />}
+                        <PlanetAvatar size={72} isDark={d} />
                     </div>
                     <div>
                         <h1

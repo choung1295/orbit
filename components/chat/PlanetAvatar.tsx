@@ -1,14 +1,12 @@
 "use client"
 
-import { useState } from "react"
-
 interface PlanetAvatarProps {
     size?: number
     isDark?: boolean
 }
 
 export default function PlanetAvatar({ size = 140, isDark = true }: PlanetAvatarProps) {
-    const [uid] = useState(() => Math.random().toString(36).slice(2, 7))
+    const uid = `pa${size}${isDark ? "d" : "l"}`
     const s = size
     const cx = s / 2
     const cy = s / 2
@@ -29,7 +27,7 @@ export default function PlanetAvatar({ size = 140, isDark = true }: PlanetAvatar
     const endX = cx + xOffset
     const endY = cy + yOffset
 
-    const orbitColor   = "#4ade80"
+    const orbitColor = "#4ade80"
     const asteroidFill = isDark ? "#ffffff" : "#a855f7"
     const p0 = "#1e293b"
     const p1 = "#0f172a"
@@ -46,8 +44,8 @@ export default function PlanetAvatar({ size = 140, isDark = true }: PlanetAvatar
         >
             <defs>
                 <radialGradient id={`planetGradient-${uid}`} cx="35%" cy="35%" r="65%" fx="35%" fy="35%">
-                    <stop offset="0%"   stopColor={p0} />
-                    <stop offset="70%"  stopColor={p1} />
+                    <stop offset="0%" stopColor={p0} />
+                    <stop offset="70%" stopColor={p1} />
                     <stop offset="100%" stopColor={p2} />
                 </radialGradient>
 
@@ -101,7 +99,7 @@ export default function PlanetAvatar({ size = 140, isDark = true }: PlanetAvatar
 
             {/* 이중 궤도 장식 */}
             <path
-                d={`M ${startX + (endX-startX)*0.1},${startY + (endY-startY)*0.1} A ${orbitRx * 0.9} ${orbitRy * 0.7} ${orbitRotation} 0 0 ${endX - (endX-startX)*0.1},${endY - (endY-startY)*0.1}`}
+                d={`M ${startX + (endX - startX) * 0.1},${startY + (endY - startY) * 0.1} A ${orbitRx * 0.9} ${orbitRy * 0.7} ${orbitRotation} 0 0 ${endX - (endX - startX) * 0.1},${endY - (endY - startY) * 0.1}`}
                 stroke={orbitColor}
                 strokeWidth={size * 0.01}
                 strokeLinecap="round"
@@ -122,7 +120,7 @@ export default function PlanetAvatar({ size = 140, isDark = true }: PlanetAvatar
                 />
                 <animate
                     attributeName="r"
-                    values={`${size*0.045}; ${size*0.045}; ${size*0.035}; ${size*0.035}; ${size*0.03}; ${size*0.03}; ${size*0.035}; ${size*0.035}; ${size*0.045}`}
+                    values={`${size * 0.045}; ${size * 0.045}; ${size * 0.035}; ${size * 0.035}; ${size * 0.03}; ${size * 0.03}; ${size * 0.035}; ${size * 0.035}; ${size * 0.045}`}
                     keyTimes="0; 0.45; 0.5; 0.64; 0.68; 0.82; 0.86; 0.95; 1"
                     dur="6s"
                     repeatCount="indefinite"
