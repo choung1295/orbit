@@ -19,37 +19,10 @@ interface LandData {
     use: string | null
 }
 
-const TILE_SIZE = 256
-
-async function stitchTiles(tiles: TileInfo[]): Promise<string> {
-    const canvas = document.createElement("canvas")
-    canvas.width = 3 * TILE_SIZE
-    canvas.height = 2 * TILE_SIZE
-    const ctx = canvas.getContext("2d")!
-
-    await Promise.all(
-        tiles.map(
-            (tile) =>
-                new Promise<void>((resolve) => {
-                    const img = new Image()
-                    img.crossOrigin = "anonymous"
-                    img.onload = () => {
-                        ctx.drawImage(img, tile.col * TILE_SIZE, tile.row * TILE_SIZE)
-                        resolve()
-                    }
-                    img.onerror = () => resolve()
-                    img.src = tile.url
-                })
-        )
-    )
-
-    return canvas.toDataURL("image/jpeg", 0.9)
-}
-
 export default function LandReport() {
     const [query, setQuery] = useState("")
     const [data, setData] = useState<LandData | null>(null)
-    const [imageDataUrl, setImageDataUrl] = useState<string | null>(null)
+    const [tiles, setTiles] = useState<TileInfo[] | null>(null)
     const [loading, setLoading] = useState(false)
     const [imageLoading, setImageLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -62,7 +35,7 @@ export default function LandReport() {
         setLoading(true)
         setError(null)
         setData(null)
-        setImageDataUrl(null)
+        setTiles(null)
         setImageError(false)
 
         try {
@@ -71,20 +44,20 @@ export default function LandReport() {
 
             if (!res.ok) {
                 setError(json.error ?? "조회 중 오류가 발생했습니다.")
+                setLoading(false)
                 return
             }
 
             setData(json)
             setLoading(false)
 
-            // 위성 이미지 타일 합성
+            // 위성 타일 로드
             setImageLoading(true)
             try {
                 const mapRes = await fetch(`/api/map-image?lat=${json.lat}&lng=${json.lng}`)
                 const tileData = await mapRes.json()
-                if (tileData.tiles) {
-                    const dataUrl = await stitchTiles(tileData.tiles)
-                    setImageDataUrl(dataUrl)
+                if (tileData.tiles?.length) {
+                    setTiles(tileData.tiles)
                 } else {
                     setImageError(true)
                 }
@@ -104,19 +77,25 @@ export default function LandReport() {
             {/* 검색 입력 */}
             <form onSubmit={handleSearch} className="flex gap-2">
                 <div className="flex-1 relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                     <input
                         type="text"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         placeholder="지번 또는 주소 입력 (예: 충남 아산시 음봉면 신휴리 378-12)"
-                        className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white placeholder:text-gray-600 transition-all"
+                        style={{ color: "#111" }}
+                        className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white transition-all"
                     />
+                    {!query && (
+                        <span className="absolute left-9 top-1/2 -translate-y-1/2 text-sm text-gray-500 pointer-events-none select-none">
+                            지번 또는 주소 입력 (예: 충남 아산시 음봉면 신휴리 378-12)
+                        </span>
+                    )}
                 </div>
                 <button
                     type="submit"
                     disabled={loading || !query.trim()}
-                    className="px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+                    className="px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5 shrink-0"
                 >
                     <Search className="w-4 h-4" />
                     조회
@@ -134,7 +113,7 @@ export default function LandReport() {
             {/* 로딩 스켈레톤 */}
             {loading && (
                 <div className="flex flex-col gap-3">
-                    <div className="w-full aspect-video rounded-2xl bg-gray-100 animate-pulse" />
+                    <div className="w-full aspect-[3/2] rounded-2xl bg-gray-100 animate-pulse" />
                     <div className="w-full h-20 rounded-2xl bg-gray-100 animate-pulse" />
                 </div>
             )}
@@ -144,27 +123,36 @@ export default function LandReport() {
                 <div className="flex flex-col gap-3">
                     {/* 위성 이미지 카드 */}
                     <div className="rounded-2xl overflow-hidden shadow-sm border border-gray-100 bg-white">
-                        <div className="relative w-full aspect-video bg-gray-100 flex items-center justify-center">
+                        <div className="relative w-full aspect-[3/2] bg-gray-100 overflow-hidden">
+
                             {imageLoading && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-gray-100 animate-pulse">
+                                <div className="absolute inset-0 flex items-center justify-center animate-pulse">
                                     <span className="text-xs text-gray-400">위성 이미지 불러오는 중...</span>
                                 </div>
                             )}
 
                             {!imageLoading && imageError && (
-                                <div className="flex flex-col items-center gap-1.5">
+                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5">
                                     <AlertCircle className="w-5 h-5 text-gray-400" />
                                     <span className="text-xs text-gray-400">이미지 불러오기 실패</span>
                                 </div>
                             )}
 
-                            {!imageLoading && imageDataUrl && (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                    src={imageDataUrl}
-                                    alt={`${data.address} 위성 이미지`}
-                                    className="w-full h-full object-cover"
-                                />
+                            {!imageLoading && tiles && (
+                                <div className="w-full h-full grid grid-cols-3 grid-rows-2">
+                                    {[...tiles]
+                                        .sort((a, b) => a.row * 3 + a.col - (b.row * 3 + b.col))
+                                        .map((tile, i) => (
+                                            // eslint-disable-next-line @next/next/no-img-element
+                                            <img
+                                                key={i}
+                                                src={tile.url}
+                                                alt=""
+                                                className="w-full h-full object-cover"
+                                                onError={() => setImageError(true)}
+                                            />
+                                        ))}
+                                </div>
                             )}
                         </div>
 
@@ -184,7 +172,7 @@ export default function LandReport() {
                         </span>
                     </div>
 
-                    {/* 토지 정보 카드 (데이터 있을 때만) */}
+                    {/* 토지 정보 카드 */}
                     {(data.area || data.use || data.officialPrice) && (
                         <div className="rounded-2xl border border-gray-100 shadow-sm bg-white px-5 py-4 grid grid-cols-2 gap-y-3 gap-x-4">
                             {data.area && (
