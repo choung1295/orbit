@@ -64,13 +64,11 @@ function SunSvg() {
 
 // ── 메인 토글 컴포넌트 ────────────────────────────────────────────────────────
 export default function ThemeToggle() {
-  const { variant, setVariant, theme } = useTheme()
+  const { variant, setVariant } = useTheme()
   const isDark = variant === 'dark'
   const [pickerOpen, setPickerOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const autoCloseRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const d = theme.isDark
-
   const startAutoClose = () => {
     if (autoCloseRef.current) clearTimeout(autoCloseRef.current)
     autoCloseRef.current = setTimeout(() => setPickerOpen(false), 3000)
@@ -135,11 +133,11 @@ export default function ThemeToggle() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: d ? '#14141d' : '#e2e2ea',
-          border: d ? '1px solid #28283e' : '1px solid #c4c4d2',
-          boxShadow: d
-            ? '0 0 10px rgba(0,255,163,0.15), 0 2px 8px rgba(0,0,0,0.5)'
-            : '0 0 10px rgba(217,119,6,0.18), 0 2px 6px rgba(0,0,0,0.10)',
+          background: isDark ? '#e8e8f0' : '#14141d',
+          border: isDark ? '1px solid #c4c4d2' : '1px solid #28283e',
+          boxShadow: isDark
+            ? '0 0 10px rgba(217,119,6,0.18), 0 2px 6px rgba(0,0,0,0.10)'
+            : '0 0 10px rgba(0,255,163,0.15), 0 2px 8px rgba(0,0,0,0.5)',
           cursor: 'pointer',
           padding: 0,
           transition: 'background 0.22s ease, box-shadow 0.22s ease',
