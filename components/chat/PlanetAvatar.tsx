@@ -6,9 +6,7 @@ interface PlanetAvatarProps {
 }
 
 export default function PlanetAvatar({ size = 140 }: PlanetAvatarProps) {
-    // 글로우 필터가 SVG 경계를 넘지 않도록 내부 패딩 추가
-    const pad = size * 0.18
-    const s = size + pad * 2   // 실제 viewBox 크기
+    const s = size
     const cx = s / 2
     const cy = s / 2
 
@@ -35,13 +33,13 @@ export default function PlanetAvatar({ size = 140 }: PlanetAvatarProps) {
     const p2 = "#020617"
 
     return (
-        // 글로우 여백만큼 SVG 크기를 키워서 행성 자체 크기는 유지
         <svg
             width={s}
             height={s}
             viewBox={`0 0 ${s} ${s}`}
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
+            style={{ overflow: "visible" }}
         >
             <defs>
                 <radialGradient id="planetGradient" cx="35%" cy="35%" r="65%" fx="35%" fy="35%">
