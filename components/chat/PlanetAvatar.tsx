@@ -1,11 +1,14 @@
 "use client"
 
+import { useId } from "react"
+
 interface PlanetAvatarProps {
     size?: number
     isDark?: boolean
 }
 
-export default function PlanetAvatar({ size = 140 }: PlanetAvatarProps) {
+export default function PlanetAvatar({ size = 140, isDark = true }: PlanetAvatarProps) {
+    const uid = useId().replace(/:/g, "")
     const s = size
     const cx = s / 2
     const cy = s / 2
@@ -27,7 +30,7 @@ export default function PlanetAvatar({ size = 140 }: PlanetAvatarProps) {
     const endY = cy + yOffset
 
     const orbitColor   = "#4ade80"
-    const asteroidFill = "#ffffff"
+    const asteroidFill = isDark ? "#ffffff" : "#a855f7"
     const p0 = "#1e293b"
     const p1 = "#0f172a"
     const p2 = "#020617"
@@ -42,18 +45,18 @@ export default function PlanetAvatar({ size = 140 }: PlanetAvatarProps) {
             style={{ overflow: "visible" }}
         >
             <defs>
-                <radialGradient id="planetGradient" cx="35%" cy="35%" r="65%" fx="35%" fy="35%">
+                <radialGradient id={`planetGradient-${uid}`} cx="35%" cy="35%" r="65%" fx="35%" fy="35%">
                     <stop offset="0%"   stopColor={p0} />
                     <stop offset="70%"  stopColor={p1} />
                     <stop offset="100%" stopColor={p2} />
                 </radialGradient>
 
-                <filter id="neonGlow" x="-30%" y="-30%" width="160%" height="160%">
+                <filter id={`neonGlow-${uid}`} x="-30%" y="-30%" width="160%" height="160%">
                     <feGaussianBlur stdDeviation="2.5" result="blur" />
                     <feComposite in="SourceGraphic" in2="blur" operator="over" />
                 </filter>
 
-                <filter id="starGlow" x="-80%" y="-80%" width="260%" height="260%">
+                <filter id={`starGlow-${uid}`} x="-80%" y="-80%" width="260%" height="260%">
                     <feGaussianBlur stdDeviation="1" result="blur" />
                     <feMerge>
                         <feMergeNode in="blur" />
@@ -62,7 +65,7 @@ export default function PlanetAvatar({ size = 140 }: PlanetAvatarProps) {
                 </filter>
 
                 <path
-                    id="orbitPath"
+                    id={`orbitPath-${uid}`}
                     d={`M ${startX},${startY} A ${orbitRx} ${orbitRy} ${orbitRotation} 0 0 ${endX},${endY} A ${orbitRx} ${orbitRy} ${orbitRotation} 0 0 ${startX},${startY}`}
                 />
             </defs>
@@ -81,10 +84,10 @@ export default function PlanetAvatar({ size = 140 }: PlanetAvatarProps) {
                 cx={planetCx}
                 cy={planetCy}
                 r={planetR}
-                fill="url(#planetGradient)"
+                fill={`url(#planetGradient-${uid})`}
                 stroke={orbitColor}
                 strokeWidth={size * 0.035}
-                filter="url(#neonGlow)"
+                filter={`url(#neonGlow-${uid})`}
             />
 
             {/* 궤도 앞부분 */}
@@ -93,6 +96,7 @@ export default function PlanetAvatar({ size = 140 }: PlanetAvatarProps) {
                 stroke={orbitColor}
                 strokeWidth={size * 0.035}
                 strokeLinecap="round"
+                filter={`url(#neonGlow-${uid})`}
             />
 
             {/* 이중 궤도 장식 */}
@@ -105,9 +109,9 @@ export default function PlanetAvatar({ size = 140 }: PlanetAvatarProps) {
             />
 
             {/* 소행성 */}
-            <circle r={size * 0.045} fill={asteroidFill} filter="url(#starGlow)">
+            <circle r={size * 0.045} fill={asteroidFill} filter={`url(#starGlow-${uid})`}>
                 <animateMotion dur="6s" repeatCount="indefinite" rotate="auto">
-                    <mpath href="#orbitPath" />
+                    <mpath href={`#orbitPath-${uid}`} />
                 </animateMotion>
                 <animate
                     attributeName="opacity"
