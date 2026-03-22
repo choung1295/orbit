@@ -1,12 +1,15 @@
 "use client"
 
+import { useId } from "react"
+
 interface PlanetAvatarProps {
     size?: number
     isDark?: boolean
 }
 
 export default function PlanetAvatar({ size = 140, isDark = true }: PlanetAvatarProps) {
-    const uid = `pa${size}`
+    const reactId = useId()
+    const uid = reactId.replace(/:/g, "")
     const s = size
     const cx = s / 2
     const cy = s / 2
@@ -35,6 +38,7 @@ export default function PlanetAvatar({ size = 140, isDark = true }: PlanetAvatar
 
     return (
         <svg
+            className="planet-svg"
             width={s}
             height={s}
             viewBox={`0 0 ${s} ${s}`}

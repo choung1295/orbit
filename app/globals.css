@@ -47,9 +47,9 @@
   display: none !important;
 }
 
-/* SSR dark-mode SVG가 light 배경에 새어나오는 것 방지 */
-html[data-orbit-theme^="light"] svg,
-[data-orbit-theme^="light"] svg {
+/* SSR dark-mode SVG가 light 배경에 새어나오는 것 방지 — planet-wrap 제외 */
+html[data-orbit-theme^="light"] svg:not(.planet-svg),
+[data-orbit-theme^="light"] svg:not(.planet-svg) {
   overflow: hidden !important;
 }
 
@@ -66,19 +66,7 @@ html[data-orbit-theme^="light"] .orbit-splash {
   display: none !important;
 }
 
-/* 라이트 모드: PlanetAvatar SVG orbit 경로(path) 강제 숨김 - 캐시된 구 버전 코드 대비 */
-html[data-orbit-theme^="light"] .planet-wrap svg path,
-[data-orbit-theme^="light"] .planet-wrap svg path {
-  display: none !important;
-  visibility: hidden !important;
-}
 
-/* 라이트 모드: PlanetAvatar SVG 모든 animation 중단 */
-html[data-orbit-theme^="light"] .planet-wrap svg *,
-[data-orbit-theme^="light"] .planet-wrap svg * {
-  animation: none !important;
-  transition: none !important;
-}
 
 * {
   box-sizing: border-box;
