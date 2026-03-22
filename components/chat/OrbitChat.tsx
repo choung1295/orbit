@@ -269,10 +269,6 @@ function OrbitChatContent() {
                     </Link>
 
                     <div className="ml-auto flex items-center gap-2">
-                        <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-600/15 text-indigo-300 border border-indigo-500/20">
-                            Orbit 0.1
-                        </span>
-
                         {/* ─── 다크/라이트 토글 ────────────────────────── */}
                         <ThemeToggle />
 
