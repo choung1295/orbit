@@ -14,9 +14,9 @@ const LIGHT_OPTIONS: { variant: BgVariant; bg: string; ring: string; label: stri
 ]
 
 // ── 반달 아이콘 ──────────────────────────────────────────────────────────────
-function MoonSvg({ active }: { active: boolean }) {
+function MoonSvg() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <filter id="moon-g" x="-100%" y="-100%" width="300%" height="300%">
           <feGaussianBlur stdDeviation="2.8" result="b" />
@@ -25,26 +25,26 @@ function MoonSvg({ active }: { active: boolean }) {
       </defs>
       <path
         d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
-        fill={active ? '#00FFA3' : '#555566'}
-        filter={active ? 'url(#moon-g)' : undefined}
+        fill="#00FFA3"
+        filter="url(#moon-g)"
       />
     </svg>
   )
 }
 
-// ── 태양 아이콘 (흰 배경에서도 잘 보이는 진한 앰버) ───────────────────────
-function SunSvg({ active }: { active: boolean }) {
-  const c = active ? '#D97706' : '#9ca3af'
+// ── 태양 아이콘 ───────────────────────────────────────────────────────────────
+function SunSvg() {
+  const c = '#D97706'
   const rays = [0, 45, 90, 135, 180, 225, 270, 315]
   return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <filter id="sun-g" x="-100%" y="-100%" width="300%" height="300%">
           <feGaussianBlur stdDeviation="2" result="b" />
           <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
         </filter>
       </defs>
-      <g filter={active ? 'url(#sun-g)' : undefined}>
+      <g filter="url(#sun-g)">
         <circle cx="12" cy="12" r="4.5" fill={c} />
         {rays.map(deg => {
           const r = (deg * Math.PI) / 180
@@ -71,7 +71,6 @@ export default function ThemeToggle() {
   const autoCloseRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const d = theme.isDark
 
-  // 자동 닫힘 타이머
   const startAutoClose = () => {
     if (autoCloseRef.current) clearTimeout(autoCloseRef.current)
     autoCloseRef.current = setTimeout(() => setPickerOpen(false), 3000)
@@ -87,7 +86,6 @@ export default function ThemeToggle() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickerOpen])
 
-  // 외부 클릭 시 닫기
   useEffect(() => {
     if (!pickerOpen) return
     const fn = (e: MouseEvent) => {
@@ -99,27 +97,21 @@ export default function ThemeToggle() {
     return () => document.removeEventListener('mousedown', fn)
   }, [pickerOpen])
 
-  // 다크로 전환되면 picker 닫기
   useEffect(() => {
     if (isDark) setPickerOpen(false)
   }, [isDark])
 
-  const handleDark = () => {
-    if (!isDark) {
-      localStorage.setItem(LAST_LIGHT_KEY, variant)
-      setVariant('dark')
-    }
-  }
-
-  const handleLight = () => {
+  const handleToggle = () => {
     if (isDark) {
-      // 마지막 라이트 색상 복원 (light-white는 선택지에 없으므로 light-green으로 대체)
+      // 다크 → 라이트
       const last = localStorage.getItem(LAST_LIGHT_KEY) as BgVariant | null
       const safe = LIGHT_OPTIONS.find(o => o.variant === last) ? last! : 'light-green'
       setVariant(safe)
       setPickerOpen(true)
     } else {
-      setPickerOpen(v => !v)
+      // 라이트 → 다크
+      localStorage.setItem(LAST_LIGHT_KEY, variant)
+      setVariant('dark')
     }
   }
 
@@ -132,85 +124,31 @@ export default function ThemeToggle() {
   return (
     <div ref={containerRef} style={{ position: 'relative', flexShrink: 0 }}>
 
-      {/* ── 토글 pill ── */}
-      <div
-        role="group"
-        aria-label="다크/라이트 모드 전환"
+      {/* ── 단일 원형 버튼 ── */}
+      <button
+        onClick={handleToggle}
+        aria-label={isDark ? '라이트 모드로 전환' : '다크 모드로 전환'}
         style={{
+          width: 34,
+          height: 34,
+          borderRadius: '50%',
           display: 'flex',
           alignItems: 'center',
-          width: 82,
-          height: 34,
-          borderRadius: 99,
-          padding: 3,
+          justifyContent: 'center',
           background: d ? '#14141d' : '#e2e2ea',
           border: d ? '1px solid #28283e' : '1px solid #c4c4d2',
-          position: 'relative',
-          boxSizing: 'border-box',
+          boxShadow: d
+            ? '0 0 10px rgba(0,255,163,0.15), 0 2px 8px rgba(0,0,0,0.5)'
+            : '0 0 10px rgba(217,119,6,0.18), 0 2px 6px rgba(0,0,0,0.10)',
+          cursor: 'pointer',
+          padding: 0,
+          transition: 'background 0.22s ease, box-shadow 0.22s ease',
         }}
       >
-        {/* 슬라이딩 인디케이터 */}
-        <div
-          aria-hidden
-          style={{
-            position: 'absolute',
-            top: 3,
-            left: isDark ? 41 : 3,
-            width: 34,
-            height: 26,
-            borderRadius: 99,
-            background: isDark
-              ? 'linear-gradient(135deg, #ffffff 0%, #faf6ef 100%)'
-              : 'linear-gradient(135deg, #151d2e 0%, #0c1220 100%)',
-            boxShadow: isDark
-              ? '0 0 10px rgba(217,119,6,0.22), 0 2px 6px rgba(0,0,0,0.10)'
-              : '0 0 10px rgba(0,255,163,0.22), 0 2px 8px rgba(0,0,0,0.5)',
-            transition: 'left 0.26s cubic-bezier(0.4,0,0.2,1)',
-          }}
-        />
+        {isDark ? <SunSvg /> : <MoonSvg />}
+      </button>
 
-        {/* 달 버튼 */}
-        <button
-          onClick={handleDark}
-          aria-label="다크 모드"
-          aria-pressed={isDark}
-          style={{
-            position: 'relative', zIndex: 1,
-            width: 38, height: 28,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'none', border: 'none',
-            cursor: isDark ? 'default' : 'pointer',
-            padding: 0,
-            transform: !isDark ? 'scale(1.1)' : 'scale(0.86)',
-            opacity: !isDark ? 1 : 0.48,
-            transition: 'transform 0.22s ease, opacity 0.22s ease',
-          }}
-        >
-          <MoonSvg active={!isDark} />
-        </button>
-
-        {/* 해 버튼 */}
-        <button
-          onClick={handleLight}
-          aria-label="라이트 모드"
-          aria-pressed={!isDark}
-          style={{
-            position: 'relative', zIndex: 1,
-            width: 38, height: 28,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'none', border: 'none',
-            cursor: 'pointer',
-            padding: 0,
-            transform: isDark ? 'scale(1.1)' : 'scale(0.86)',
-            opacity: isDark ? 1 : 0.48,
-            transition: 'transform 0.22s ease, opacity 0.22s ease',
-          }}
-        >
-          <SunSvg active={isDark} />
-        </button>
-      </div>
-
-      {/* ── 컬러 선택창 (작은 원형 4개) ── */}
+      {/* ── 컬러 선택창 (라이트 전환 시 표시) ── */}
       <div
         onMouseEnter={cancelAutoClose}
         onMouseLeave={startAutoClose}
