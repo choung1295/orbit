@@ -96,7 +96,7 @@ export default function CctvMap() {
     urbanCctvList, setUrbanCctvList,
     urbanCctvState, setUrbanCctvState,
     cityCctvList, setCityCctvList,
-    cityCctvState, setCityCctvState,
+    setCityCctvState,
     myLocation, setMyLocation,
     locationLoading, setLocationLoading,
     showRoutePanel, setShowRoutePanel,
