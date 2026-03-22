@@ -73,8 +73,7 @@ export default function PlanetAvatar({ size = 140 }: PlanetAvatarProps) {
                 stroke={orbitColor}
                 strokeWidth={size * 0.02}
                 strokeLinecap="round"
-                opacity="0.25"
-                filter="url(#neonGlow)"
+                opacity="0.35"
             />
 
             {/* 행성 본체 */}
@@ -94,7 +93,6 @@ export default function PlanetAvatar({ size = 140 }: PlanetAvatarProps) {
                 stroke={orbitColor}
                 strokeWidth={size * 0.035}
                 strokeLinecap="round"
-                filter="url(#neonGlow)"
             />
 
             {/* 이중 궤도 장식 */}
