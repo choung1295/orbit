@@ -6,14 +6,14 @@ export const ACTIVE_PROVIDER: AIProvider =
 
 // provider별 모드에 따른 모델명
 export const MODEL_MAP: Record<AIProvider, Record<AIMode, string>> = {
-    grok:      { fast: "grok-4-fast-non-reasoning",  deep: "grok-4-fast-reasoning" },
-    openai:    { fast: "gpt-4o-mini",               deep: "gpt-4o" },
-    claude:    { fast: "claude-haiku-4-5-20251001", deep: "claude-sonnet-4-6" },
-    deepseek:  { fast: "deepseek-chat",             deep: "deepseek-reasoner" },
-    groq:      { fast: "llama-3.1-8b-instant",      deep: "llama-3.3-70b-versatile" },
-    mistral:   { fast: "mistral-small-latest",      deep: "mistral-large-latest" },
-    google:    { fast: "gemini-1.5-flash",          deep: "gemini-1.5-pro" },
-    microsoft: { fast: "o1-mini",                   deep: "o1" },
+    grok:      { fast: "grok-4-1-fast-non-reasoning",  deep: "grok-4-1-fast-reasoning" },
+    openai:    { fast: "gpt-4o-mini",                  deep: "gpt-4o" },
+    claude:    { fast: "claude-haiku-4-5-20251001",    deep: "claude-sonnet-4-6" },
+    deepseek:  { fast: "deepseek-chat",                deep: "deepseek-reasoner" },
+    groq:      { fast: "llama-3.1-8b-instant",         deep: "llama-3.3-70b-versatile" },
+    mistral:   { fast: "mistral-small-latest",         deep: "mistral-large-latest" },
+    google:    { fast: "gemini-1.5-flash",             deep: "gemini-1.5-pro" },
+    microsoft: { fast: "o1-mini",                      deep: "o1" },
 }
 
 // OpenAI 호환 provider의 API endpoint
@@ -29,14 +29,14 @@ export const BASE_URL_MAP: Partial<Record<AIProvider, string>> = {
 
 // provider별 API 키 (env에서 읽음)
 export const API_KEY_MAP: Record<AIProvider, () => string> = {
-    grok:      () => process.env.XAI_API_KEY      ?? "",
-    openai:    () => process.env.OPENAI_API_KEY   ?? "",
+    grok:      () => process.env.XAI_API_KEY       ?? "",
+    openai:    () => process.env.OPENAI_API_KEY    ?? "",
     claude:    () => process.env.ANTHROPIC_API_KEY ?? "",
-    deepseek:  () => process.env.DEEPSEEK_API_KEY ?? "",
-    groq:      () => process.env.GROQ_API_KEY     ?? "",
-    mistral:   () => process.env.MISTRAL_API_KEY  ?? "",
-    google:    () => process.env.GOOGLE_API_KEY   ?? "",
-    microsoft: () => process.env.OPENAI_API_KEY   ?? "",
+    deepseek:  () => process.env.DEEPSEEK_API_KEY  ?? "",
+    groq:      () => process.env.GROQ_API_KEY      ?? "",
+    mistral:   () => process.env.MISTRAL_API_KEY   ?? "",
+    google:    () => process.env.GOOGLE_API_KEY    ?? "",
+    microsoft: () => process.env.OPENAI_API_KEY    ?? "",
 }
 
 // task 유형에 따른 기본 provider

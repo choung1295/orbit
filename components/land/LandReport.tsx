@@ -2,12 +2,7 @@
 
 import { useState } from "react"
 import { Search, MapPin, AlertCircle } from "lucide-react"
-
-interface TileInfo {
-    url: string
-    col: number
-    row: number
-}
+import KakaoLandMap from "./KakaoLandMap"
 
 interface LandData {
     address: string
@@ -22,11 +17,8 @@ interface LandData {
 export default function LandReport() {
     const [query, setQuery] = useState("")
     const [data, setData] = useState<LandData | null>(null)
-    const [tiles, setTiles] = useState<TileInfo[] | null>(null)
     const [loading, setLoading] = useState(false)
-    const [imageLoading, setImageLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [imageError, setImageError] = useState(false)
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -35,8 +27,6 @@ export default function LandReport() {
         setLoading(true)
         setError(null)
         setData(null)
-        setTiles(null)
-        setImageError(false)
 
         try {
             const res = await fetch(`/api/land?address=${encodeURIComponent(query.trim())}`)
@@ -50,22 +40,6 @@ export default function LandReport() {
 
             setData(json)
             setLoading(false)
-
-            // 위성 타일 로드
-            setImageLoading(true)
-            try {
-                const mapRes = await fetch(`/api/map-image?lat=${json.lat}&lng=${json.lng}`)
-                const tileData = await mapRes.json()
-                if (tileData.tiles?.length) {
-                    setTiles(tileData.tiles)
-                } else {
-                    setImageError(true)
-                }
-            } catch {
-                setImageError(true)
-            } finally {
-                setImageLoading(false)
-            }
         } catch {
             setError("서버 연결에 실패했습니다.")
             setLoading(false)
@@ -121,56 +95,8 @@ export default function LandReport() {
             {/* 결과 */}
             {data && !loading && (
                 <div className="flex flex-col gap-3">
-                    {/* 위성 이미지 카드 */}
-                    <div className="rounded-2xl overflow-hidden shadow-sm border border-gray-100 bg-white">
-                        <div className="relative w-full aspect-square bg-gray-100 overflow-hidden">
-
-                            {imageLoading && (
-                                <div className="absolute inset-0 flex items-center justify-center animate-pulse">
-                                    <span className="text-xs text-gray-400">위성 이미지 불러오는 중...</span>
-                                </div>
-                            )}
-
-                            {!imageLoading && imageError && (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5">
-                                    <AlertCircle className="w-5 h-5 text-gray-400" />
-                                    <span className="text-xs text-gray-400">이미지 불러오기 실패</span>
-                                </div>
-                            )}
-
-                            {!imageLoading && tiles && (
-                                <div
-                                    style={{
-                                        display: "grid",
-                                        gridTemplateColumns: "repeat(3, 1fr)",
-                                        gridTemplateRows: "repeat(3, 1fr)",
-                                        width: "100%",
-                                        height: "100%",
-                                        gap: 0,
-                                    }}
-                                >
-                                    {[...tiles]
-                                        .sort((a, b) => a.row * 3 + a.col - (b.row * 3 + b.col))
-                                        .map((tile, i) => (
-                                            // eslint-disable-next-line @next/next/no-img-element
-                                            <img
-                                                key={i}
-                                                src={tile.url}
-                                                alt=""
-                                                style={{ width: "100%", height: "100%", display: "block", objectFit: "cover" }}
-                                                onError={() => setImageError(true)}
-                                            />
-                                        ))}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50">
-                            <p className="text-xs text-gray-500">
-                                위성 기준 참고 이미지 · 실제 현장과 차이가 있을 수 있습니다
-                            </p>
-                        </div>
-                    </div>
+                    {/* 카카오 지도 */}
+                    <KakaoLandMap lat={data.lat} lng={data.lng} address={data.address} />
 
                     {/* 위치 카드 */}
                     <div className="rounded-2xl border border-gray-100 shadow-sm bg-white px-5 py-4 flex flex-col gap-1">

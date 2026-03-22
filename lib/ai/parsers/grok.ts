@@ -16,5 +16,7 @@ export async function parseGrokResponse(response: Response): Promise<string> {
         (data as { choices?: { message?: { content?: string } }[] })
             ?.choices?.[0]?.message?.content
 
-    return content ?? FALLBACK
+    // reasoning 모델의 <thinking>...</thinking> 태그 제거
+    const cleaned = (content ?? FALLBACK).replace(/<thinking>[\s\S]*?<\/thinking>/g, "").trim()
+    return cleaned || FALLBACK
 }

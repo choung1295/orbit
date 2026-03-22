@@ -55,7 +55,8 @@ function detectMode(message: string): "fast" | "deep" {
     const isDeep = deepKeywords.some(k => message.includes(k))
     const isChat = chatKeywords.some(k => message.includes(k))
 
-    return isDeep || isChat || message.length > 200 ? "deep" : "fast"
+    if (isChat) return "fast"
+    return isDeep || message.length > 200 ? "deep" : "fast"
 }
 
 export async function runDelphai(input: DelphaiInput): Promise<DelphaiOutput> {
