@@ -1,27 +1,59 @@
 "use client"
 
 import { useState } from "react"
-import Image from "next/image"
 import { Search, MapPin, AlertCircle } from "lucide-react"
+
+interface TileInfo {
+    url: string
+    col: number
+    row: number
+}
 
 interface LandData {
     address: string
     lat: number
     lng: number
-    imageUrl: string
     area: string | null
     officialPrice: string | null
     total: string | null
     use: string | null
 }
 
+const TILE_SIZE = 256
+
+async function stitchTiles(tiles: TileInfo[]): Promise<string> {
+    const canvas = document.createElement("canvas")
+    canvas.width = 3 * TILE_SIZE
+    canvas.height = 2 * TILE_SIZE
+    const ctx = canvas.getContext("2d")!
+
+    await Promise.all(
+        tiles.map(
+            (tile) =>
+                new Promise<void>((resolve) => {
+                    const img = new Image()
+                    img.crossOrigin = "anonymous"
+                    img.onload = () => {
+                        ctx.drawImage(img, tile.col * TILE_SIZE, tile.row * TILE_SIZE)
+                        resolve()
+                    }
+                    img.onerror = () => resolve()
+                    img.src = tile.url
+                })
+        )
+    )
+
+    return canvas.toDataURL("image/jpeg", 0.9)
+}
+
 export default function LandReport() {
     const [query, setQuery] = useState("")
     const [data, setData] = useState<LandData | null>(null)
+    const [imageDataUrl, setImageDataUrl] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
+    const [imageLoading, setImageLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [imageLoaded, setImageLoaded] = useState(false)
-    const [imageFailed, setImageFailed] = useState(false)
+    const [imageError, setImageError] = useState(false)
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -30,8 +62,8 @@ export default function LandReport() {
         setLoading(true)
         setError(null)
         setData(null)
-        setImageLoaded(false)
-        setImageFailed(false)
+        setImageDataUrl(null)
+        setImageError(false)
 
         try {
             const res = await fetch(`/api/land?address=${encodeURIComponent(query.trim())}`)
@@ -43,9 +75,26 @@ export default function LandReport() {
             }
 
             setData(json)
+            setLoading(false)
+
+            // 위성 이미지 타일 합성
+            setImageLoading(true)
+            try {
+                const mapRes = await fetch(`/api/map-image?lat=${json.lat}&lng=${json.lng}`)
+                const tileData = await mapRes.json()
+                if (tileData.tiles) {
+                    const dataUrl = await stitchTiles(tileData.tiles)
+                    setImageDataUrl(dataUrl)
+                } else {
+                    setImageError(true)
+                }
+            } catch {
+                setImageError(true)
+            } finally {
+                setImageLoading(false)
+            }
         } catch {
             setError("서버 연결에 실패했습니다.")
-        } finally {
             setLoading(false)
         }
     }
@@ -60,8 +109,8 @@ export default function LandReport() {
                         type="text"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        placeholder="지번 또는 주소 입력 (예: 경기도 평택시 서정동 123)"
-                        className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white placeholder:text-gray-400 transition-all"
+                        placeholder="지번 또는 주소 입력 (예: 충남 아산시 음봉면 신휴리 378-12)"
+                        className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white placeholder:text-gray-600 transition-all"
                     />
                 </div>
                 <button
@@ -82,13 +131,11 @@ export default function LandReport() {
                 </div>
             )}
 
-            {/* 로딩 */}
+            {/* 로딩 스켈레톤 */}
             {loading && (
                 <div className="flex flex-col gap-3">
-                    {/* 이미지 스켈레톤 */}
                     <div className="w-full aspect-video rounded-2xl bg-gray-100 animate-pulse" />
-                    {/* 카드 스켈레톤 */}
-                    <div className="w-full h-24 rounded-2xl bg-gray-100 animate-pulse" />
+                    <div className="w-full h-20 rounded-2xl bg-gray-100 animate-pulse" />
                 </div>
             )}
 
@@ -97,37 +144,38 @@ export default function LandReport() {
                 <div className="flex flex-col gap-3">
                     {/* 위성 이미지 카드 */}
                     <div className="rounded-2xl overflow-hidden shadow-sm border border-gray-100 bg-white">
-                        <div className="relative w-full aspect-video bg-gray-100">
-                            {!imageLoaded && !imageFailed && (
+                        <div className="relative w-full aspect-video bg-gray-100 flex items-center justify-center">
+                            {imageLoading && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-gray-100 animate-pulse">
                                     <span className="text-xs text-gray-400">위성 이미지 불러오는 중...</span>
                                 </div>
                             )}
 
-                            {imageFailed ? (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 gap-1.5">
+                            {!imageLoading && imageError && (
+                                <div className="flex flex-col items-center gap-1.5">
                                     <AlertCircle className="w-5 h-5 text-gray-400" />
                                     <span className="text-xs text-gray-400">이미지 불러오기 실패</span>
                                 </div>
-                            ) : (
-                                <Image
-                                    src={data.imageUrl}
+                            )}
+
+                            {!imageLoading && imageDataUrl && (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                    src={imageDataUrl}
                                     alt={`${data.address} 위성 이미지`}
-                                    fill
-                                    className={`object-cover transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
-                                    onLoad={() => setImageLoaded(true)}
-                                    onError={() => setImageFailed(true)}
-                                    unoptimized
+                                    className="w-full h-full object-cover"
                                 />
                             )}
                         </div>
 
                         <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50">
-                            <p className="text-xs text-gray-500">위성 기준 참고 이미지 · 실제 현장과 차이가 있을 수 있습니다</p>
+                            <p className="text-xs text-gray-500">
+                                위성 기준 참고 이미지 · 실제 현장과 차이가 있을 수 있습니다
+                            </p>
                         </div>
                     </div>
 
-                    {/* 주소 정보 카드 */}
+                    {/* 위치 카드 */}
                     <div className="rounded-2xl border border-gray-100 shadow-sm bg-white px-5 py-4 flex flex-col gap-1">
                         <span className="text-xs font-medium text-indigo-500 uppercase tracking-wide">위치</span>
                         <span className="text-sm text-gray-800 font-medium">{data.address}</span>
