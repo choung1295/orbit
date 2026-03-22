@@ -139,7 +139,16 @@ export default function LandReport() {
                             )}
 
                             {!imageLoading && tiles && (
-                                <div className="w-full h-full grid grid-cols-3 grid-rows-3">
+                                <div
+                                    style={{
+                                        display: "grid",
+                                        gridTemplateColumns: "repeat(3, 1fr)",
+                                        gridTemplateRows: "repeat(3, 1fr)",
+                                        width: "100%",
+                                        height: "100%",
+                                        gap: 0,
+                                    }}
+                                >
                                     {[...tiles]
                                         .sort((a, b) => a.row * 3 + a.col - (b.row * 3 + b.col))
                                         .map((tile, i) => (
@@ -148,7 +157,7 @@ export default function LandReport() {
                                                 key={i}
                                                 src={tile.url}
                                                 alt=""
-                                                className="w-full h-full object-cover"
+                                                style={{ width: "100%", height: "100%", display: "block", objectFit: "cover" }}
                                                 onError={() => setImageError(true)}
                                             />
                                         ))}
