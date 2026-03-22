@@ -98,7 +98,7 @@ export default function MessageList({ messages, loading, streamingText, thinking
             {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-start min-h-[65vh] pt-52 gap-3 text-center px-6">
                     <div className="planet-wrap">
-                        {mounted && <PlanetAvatar key={d ? 'dark' : 'light'} size={72} isDark={d} />}
+                        {mounted && <PlanetAvatar size={72} isDark={d} />}
                     </div>
                     <div>
                         <h1
