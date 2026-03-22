@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  CctvItem,
+  CctvItem, CityCctvItem,
   getCctvName, getCctvLat, getCctvLng, getCctvUrl,
   getCctvMarkerImg, getCctvMarkerSize,
   getCityCctvMarkerImg, buildCityCctvStreamUrl,
@@ -81,6 +81,7 @@ export default function CctvMap() {
   const cityFetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const locationMemoryRef = useRef(true)
   const cctvDropdownRef = useRef<HTMLDivElement>(null)
+  const popupHistoryPushedRef = useRef(false)
 
   // ── Store ─────────────────────────────────────────────────────────────
   const {
@@ -118,9 +119,48 @@ export default function CctvMap() {
   const routeCctvCountMap = Object.fromEntries(
     Object.entries(routeCctvMap).map(([id, list]) => [id, list.length])
   )
-  const handleSelectCctv = useCallback((item: CctvItem) => {
+  // ── CCTV 팝업 히스토리 / 뒤로가기 처리 ───────────────────────────────
+  useEffect(() => {
+    const handlePopState = () => {
+      if (!popupHistoryPushedRef.current) return
+      popupHistoryPushedRef.current = false
+      clearSelection()
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [clearSelection])
+
+  /** 팝업 최초 오픈 시에만 pushState 1회, 이미 열린 상태면 교체만 */
+  const openUrbanCctv = useCallback((item: CctvItem) => {
+    if (!popupHistoryPushedRef.current) {
+      history.pushState({ cctvPopup: true }, '')
+      popupHistoryPushedRef.current = true
+    }
     selectUrbanCctv(item)
   }, [selectUrbanCctv])
+
+  const openCityCctv = useCallback((item: CityCctvItem) => {
+    if (!popupHistoryPushedRef.current) {
+      history.pushState({ cctvPopup: true }, '')
+      popupHistoryPushedRef.current = true
+    }
+    selectCityCctv(item)
+  }, [selectCityCctv])
+
+  /** X 버튼 닫기: 즉시 닫고 히스토리 엔트리 제거 */
+  const handleClosePopup = useCallback(() => {
+    if (popupHistoryPushedRef.current) {
+      popupHistoryPushedRef.current = false
+      clearSelection()
+      history.back()  // popstate 발생하지만 ref가 false → no-op
+    } else {
+      clearSelection()
+    }
+  }, [clearSelection])
+
+  const handleSelectCctv = useCallback((item: CctvItem) => {
+    openUrbanCctv(item)
+  }, [openUrbanCctv])
 
   // ── locationMemory ref 동기화 ────────────────────────────────────────
   useEffect(() => { locationMemoryRef.current = locationMemory }, [locationMemory])
@@ -319,12 +359,30 @@ export default function CctvMap() {
       return next
     })
     if (isActive) {
-      if (layerId === 'urban-cctv') clearUrbanSelection()
-      if (layerId === 'city-cctv') { clearCitySelection(); setCityCctvList([]) }
+      if (layerId === 'urban-cctv') {
+        if (popupHistoryPushedRef.current && selectedCctv?.type === 'urban') {
+          popupHistoryPushedRef.current = false
+          clearUrbanSelection()
+          history.back()
+        } else {
+          clearUrbanSelection()
+        }
+      }
+      if (layerId === 'city-cctv') {
+        if (popupHistoryPushedRef.current && selectedCctv?.type === 'city') {
+          popupHistoryPushedRef.current = false
+          clearCitySelection()
+          setCityCctvList([])
+          history.back()
+        } else {
+          clearCitySelection()
+          setCityCctvList([])
+        }
+      }
     } else {
       if (layerId === 'urban-cctv') loadUrbanCctv()
     }
-  }, [activeLayers, loadUrbanCctv, clearUrbanSelection, clearCitySelection, setCityCctvList, setActiveLayers])
+  }, [activeLayers, loadUrbanCctv, clearUrbanSelection, clearCitySelection, setCityCctvList, setActiveLayers, selectedCctv])
 
   // ── 도시교통 30분 자동 재연결 ────────────────────────────────────────
   useEffect(() => {
@@ -377,11 +435,11 @@ export default function CctvMap() {
       const lng = getCctvLng(item); const lat = getCctvLat(item)
       if (lng == null || lat == null || lng < 124 || lng > 132 || lat < 33 || lat > 43) return
       const marker = new window.kakao.maps.Marker({ position: new window.kakao.maps.LatLng(lat, lng), image: markerImage, title: getCctvName(item) })
-      window.kakao.maps.event.addListener(marker, 'click', () => selectUrbanCctv(item))
+      window.kakao.maps.event.addListener(marker, 'click', () => openUrbanCctv(item))
       markers.push(marker)
     })
     clustererRef.current = new window.kakao.maps.MarkerClusterer({ map: mapInstanceRef.current, averageCenter: true, minLevel: 10, disableClickZoom: false, markers, styles: CLUSTER_STYLES })
-  }, [isMapReady, urbanCctvList, myLocation, zoomLevel, routeMode, activeLayers, urbanCctvState, selectUrbanCctv])
+  }, [isMapReady, urbanCctvList, myLocation, zoomLevel, routeMode, activeLayers, urbanCctvState, openUrbanCctv])
 
   // ── 시내교통 CCTV 클러스터러 ─────────────────────────────────────────
   useEffect(() => {
@@ -395,11 +453,11 @@ export default function CctvMap() {
     cityCctvList.forEach(item => {
       if (!item.XCOORD || !item.YCOORD) return
       const marker = new window.kakao.maps.Marker({ position: new window.kakao.maps.LatLng(item.YCOORD, item.XCOORD), image: markerImage, title: item.CCTVNAME })
-      window.kakao.maps.event.addListener(marker, 'click', () => selectCityCctv(item))
+      window.kakao.maps.event.addListener(marker, 'click', () => openCityCctv(item))
       markers.push(marker)
     })
     cityCctvClustererRef.current = new window.kakao.maps.MarkerClusterer({ map: mapInstanceRef.current, averageCenter: true, minLevel: 6, disableClickZoom: false, markers, styles: CITY_CLUSTER_STYLES })
-  }, [isMapReady, cityCctvList, zoomLevel, activeLayers, selectCityCctv])
+  }, [isMapReady, cityCctvList, zoomLevel, activeLayers, openCityCctv])
 
   const urbanActive = activeLayers.has('urban-cctv')
   const cityActive = activeLayers.has('city-cctv')
@@ -642,7 +700,7 @@ export default function CctvMap() {
                 <p className="text-[10px] text-indigo-400 font-medium mb-0.5">도시교통 CCTV</p>
                 <h3 className="text-white text-sm font-semibold leading-tight truncate">{getCctvName(selectedUrban)}</h3>
               </div>
-              <button onClick={clearSelection} className="text-gray-500 hover:text-white transition-colors flex-shrink-0 mt-0.5">
+              <button onClick={handleClosePopup} className="text-gray-500 hover:text-white transition-colors flex-shrink-0 mt-0.5">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
               </button>
             </div>
@@ -662,7 +720,7 @@ export default function CctvMap() {
                 </p>
                 <h3 className="text-white text-sm font-semibold leading-tight truncate">{selectedCityItem.CCTVNAME}</h3>
               </div>
-              <button onClick={clearSelection} className="text-gray-500 hover:text-white transition-colors flex-shrink-0 mt-0.5">
+              <button onClick={handleClosePopup} className="text-gray-500 hover:text-white transition-colors flex-shrink-0 mt-0.5">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
               </button>
             </div>
