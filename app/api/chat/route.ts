@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic"
 
 import { createClient } from "@/lib/supabase/server"
 import { runDelphai } from "@/lib/delphai/reasoning/delphai-core"
-import { AIProvider } from "@/lib/ai/callAI"
+import { AIProvider } from "@/lib/ai"
 
 export async function POST(req: Request) {
     try {

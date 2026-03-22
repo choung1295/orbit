@@ -1,7 +1,7 @@
 import { recallMemory } from "../memory/recall"
 import { saveMemory } from "../memory/save"
 import { buildPrompt } from "../prompt/build"
-import { callAI, AIProvider, AITask } from "../../ai/callAI"
+import { callAI, AIProvider, AITask } from "../../ai"
 import { retrieveContext } from "../rag/retrieve-context"
 import { guardInput } from "../security/guard"
 import { buildContext } from "../../context"
