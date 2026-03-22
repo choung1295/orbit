@@ -6,15 +6,17 @@ interface PlanetAvatarProps {
 }
 
 export default function PlanetAvatar({ size = 140, isDark = true }: PlanetAvatarProps) {
-    const s = size
+    // 글로우 필터가 SVG 경계를 넘지 않도록 내부 패딩 추가
+    const pad = size * 0.18
+    const s = size + pad * 2   // 실제 viewBox 크기
     const cx = s / 2
     const cy = s / 2
 
-    const planetR = s * 0.233
-    const planetCx = cx + s * 0.02
-    const planetCy = cy + s * 0.04
-    const orbitRx = s * 0.42
-    const orbitRy = s * 0.14
+    const planetR = size * 0.233
+    const planetCx = cx + size * 0.02
+    const planetCy = cy + size * 0.04
+    const orbitRx = size * 0.42
+    const orbitRy = size * 0.14
     const orbitRotation = -15
 
     const rad = (orbitRotation * Math.PI) / 180
@@ -26,7 +28,6 @@ export default function PlanetAvatar({ size = 140, isDark = true }: PlanetAvatar
     const endX = cx + xOffset
     const endY = cy + yOffset
 
-    // 다크/라이트 색상만 교체
     const orbitColor   = isDark ? "#4ade80" : "#6366f1"
     const asteroidFill = isDark ? "#ffffff"  : "#4338ca"
     const p0 = isDark ? "#1e293b" : "#6366f1"
@@ -34,13 +35,13 @@ export default function PlanetAvatar({ size = 140, isDark = true }: PlanetAvatar
     const p2 = isDark ? "#020617" : "#312e81"
 
     return (
+        // 바깥 크기는 size×size 유지, 내부 viewBox는 패딩 포함
         <svg
-            width={s}
-            height={s}
+            width={size}
+            height={size}
             viewBox={`0 0 ${s} ${s}`}
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
-            style={{ overflow: "visible" }}
         >
             <defs>
                 <radialGradient id="planetGradient" cx="35%" cy="35%" r="65%" fx="35%" fy="35%">
@@ -49,12 +50,12 @@ export default function PlanetAvatar({ size = 140, isDark = true }: PlanetAvatar
                     <stop offset="100%" stopColor={p2} />
                 </radialGradient>
 
-                <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+                <filter id="neonGlow" x="-30%" y="-30%" width="160%" height="160%">
                     <feGaussianBlur stdDeviation="2.5" result="blur" />
                     <feComposite in="SourceGraphic" in2="blur" operator="over" />
                 </filter>
 
-                <filter id="starGlow" x="-100%" y="-100%" width="300%" height="300%">
+                <filter id="starGlow" x="-80%" y="-80%" width="260%" height="260%">
                     <feGaussianBlur stdDeviation="1" result="blur" />
                     <feMerge>
                         <feMergeNode in="blur" />
@@ -72,7 +73,7 @@ export default function PlanetAvatar({ size = 140, isDark = true }: PlanetAvatar
             <path
                 d={`M ${endX},${endY} A ${orbitRx} ${orbitRy} ${orbitRotation} 0 0 ${startX},${startY}`}
                 stroke={orbitColor}
-                strokeWidth={s * 0.02}
+                strokeWidth={size * 0.02}
                 strokeLinecap="round"
                 opacity="0.25"
                 filter="url(#neonGlow)"
@@ -85,7 +86,7 @@ export default function PlanetAvatar({ size = 140, isDark = true }: PlanetAvatar
                 r={planetR}
                 fill="url(#planetGradient)"
                 stroke={orbitColor}
-                strokeWidth={s * 0.035}
+                strokeWidth={size * 0.035}
                 filter="url(#neonGlow)"
             />
 
@@ -93,7 +94,7 @@ export default function PlanetAvatar({ size = 140, isDark = true }: PlanetAvatar
             <path
                 d={`M ${startX},${startY} A ${orbitRx} ${orbitRy} ${orbitRotation} 0 0 ${endX},${endY}`}
                 stroke={orbitColor}
-                strokeWidth={s * 0.035}
+                strokeWidth={size * 0.035}
                 strokeLinecap="round"
                 filter="url(#neonGlow)"
             />
@@ -102,13 +103,13 @@ export default function PlanetAvatar({ size = 140, isDark = true }: PlanetAvatar
             <path
                 d={`M ${startX + (endX-startX)*0.1},${startY + (endY-startY)*0.1} A ${orbitRx * 0.9} ${orbitRy * 0.7} ${orbitRotation} 0 0 ${endX - (endX-startX)*0.1},${endY - (endY-startY)*0.1}`}
                 stroke={orbitColor}
-                strokeWidth={s * 0.01}
+                strokeWidth={size * 0.01}
                 strokeLinecap="round"
                 opacity="0.4"
             />
 
             {/* 소행성 */}
-            <circle r={s * 0.045} fill={asteroidFill} filter="url(#starGlow)">
+            <circle r={size * 0.045} fill={asteroidFill} filter="url(#starGlow)">
                 <animateMotion dur="6s" repeatCount="indefinite" rotate="auto">
                     <mpath href="#orbitPath" />
                 </animateMotion>
@@ -121,7 +122,7 @@ export default function PlanetAvatar({ size = 140, isDark = true }: PlanetAvatar
                 />
                 <animate
                     attributeName="r"
-                    values={`${s*0.045}; ${s*0.045}; ${s*0.035}; ${s*0.035}; ${s*0.03}; ${s*0.03}; ${s*0.035}; ${s*0.035}; ${s*0.045}`}
+                    values={`${size*0.045}; ${size*0.045}; ${size*0.035}; ${size*0.035}; ${size*0.03}; ${size*0.03}; ${size*0.035}; ${size*0.035}; ${size*0.045}`}
                     keyTimes="0; 0.45; 0.5; 0.64; 0.68; 0.82; 0.86; 0.95; 1"
                     dur="6s"
                     repeatCount="indefinite"
