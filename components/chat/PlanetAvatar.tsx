@@ -35,10 +35,10 @@ export default function PlanetAvatar({ size = 140, isDark = true }: PlanetAvatar
     const p2 = isDark ? "#020617" : "#312e81"
 
     return (
-        // 바깥 크기는 size×size 유지, 내부 viewBox는 패딩 포함
+        // 글로우 여백만큼 SVG 크기를 키워서 행성 자체 크기는 유지
         <svg
-            width={size}
-            height={size}
+            width={s}
+            height={s}
             viewBox={`0 0 ${s} ${s}`}
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
