@@ -3,12 +3,9 @@
 import { useRef, useEffect, useState } from "react"
 import { Message } from "./useChat"
 import { ThinkingStatus } from "./useChat"
-import dynamic from "next/dynamic"
 import MessageBubble from "./MessageBubble"
+import PlanetAvatar from "./PlanetAvatar"
 import { useTheme } from "@/components/chat/ThemeContext"
-
-// SSR에서 렌더링하지 않음 → 서버 기본값(dark)으로 orbit SVG가 먼저 그려지는 현상 방지
-const PlanetAvatar = dynamic(() => import("./PlanetAvatar"), { ssr: false })
 
 interface MessageListProps {
     messages: Message[]
@@ -87,7 +84,10 @@ function ThinkingIndicator({ thinkingStatus }: { thinkingStatus: ThinkingStatus 
 export default function MessageList({ messages, loading, streamingText, thinkingStatus, onRetry, onRegenerate }: MessageListProps) {
     const { theme } = useTheme()
     const d = theme.isDark
+    const [mounted, setMounted] = useState(false)
     const bottomRef = useRef<HTMLDivElement | null>(null)
+
+    useEffect(() => { setMounted(true) }, [])
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -98,7 +98,7 @@ export default function MessageList({ messages, loading, streamingText, thinking
             {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-start min-h-[65vh] pt-52 gap-3 text-center px-6">
                     <div className="planet-wrap">
-                        <PlanetAvatar key={d ? 'dark' : 'light'} size={72} isDark={d} />
+                        {mounted && <PlanetAvatar key={d ? 'dark' : 'light'} size={72} isDark={d} />}
                     </div>
                     <div>
                         <h1
