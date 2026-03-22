@@ -5,7 +5,7 @@ interface PlanetAvatarProps {
     isDark?: boolean
 }
 
-export default function PlanetAvatar({ size = 140, isDark = true }: PlanetAvatarProps) {
+export default function PlanetAvatar({ size = 140 }: PlanetAvatarProps) {
     // 글로우 필터가 SVG 경계를 넘지 않도록 내부 패딩 추가
     const pad = size * 0.18
     const s = size + pad * 2   // 실제 viewBox 크기
@@ -28,11 +28,11 @@ export default function PlanetAvatar({ size = 140, isDark = true }: PlanetAvatar
     const endX = cx + xOffset
     const endY = cy + yOffset
 
-    const orbitColor   = isDark ? "#4ade80" : "#6366f1"
-    const asteroidFill = isDark ? "#ffffff"  : "#4338ca"
-    const p0 = isDark ? "#1e293b" : "#6366f1"
-    const p1 = isDark ? "#0f172a" : "#4338ca"
-    const p2 = isDark ? "#020617" : "#312e81"
+    const orbitColor   = "#4ade80"
+    const asteroidFill = "#ffffff"
+    const p0 = "#1e293b"
+    const p1 = "#0f172a"
+    const p2 = "#020617"
 
     return (
         // 글로우 여백만큼 SVG 크기를 키워서 행성 자체 크기는 유지
