@@ -1,6 +1,6 @@
 "use client"
 
-import { useId } from "react"
+import { useState } from "react"
 
 interface PlanetAvatarProps {
     size?: number
@@ -8,7 +8,7 @@ interface PlanetAvatarProps {
 }
 
 export default function PlanetAvatar({ size = 140, isDark = true }: PlanetAvatarProps) {
-    const uid = useId().replace(/:/g, "")
+    const [uid] = useState(() => Math.random().toString(36).slice(2, 7))
     const s = size
     const cx = s / 2
     const cy = s / 2
