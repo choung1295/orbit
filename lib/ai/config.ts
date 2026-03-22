@@ -6,7 +6,7 @@ export const ACTIVE_PROVIDER: AIProvider =
 
 // provider별 모드에 따른 모델명
 export const MODEL_MAP: Record<AIProvider, Record<AIMode, string>> = {
-    grok:      { fast: "grok-3-mini",               deep: "grok-3" },
+    grok:      { fast: "grok-4-fast-non-reasoning",  deep: "grok-4-fast-reasoning" },
     openai:    { fast: "gpt-4o-mini",               deep: "gpt-4o" },
     claude:    { fast: "claude-haiku-4-5-20251001", deep: "claude-sonnet-4-6" },
     deepseek:  { fast: "deepseek-chat",             deep: "deepseek-reasoner" },
