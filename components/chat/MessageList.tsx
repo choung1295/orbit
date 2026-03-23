@@ -94,10 +94,10 @@ export default function MessageList({ messages, loading, streamingText, thinking
         <div className="max-w-[800px] mx-auto w-full px-4 py-4">
             {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-start min-h-[65vh] pt-52 gap-3 text-center px-6">
-                    <div className="planet-wrap">
+                    <div className="planet-wrap" style={{ marginBottom: '-15px', position: 'relative', top: '-15px' }}>
                         <PlanetAvatar size={120} isDark={d} />
                     </div>
-                    <div>
+                    <div style={{ position: 'relative', top: '-20px' }}>
                         <h1
                             className="text-xl md:text-2xl font-semibold mb-3 tracking-tight"
                             style={d
@@ -114,7 +114,7 @@ export default function MessageList({ messages, loading, streamingText, thinking
                         >
                             어떤 도움이 필요하신가요?
                         </h1>
-                        <p className="text-sm md:text-[15px] font-medium" style={{ color: d ? '#848494' : '#b0b7c0' }}>
+                        <p className="text-sm md:text-[15px] font-medium" style={{ color: d ? '#848494' : '#b0b7c0', position: 'relative', top: '-2px' }}>
                             Orbit 비서가 항상 대기하고 있습니다
                         </p>
                     </div>
