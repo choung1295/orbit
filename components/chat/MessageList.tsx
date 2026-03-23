@@ -114,7 +114,7 @@ export default function MessageList({ messages, loading, streamingText, thinking
                         >
                             어떤 도움이 필요하신가요?
                         </h1>
-                        <p className="text-xs md:text-sm font-medium" style={{ color: theme.textMuted }}>
+                        <p className="text-sm md:text-[15px] font-medium" style={{ color: theme.textMuted }}>
                             Orbit 비서가 항상 대기하고 있습니다
                         </p>
                     </div>
@@ -135,7 +135,7 @@ export default function MessageList({ messages, loading, streamingText, thinking
                     {loading && streamingText && (
                         <div className="flex flex-row items-start gap-2 w-full">
                             <div
-                                className="flex-1 px-4 py-3 rounded-2xl rounded-tl-sm text-sm leading-[1.7] whitespace-pre-wrap break-words"
+                                className="flex-1 px-4 py-3 rounded-2xl rounded-tl-sm text-[15px] leading-[1.7] whitespace-pre-wrap break-words"
                                 style={{
                                     backgroundColor: theme.msgAi,
                                     border: `1px solid ${theme.msgAiBorder}`,

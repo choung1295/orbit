@@ -41,7 +41,7 @@ export default function MessageBubble({
         return (
             <div className="flex flex-col items-end gap-1 group">
                 <div
-                    className="max-w-[65%] px-5 py-3.5 rounded-2xl rounded-tr-sm text-sm leading-[1.7] whitespace-pre-wrap break-words"
+                    className="max-w-[65%] px-5 py-3.5 rounded-2xl rounded-tr-sm text-[15px] leading-[1.7] whitespace-pre-wrap break-words"
                     style={{ backgroundColor: "#4338a8", color: "#ededf8" }}
                 >
                     {message.fileName && (
@@ -53,7 +53,7 @@ export default function MessageBubble({
 
                     {isEditing ? (
                         <textarea
-                            className="w-full bg-transparent outline-none resize-none text-sm leading-[1.7]"
+                            className="w-full bg-transparent outline-none resize-none text-[15px] leading-[1.7]"
                             style={{ color: "#ededf8" }}
                             value={editValue}
                             onChange={(e) => setEditValue(e.target.value)}
@@ -86,7 +86,7 @@ export default function MessageBubble({
         <div className="flex flex-row items-start gap-2 w-full group -mt-2">
             <div className="flex-1 flex flex-col gap-1.5">
                 <div
-                    className={`px-4 py-3 rounded-2xl rounded-tl-sm text-sm leading-[1.7] max-w-none ${d ? 'prose prose-invert prose-sm' : 'prose prose-sm'}`}
+                    className={`px-4 py-3 rounded-2xl rounded-tl-sm text-[15px] leading-[1.7] max-w-none ${d ? 'prose prose-invert' : 'prose'}`}
                     style={{
                         backgroundColor: theme.msgAi,
                         border: `1px solid ${theme.msgAiBorder}`,

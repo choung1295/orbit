@@ -90,7 +90,7 @@ function MenuItem({ icon, label, onClick, danger = false }: {
         <button
             onClick={onClick}
             onMouseDown={(e) => e.stopPropagation()}
-            className={`w-full flex items-center gap-2.5 px-3 py-2 transition-colors text-xs ${danger
+            className={`w-full flex items-center gap-2.5 px-3 py-2 transition-colors text-[13px] ${danger
                 ? "text-red-400 hover:text-red-300 hover:bg-red-500/10"
                 : d
                     ? "text-zinc-300 hover:text-white hover:bg-white/5"
@@ -272,7 +272,7 @@ function ConversationItem({
                     onMouseLeave={e => { if (!isActive) (e.currentTarget.parentElement as HTMLElement).style.backgroundColor = 'transparent' }}
                 >
                     <span
-                        className="text-xs truncate block transition-colors"
+                        className="text-[13px] truncate block transition-colors"
                         style={{ color: isActive ? (d ? '#f0f0f5' : '#1f2937') : (d ? '#a0a0b0' : '#6b7280'), fontWeight: isActive ? 500 : 400 }}
                     >
                         {chat.title}
@@ -303,7 +303,7 @@ function SectionHeader({ icon, label }: { icon?: React.ReactNode; label: string 
         <div className="flex items-center gap-1.5 px-2 py-1.5 mt-3">
             {icon && <span style={{ color: theme.textMuted }}>{icon}</span>}
             <p
-                className="text-[10px] font-semibold uppercase tracking-widest"
+                className="text-xs font-semibold uppercase tracking-widest"
                 style={{ color: theme.textMuted }}
             >
                 {label}
@@ -527,13 +527,13 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
             >
                 <Link
                     href="/orbit/cctv"
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-indigo-400 hover:bg-indigo-500/10 hover:text-indigo-300 transition-colors text-xs font-medium"
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-indigo-400 hover:bg-indigo-500/10 hover:text-indigo-300 transition-colors text-[13px] font-medium"
                 >
                     <FolderInput className="w-3.5 h-3.5 shrink-0" />
                     실시간 CCTV 지도
                 </Link>
                 <button
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-xs ${d
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-[13px] ${d
                         ? 'text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-200'
                         : 'text-gray-400 hover:bg-black/[0.04] hover:text-gray-700'}`}
                 >
@@ -541,7 +541,7 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                     제안하기
                 </button>
                 <button
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-xs ${d
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-[13px] ${d
                         ? 'text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-200'
                         : 'text-gray-400 hover:bg-black/[0.04] hover:text-gray-700'}`}
                 >

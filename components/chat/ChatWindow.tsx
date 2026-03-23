@@ -159,7 +159,7 @@ export default function ChatWindow({ conversationId, onConversationCreated }: Ch
                             }}
                             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend() } }}
                             rows={1}
-                            className="flex-1 min-w-0 bg-transparent text-[15px] md:text-sm resize-none outline-none max-h-48 py-2 md:py-1.5 leading-relaxed [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                            className="flex-1 min-w-0 bg-transparent text-[15px] resize-none outline-none max-h-48 py-2 md:py-1.5 leading-relaxed [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                             style={{
                                 color: theme.text,
                             }}
