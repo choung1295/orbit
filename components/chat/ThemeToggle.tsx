@@ -125,6 +125,7 @@ export default function ThemeToggle() {
       {/* ── 단일 원형 버튼 ── */}
       <button
         onClick={handleToggle}
+        onMouseEnter={() => { if (!isDark) setPickerOpen(true) }}
         aria-label={isDark ? '라이트 모드로 전환' : '다크 모드로 전환'}
         style={{
           width: 34,
