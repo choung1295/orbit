@@ -42,7 +42,7 @@ export default function MessageBubble({
             <div className="flex flex-col items-end gap-1 group">
                 <div
                     className="max-w-[65%] px-5 py-3.5 rounded-2xl rounded-tr-sm text-[15px] leading-[1.7] whitespace-pre-wrap break-words"
-                    style={{ backgroundColor: "#5eead4", color: "#134e4a" }}
+                    style={{ backgroundColor: "#99f6e4", color: "#134e4a" }}
                 >
                     {message.fileName && (
                         <div className="flex items-center gap-2 mb-2.5 px-3 py-1.5 rounded-lg bg-white/10 text-xs text-indigo-200">
