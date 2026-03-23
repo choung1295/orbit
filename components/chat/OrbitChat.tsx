@@ -77,10 +77,14 @@ function OrbitChatContent() {
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_DEFAULT)
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-    const [isLoggedIn, setIsLoggedIn] = useState(false)
-    const [nickname, setNickname] = useState('')
-    const [displayInitial, setDisplayInitial] = useState('?')
-    const [isLoading, setIsLoading] = useState(true)
+    const NICK_KEY = 'orbit-nickname'
+    const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem(NICK_KEY))
+    const [nickname, setNickname] = useState(() => localStorage.getItem(NICK_KEY) || '')
+    const [displayInitial, setDisplayInitial] = useState(() => {
+        const n = localStorage.getItem(NICK_KEY) || ''
+        return n ? n.slice(0, 2) : '?'
+    })
+    const [isLoading, setIsLoading] = useState(() => !localStorage.getItem(NICK_KEY))
     const [isResizing, setIsResizing] = useState(false)
 
     const dropdownRef = useRef<HTMLDivElement>(null)
@@ -88,38 +92,26 @@ function OrbitChatContent() {
     const resizeStartWidth = useRef(SIDEBAR_DEFAULT)
 
     useEffect(() => {
-        const NICK_KEY = 'orbit-nickname'
         const checkUser = async () => {
-            // getSession()은 로컬 캐시에서 즉시 반환 (네트워크 없음)
             const { data: { session } } = await supabase.auth.getSession()
             const user = session?.user
             if (user) {
                 setIsLoggedIn(true)
                 const cached = localStorage.getItem(NICK_KEY)
-                if (cached) {
-                    // 캐시 즉시 표시
-                    setNickname(cached)
-                    setDisplayInitial(cached.slice(0, 2))
-                    setIsLoading(false)
-                    // 백그라운드에서 최신값 갱신
-                    supabase.from('users').select('nickname').eq('id', user.id).single()
-                        .then(({ data }) => {
-                            const fresh = data?.nickname || user.email?.split('@')[0] || '사용자'
-                            if (fresh !== cached) {
-                                localStorage.setItem(NICK_KEY, fresh)
-                                setNickname(fresh)
-                                setDisplayInitial(fresh.slice(0, 2))
-                            }
-                        })
-                } else {
-                    const { data } = await supabase.from('users').select('nickname').eq('id', user.id).single()
-                    const name = data?.nickname || user.email?.split('@')[0] || '사용자'
-                    localStorage.setItem(NICK_KEY, name)
-                    setNickname(name)
-                    setDisplayInitial(name.slice(0, 2))
-                    setIsLoading(false)
-                }
+                // 백그라운드에서 최신 nickname 갱신
+                supabase.from('users').select('nickname').eq('id', user.id).single()
+                    .then(({ data }) => {
+                        const fresh = data?.nickname || user.email?.split('@')[0] || '사용자'
+                        if (fresh !== cached) {
+                            localStorage.setItem(NICK_KEY, fresh)
+                            setNickname(fresh)
+                            setDisplayInitial(fresh.slice(0, 2))
+                        }
+                        if (!cached) setIsLoading(false)
+                    })
+                if (cached) setIsLoading(false)
             } else {
+                localStorage.removeItem(NICK_KEY)
                 setIsLoggedIn(false)
                 setIsLoading(false)
             }
