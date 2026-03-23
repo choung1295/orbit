@@ -128,11 +128,18 @@ export function useChat(
         }
 
         const content = cleaned;
-        const { data: authData } = await supabase.auth.getUser();
-        const isLoggedIn = !!authData?.user;
-
         const attachedFileName = selectedFile?.name ?? null;
 
+        // ── 사용자 메시지 즉시 선반영 (어떤 await보다 앞) ──────────────────
+        const tempId = crypto.randomUUID();
+        const tempUserMsg: Message = {
+            id: tempId,
+            role: "user",
+            content,
+            created_at: new Date().toISOString(),
+            ...(attachedFileName ? { fileName: attachedFileName } : {}),
+        };
+        setMessages((prev) => [...prev, tempUserMsg]);
         setInput("");
         setSelectedFile(null);
         setLoading(true);
@@ -149,6 +156,10 @@ export function useChat(
             setIsRecording(false);
         }
 
+        // ── 이후 비동기 작업 (로그인 확인, DB 저장 등) ──────────────────────
+        const { data: authData } = await supabase.auth.getUser();
+        const isLoggedIn = !!authData?.user;
+
         let currentConversationId: string | null = conversationId;
         const controller = new AbortController();
         abortControllerRef.current = controller;
@@ -160,28 +171,20 @@ export function useChat(
                     currentConversationId = newConv.id;
 
                     // URL이 변경되면 loadMessages가 발동되는데,
-                    // handleSend가 메시지를 직접 쌓고 있으므로 한 번 스킵
+                    // handleSend가 메시지를 직접 관리 중이므로 한 번 스킵
                     skipNextLoadRef.current = true;
                     onConversationCreated(newConv.id);
                 }
                 const convId = currentConversationId as string;
                 const userMsg = await saveMessage(convId, "user", content);
                 if (userMsg) {
+                    // 선반영한 temp 메시지를 DB 저장된 실제 메시지로 교체
                     const enrichedMsg: Message = {
                         ...(userMsg as Message),
                         ...(attachedFileName ? { fileName: attachedFileName } : {}),
                     };
-                    setMessages((prev) => [...prev, enrichedMsg]);
+                    setMessages((prev) => prev.map((m) => m.id === tempId ? enrichedMsg : m));
                 }
-            } else {
-                const tempUserMsg: Message = {
-                    id: crypto.randomUUID(),
-                    role: "user",
-                    content,
-                    created_at: new Date().toISOString(),
-                    ...(attachedFileName ? { fileName: attachedFileName } : {}),
-                };
-                setMessages((prev) => [...prev, tempUserMsg]);
             }
 
             const history = messages
