@@ -336,10 +336,34 @@ export default function CctvMap() {
       const line = size - 4
       const fs = count >= 200 ? 16 : count >= 100 ? 15 : count >= 50 ? 14 : 13
       const bg = count >= 200 ? '#115e59' : count >= 100 ? '#0f766e' : '#0d9488'
-      const html = `<div style="width:${size}px;height:${size}px;background:${bg};border:2px solid rgba(255,255,255,0.9);border-radius:50%;text-align:center;line-height:${line}px;font-size:${fs}px;font-weight:bold;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.4);transform:translate(-50%,-50%);cursor:pointer">${count}</div>`
+
+      // HTML 문자열 대신 DOM 엘리먼트 사용 → 클릭 이벤트 직접 부착 가능
+      const el = document.createElement('div')
+      el.style.cssText = `width:${size}px;height:${size}px;background:${bg};border:2px solid rgba(255,255,255,0.9);border-radius:50%;text-align:center;line-height:${line}px;font-size:${fs}px;font-weight:bold;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.4);transform:translate(-50%,-50%);cursor:pointer;transition:transform 0.15s ease,filter 0.15s ease`
+      el.textContent = String(count)
+
+      el.addEventListener('click', () => {
+        // 즉각 시각 피드백 (0.1초)
+        el.style.transform = 'translate(-50%,-50%) scale(1.12)'
+        el.style.filter = 'brightness(1.3)'
+        setTimeout(() => {
+          el.style.transform = 'translate(-50%,-50%)'
+          el.style.filter = ''
+        }, 150)
+
+        // 3레벨 줌인 (클러스터 중심 기준)
+        const map = mapInstanceRef.current
+        if (!map) return
+        const targetLevel = Math.max(map.getLevel() - 3, 3)
+        map.setLevel(targetLevel, {
+          anchor: new window.kakao.maps.LatLng(lat, lng),
+          animate: { duration: 400 },
+        })
+      })
+
       const overlay = new window.kakao.maps.CustomOverlay({
         position: new window.kakao.maps.LatLng(lat, lng),
-        content: html,
+        content: el,
         zIndex: 3,
       })
       overlay.setMap(mapInstanceRef.current)
