@@ -452,16 +452,6 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                     </Link>
                     <div className="ml-auto flex items-center gap-1">
                         <ChevronDown className="w-4 h-4" style={{ color: theme.textMuted }} />
-                        {onClose && (
-                            <button
-                                onClick={onClose}
-                                className={`p-1 rounded-md transition-colors ${d
-                                    ? 'text-zinc-600 hover:text-zinc-200 hover:bg-white/5'
-                                    : 'text-gray-400 hover:text-gray-700 hover:bg-black/5'}`}
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        )}
                     </div>
                 </div>
                 <button
