@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   CctvItem, CityCctvItem,
   getCctvName, getCctvLat, getCctvLng, getCctvUrl,
@@ -88,10 +89,11 @@ export default function CctvMap() {
   // ── 가로/세로 방향 감지 (시내 CCTV 전체화면 전환용) ─────────────────────
   const [isLandscape, setIsLandscape] = useState(false)
   useEffect(() => {
-    const check = () => setIsLandscape(window.innerWidth > window.innerHeight)
-    check()
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
+    const mq = window.matchMedia('(orientation: landscape)')
+    const handler = (e: MediaQueryListEvent | MediaQueryList) => setIsLandscape(e.matches)
+    handler(mq)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
   }, [])
 
   // ── Store ─────────────────────────────────────────────────────────────
@@ -768,30 +770,33 @@ export default function CctvMap() {
         </div>
       )}
 
-      {/* ── 시내교통 CCTV 팝업 (iframe) ── */}
-      {selectedCityItem && (
-        isLandscape ? (
-          /* 가로 모드: 전체화면 */
-          <div className="fixed inset-0 z-[200] bg-black flex flex-col">
-            <div className="flex items-center justify-between px-4 py-2 bg-black/70 flex-shrink-0">
-              <div className="min-w-0">
-                <p className="text-[10px] text-teal-400 font-medium">{selectedCityItem.CENTERNAME}</p>
-                <p className="text-white text-sm font-semibold truncate">{selectedCityItem.CCTVNAME}</p>
-              </div>
-              <button onClick={handleClosePopup} className="text-gray-400 hover:text-white transition-colors ml-4 flex-shrink-0 p-1">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-              </button>
+      {/* ── 시내교통 CCTV 팝업 가로 모드: document.body에 포털로 렌더링 ── */}
+      {/* 카카오맵 SDK의 CSS transform이 fixed 자식을 가로채므로 portal로 우회 */}
+      {selectedCityItem && isLandscape && createPortal(
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#000', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px', background: 'rgba(0,0,0,0.7)', flexShrink: 0 }}>
+            <div style={{ minWidth: 0, overflow: 'hidden' }}>
+              <p style={{ fontSize: '10px', color: '#2dd4bf', margin: 0 }}>{selectedCityItem.CENTERNAME}</p>
+              <p style={{ fontSize: '14px', fontWeight: 600, color: '#fff', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedCityItem.CCTVNAME}</p>
             </div>
-            <iframe
-              src={buildCityCctvStreamUrl(selectedCityItem, mapBounds)}
-              className="flex-1 w-full bg-black"
-              style={{ border: 'none' }}
-              title={selectedCityItem.CCTVNAME}
-              allowFullScreen
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-fullscreen"
-            />
+            <button onClick={handleClosePopup} style={{ color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer', padding: '8px', flexShrink: 0 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+            </button>
           </div>
-        ) : (
+          <iframe
+            src={buildCityCctvStreamUrl(selectedCityItem, mapBounds)}
+            style={{ flex: 1, width: '100%', border: 'none', background: '#000' }}
+            title={selectedCityItem.CCTVNAME}
+            allowFullScreen
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-fullscreen"
+          />
+        </div>,
+        document.body
+      )}
+
+      {/* ── 시내교통 CCTV 팝업 세로 모드 ── */}
+      {selectedCityItem && (
+        !isLandscape ? (
           /* 세로 모드: 기존 팝업 */
           <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 z-[100]">
             <div className="bg-gray-950/95 border border-teal-500/20 rounded-xl p-4 shadow-2xl backdrop-blur-xl">
@@ -821,7 +826,7 @@ export default function CctvMap() {
               </div>
             </div>
           </div>
-        )
+        ) : null
       )}
     </div>
   )
