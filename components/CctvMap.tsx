@@ -82,6 +82,8 @@ export default function CctvMap() {
   const locationMemoryRef = useRef(true)
   const cctvDropdownRef = useRef<HTMLDivElement>(null)
   const popupHistoryPushedRef = useRef(false)
+  const popstateFromCodeRef = useRef(false)  // 코드가 호출한 history.go/back() popstate 식별용
+  const preMountHistoryLengthRef = useRef(0) // 카카오 SDK 초기화 이전 history.length 기준점
 
   // ── Store ─────────────────────────────────────────────────────────────
   const {
@@ -120,21 +122,40 @@ export default function CctvMap() {
     Object.entries(routeCctvMap).map(([id, list]) => [id, list.length])
   )
   // ── CCTV 팝업 히스토리 / 뒤로가기 처리 ───────────────────────────────
+  // 카카오 SDK가 히스토리 엔트리를 추가하기 전 기준 길이를 저장
+  useEffect(() => {
+    preMountHistoryLengthRef.current = history.length
+  }, [])
+
   useEffect(() => {
     const handlePopState = () => {
+      // 코드가 직접 호출한 history.go/back() → 무시
+      if (popstateFromCodeRef.current) {
+        popstateFromCodeRef.current = false
+        return
+      }
+      // 사용자 뒤로가기: 팝업 닫기 + 카카오 SDK 중간 엔트리 건너뜀
       if (!popupHistoryPushedRef.current) return
       popupHistoryPushedRef.current = false
       clearSelection()
+      // 마운트 기준점까지 남은 중간 엔트리 수 (카카오 SDK가 추가한 엔트리)
+      const remaining = history.length - preMountHistoryLengthRef.current - 1
+      if (remaining > 0) {
+        popstateFromCodeRef.current = true
+        history.go(-remaining)
+      }
     }
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
   }, [clearSelection])
 
-  /** 팝업 최초 오픈 시에만 pushState 1회, 이미 열린 상태면 교체만 */
+  /** 팝업 최초 오픈 시에만 pushState 1회, 이미 열린 상태면 replaceState로 교체 */
   const openUrbanCctv = useCallback((item: CctvItem) => {
     if (!popupHistoryPushedRef.current) {
       history.pushState({ cctvPopup: true }, '')
       popupHistoryPushedRef.current = true
+    } else {
+      history.replaceState({ cctvPopup: true }, '')
     }
     selectUrbanCctv(item)
   }, [selectUrbanCctv])
@@ -143,18 +164,21 @@ export default function CctvMap() {
     if (!popupHistoryPushedRef.current) {
       history.pushState({ cctvPopup: true }, '')
       popupHistoryPushedRef.current = true
+    } else {
+      history.replaceState({ cctvPopup: true }, '')
     }
     selectCityCctv(item)
   }, [selectCityCctv])
 
-  /** X 버튼 닫기: 즉시 닫고 히스토리 엔트리 제거 */
+  /** X 버튼 닫기: 즉시 닫고 카카오 SDK 엔트리 포함 CCTV 관련 히스토리 전부 제거 */
   const handleClosePopup = useCallback(() => {
+    clearSelection()
     if (popupHistoryPushedRef.current) {
       popupHistoryPushedRef.current = false
-      clearSelection()
-      history.back()  // popstate 발생하지만 ref가 false → no-op
-    } else {
-      clearSelection()
+      popstateFromCodeRef.current = true
+      // 카카오 SDK 중간 엔트리 + cctvPopup 엔트리를 한 번에 건너뜀
+      const delta = history.length - preMountHistoryLengthRef.current
+      history.go(-(delta > 0 ? delta : 1))
     }
   }, [clearSelection])
 
@@ -362,8 +386,9 @@ export default function CctvMap() {
       if (layerId === 'urban-cctv') {
         if (popupHistoryPushedRef.current && selectedCctv?.type === 'urban') {
           popupHistoryPushedRef.current = false
+          popstateFromCodeRef.current = true
           clearUrbanSelection()
-          history.back()
+          history.go(-(Math.max(history.length - preMountHistoryLengthRef.current, 1)))
         } else {
           clearUrbanSelection()
         }
@@ -371,9 +396,10 @@ export default function CctvMap() {
       if (layerId === 'city-cctv') {
         if (popupHistoryPushedRef.current && selectedCctv?.type === 'city') {
           popupHistoryPushedRef.current = false
+          popstateFromCodeRef.current = true
           clearCitySelection()
           setCityCctvList([])
-          history.back()
+          history.go(-(Math.max(history.length - preMountHistoryLengthRef.current, 1)))
         } else {
           clearCitySelection()
           setCityCctvList([])
