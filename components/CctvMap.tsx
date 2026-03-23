@@ -85,6 +85,15 @@ export default function CctvMap() {
   const popstateFromCodeRef = useRef(false)  // 코드가 호출한 history.go/back() popstate 식별용
   const preMountHistoryLengthRef = useRef(0) // 카카오 SDK 초기화 이전 history.length 기준점
 
+  // ── 가로/세로 방향 감지 (시내 CCTV 전체화면 전환용) ─────────────────────
+  const [isLandscape, setIsLandscape] = useState(false)
+  useEffect(() => {
+    const check = () => setIsLandscape(window.innerWidth > window.innerHeight)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
   // ── Store ─────────────────────────────────────────────────────────────
   const {
     isMapReady, setIsMapReady,
@@ -761,33 +770,58 @@ export default function CctvMap() {
 
       {/* ── 시내교통 CCTV 팝업 (iframe) ── */}
       {selectedCityItem && (
-        <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 z-[100]">
-          <div className="bg-gray-950/95 border border-teal-500/20 rounded-xl p-4 shadow-2xl backdrop-blur-xl">
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] text-teal-400 font-medium mb-0.5">
-                  시내교통 CCTV · {selectedCityItem.CENTERNAME}
-                </p>
-                <h3 className="text-white text-sm font-semibold leading-tight truncate">{selectedCityItem.CCTVNAME}</h3>
+        isLandscape ? (
+          /* 가로 모드: 전체화면 */
+          <div className="fixed inset-0 z-[200] bg-black flex flex-col">
+            <div className="flex items-center justify-between px-4 py-2 bg-black/70 flex-shrink-0">
+              <div className="min-w-0">
+                <p className="text-[10px] text-teal-400 font-medium">{selectedCityItem.CENTERNAME}</p>
+                <p className="text-white text-sm font-semibold truncate">{selectedCityItem.CCTVNAME}</p>
               </div>
-              <button onClick={handleClosePopup} className="text-gray-500 hover:text-white transition-colors flex-shrink-0 mt-0.5">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              <button onClick={handleClosePopup} className="text-gray-400 hover:text-white transition-colors ml-4 flex-shrink-0 p-1">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
               </button>
             </div>
             <iframe
               src={buildCityCctvStreamUrl(selectedCityItem, mapBounds)}
-              className="w-full rounded-lg bg-black"
-              style={{ height: '200px', border: 'none' }}
+              className="flex-1 w-full bg-black"
+              style={{ border: 'none' }}
               title={selectedCityItem.CCTVNAME}
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+              allowFullScreen
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-fullscreen"
             />
-            <div className="flex items-center justify-between mt-2">
-              <p className="text-[10px] text-gray-600">영상 재생은 60초만 제공됩니다 (UTIC)</p>
-              <a href={buildCityCctvStreamUrl(selectedCityItem, mapBounds)} target="_blank" rel="noopener noreferrer"
-                className="text-[10px] text-teal-400 hover:text-teal-300 underline">새창으로 보기</a>
+          </div>
+        ) : (
+          /* 세로 모드: 기존 팝업 */
+          <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 z-[100]">
+            <div className="bg-gray-950/95 border border-teal-500/20 rounded-xl p-4 shadow-2xl backdrop-blur-xl">
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] text-teal-400 font-medium mb-0.5">
+                    시내교통 CCTV · {selectedCityItem.CENTERNAME}
+                  </p>
+                  <h3 className="text-white text-sm font-semibold leading-tight truncate">{selectedCityItem.CCTVNAME}</h3>
+                </div>
+                <button onClick={handleClosePopup} className="text-gray-500 hover:text-white transition-colors flex-shrink-0 mt-0.5">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                </button>
+              </div>
+              <iframe
+                src={buildCityCctvStreamUrl(selectedCityItem, mapBounds)}
+                className="w-full rounded-lg bg-black"
+                style={{ height: '200px', border: 'none' }}
+                title={selectedCityItem.CCTVNAME}
+                allowFullScreen
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-fullscreen"
+              />
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-[10px] text-gray-600">영상 재생은 60초만 제공됩니다 (UTIC)</p>
+                <a href={buildCityCctvStreamUrl(selectedCityItem, mapBounds)} target="_blank" rel="noopener noreferrer"
+                  className="text-[10px] text-teal-400 hover:text-teal-300 underline">새창으로 보기</a>
+              </div>
             </div>
           </div>
-        </div>
+        )
       )}
     </div>
   )
