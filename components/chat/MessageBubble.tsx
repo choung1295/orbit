@@ -21,10 +21,10 @@ function PreBlock({ children, isDark }: { children: React.ReactNode; isDark: boo
     }
 
     return (
-        <div className="relative my-3 group/code">
+        <div className="relative my-3 group/code w-full">
             <pre
                 ref={preRef}
-                className="overflow-x-auto rounded-xl text-[13px] leading-relaxed"
+                className="w-full max-w-full overflow-x-auto overflow-y-hidden whitespace-pre rounded-xl text-[13px] leading-relaxed"
                 style={{
                     backgroundColor: isDark ? '#1a1a26' : '#ffffff',
                     border: `1px solid ${isDark ? '#2a2a3a' : '#d9dee5'}`,
@@ -129,7 +129,7 @@ export default function MessageBubble({
 
     return (
         <div className="flex flex-row items-start gap-2 w-full -mt-2">
-            <div className="flex-1 flex flex-col gap-1.5">
+            <div className="flex-1 min-w-0 flex flex-col gap-1.5">
                 <div
                     className={`text-[15px] leading-[1.7] max-w-none ${d ? 'prose prose-invert' : 'prose'}`}
                     style={{ color: theme.text }}
