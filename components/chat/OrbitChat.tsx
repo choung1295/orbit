@@ -258,7 +258,7 @@ function OrbitChatContent() {
             <div className="flex-1 flex flex-col min-w-0">
                 {/* 헤더 */}
                 <div
-                    className="flex items-center gap-3 pl-16 pr-6 md:px-6 h-16 shrink-0"
+                    className="relative flex items-center gap-3 pl-16 pr-6 md:px-6 h-16 shrink-0"
                     style={{ borderBottom: `1px solid ${theme.panelBorder}` }}
                 >
                     {/* 사이드바 토글 — 문 아이콘 */}
@@ -275,7 +275,7 @@ function OrbitChatContent() {
 
                     <Link
                         href="/orbit"
-                        className="text-sm font-medium truncate hover:opacity-70 transition-opacity"
+                        className="absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0 text-sm font-medium truncate hover:opacity-70 transition-opacity"
                         style={{ color: theme.textSub }}
                     >
                         Orbit AI

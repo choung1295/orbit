@@ -290,11 +290,14 @@ export default function ProjectsSection({
     return (
         <div className="mb-1">
             {/* 섹션 헤더 */}
-            <div className="flex items-center justify-between px-2 py-1.5 group/header">
+            <div
+                className="flex items-center justify-between px-2 py-1.5 group/header sticky top-0 z-10"
+                style={{ backgroundColor: theme.panel }}
+            >
                 <div className="flex items-center gap-1.5">
                     <FolderOpen className="w-3 h-3" style={{ color: theme.textMuted }} />
                     <p
-                        className="text-[10px] font-semibold uppercase tracking-widest"
+                        className="text-xs font-semibold uppercase tracking-widest"
                         style={{ color: theme.textMuted }}
                     >
                         Projects

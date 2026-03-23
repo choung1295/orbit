@@ -300,7 +300,10 @@ function ConversationItem({
 function SectionHeader({ icon, label }: { icon?: React.ReactNode; label: string }) {
     const { theme } = useTheme()
     return (
-        <div className="flex items-center gap-1.5 px-2 py-1.5 mt-3">
+        <div
+            className="flex items-center gap-1.5 px-2 py-1.5 sticky top-0 z-10"
+            style={{ backgroundColor: theme.panel }}
+        >
             {icon && <span style={{ color: theme.textMuted }}>{icon}</span>}
             <p
                 className="text-xs font-semibold uppercase tracking-widest"
@@ -442,7 +445,7 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                     <Link href="/orbit" className="flex items-center gap-2 group">
                         <div className="w-6 h-6 shrink-0" aria-hidden="true" />
                         <span
-                            className="font-semibold text-sm tracking-wide transition-colors"
+                            className="font-semibold text-lg tracking-wide transition-colors"
                             style={{ color: d ? '#e4e4f0' : '#1f2937' }}
                         >
                             Orbit
@@ -477,27 +480,22 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                 <SearchBar onSearch={handleSearch} onClear={handleSearchClear} />
             </div>
 
-            {/* ── 3등분 영역 ── */}
-            <div className="flex-1 flex flex-col min-h-0">
-
-                {/* 1/3 — PROJECTS */}
-                <div
-                    className="flex-1 overflow-y-auto px-3 py-1 min-h-0 custom-scrollbar"
-                    style={{ borderBottom: `1px solid ${theme.panelBorder}` }}
-                >
-                    {searchKeyword.length >= 2 ? (
-                        <SearchResults
-                            results={searchResults}
-                            isSearching={isSearching}
-                            keyword={searchKeyword}
-                            onSelect={(id) => handleSelectChat(id, onClose)}
-                            activeId={activeChatId}
-                        />
-                    ) : isLoading ? (
-                        <p className="px-2 py-2 text-xs animate-pulse italic" style={{ color: theme.textMuted }}>
-                            Thinking...
-                        </p>
-                    ) : (
+            {/* ── 상단: 프로젝트 + 최근대화 ── */}
+            <div className="overflow-y-auto px-3 py-1 custom-scrollbar" style={{ maxHeight: '55%' }}>
+                {searchKeyword.length >= 2 ? (
+                    <SearchResults
+                        results={searchResults}
+                        isSearching={isSearching}
+                        keyword={searchKeyword}
+                        onSelect={(id) => handleSelectChat(id, onClose)}
+                        activeId={activeChatId}
+                    />
+                ) : isLoading ? (
+                    <p className="px-2 py-2 text-xs animate-pulse italic" style={{ color: theme.textMuted }}>
+                        Thinking...
+                    </p>
+                ) : (
+                    <>
                         <ProjectsSection
                             projects={projects}
                             conversations={conversations}
@@ -507,57 +505,50 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                             onConversationMove={(convId, projectId) => handleMoveToProject(convId, projectId)}
                             onSelectChat={(id) => handleSelectChat(id, onClose)}
                         />
-                    )}
-                </div>
+                        {recentConvs.length > 0 && (
+                            <>
+                                <SectionHeader label="Recent" />
+                                {renderList(recentConvs, onClose)}
+                            </>
+                        )}
+                        {archiveConvs.length > 0 && (
+                            <>
+                                <SectionHeader icon={<Archive className="w-3 h-3" />} label="Archive" />
+                                {renderList(archiveConvs, onClose)}
+                            </>
+                        )}
+                    </>
+                )}
+            </div>
 
-                {/* 2/3 — RECENT */}
-                <div
-                    className="flex-1 overflow-y-auto px-3 py-1 min-h-0 custom-scrollbar"
-                    style={{ borderBottom: `1px solid ${theme.panelBorder}` }}
+            {/* ── 빈 공간 (앞으로 추가될 메뉴들이 아래서 쌓임) ── */}
+            <div className="flex-1" />
+
+            {/* ── 하단 메뉴 ── */}
+            <div className="shrink-0 px-3 py-2 space-y-0.5" style={{ borderTop: `1px solid ${theme.panelBorder}` }}>
+                <Link
+                    href="/orbit/cctv"
+                    className="w-full flex items-center gap-3 px-3 py-[3px] rounded-lg text-indigo-400 hover:bg-indigo-500/10 hover:text-indigo-300 transition-colors text-[13px] font-medium"
                 >
-                    {recentConvs.length > 0 ? (
-                        <>
-                            <SectionHeader label="Recent" />
-                            {renderList(recentConvs, onClose)}
-                        </>
-                    ) : (
-                        <p className="px-2 py-2 text-xs" style={{ color: theme.textMuted }}>대화가 없습니다.</p>
-                    )}
-                    {archiveConvs.length > 0 && (
-                        <>
-                            <SectionHeader icon={<Archive className="w-3 h-3" />} label="Archive" />
-                            {renderList(archiveConvs, onClose)}
-                        </>
-                    )}
-                </div>
-
-                {/* 3/3 — 메뉴 */}
-                <div className="flex-1 overflow-y-auto px-3 py-2 min-h-0 space-y-0.5">
-                    <Link
-                        href="/orbit/cctv"
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-indigo-400 hover:bg-indigo-500/10 hover:text-indigo-300 transition-colors text-[13px] font-medium"
-                    >
-                        <FolderInput className="w-3.5 h-3.5 shrink-0" />
-                        실시간 CCTV 지도
-                    </Link>
-                    <button
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-[13px] ${d
-                            ? 'text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-200'
-                            : 'text-gray-400 hover:bg-black/[0.04] hover:text-gray-700'}`}
-                    >
-                        <MessageSquare className="w-3.5 h-3.5 shrink-0" />
-                        제안하기
-                    </button>
-                    <button
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-[13px] ${d
-                            ? 'text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-200'
-                            : 'text-gray-400 hover:bg-black/[0.04] hover:text-gray-700'}`}
-                    >
-                        <Settings className="w-3.5 h-3.5 shrink-0" />
-                        Settings
-                    </button>
-                </div>
-
+                    <FolderInput className="w-3.5 h-3.5 shrink-0" />
+                    실시간 CCTV 지도
+                </Link>
+                <button
+                    className={`w-full flex items-center gap-3 px-3 py-[3px] rounded-lg transition-colors text-[13px] ${d
+                        ? 'text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-200'
+                        : 'text-gray-400 hover:bg-black/[0.04] hover:text-gray-700'}`}
+                >
+                    <MessageSquare className="w-3.5 h-3.5 shrink-0" />
+                    제안하기
+                </button>
+                <button
+                    className={`w-full flex items-center gap-3 px-3 py-[3px] rounded-lg transition-colors text-[13px] ${d
+                        ? 'text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-200'
+                        : 'text-gray-400 hover:bg-black/[0.04] hover:text-gray-700'}`}
+                >
+                    <Settings className="w-3.5 h-3.5 shrink-0" />
+                    Settings
+                </button>
             </div>
         </aside>
     )
