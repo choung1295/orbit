@@ -114,7 +114,7 @@ export default function MessageList({ messages, loading, streamingText, thinking
                         >
                             어떤 도움이 필요하신가요?
                         </h1>
-                        <p className="text-sm md:text-[15px] font-medium" style={{ color: d ? '#848494' : '#b0b7c0', position: 'relative', top: '-2px' }}>
+                        <p className="text-sm md:text-[15px] font-medium" style={{ color: d ? '#848494' : '#b0b7c0', position: 'relative', top: '-5px' }}>
                             Orbit 비서가 항상 대기하고 있습니다
                         </p>
                     </div>
