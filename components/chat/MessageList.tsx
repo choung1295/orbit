@@ -91,7 +91,7 @@ export default function MessageList({ messages, loading, streamingText, thinking
     }, [messages, loading, streamingText])
 
     return (
-        <div className="max-w-5xl mx-auto w-full px-4 py-4">
+        <div className="max-w-[800px] mx-auto w-full px-4 py-4">
             {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-start min-h-[65vh] pt-52 gap-3 text-center px-6">
                     <div className="planet-wrap">

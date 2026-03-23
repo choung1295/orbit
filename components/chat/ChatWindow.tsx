@@ -74,7 +74,7 @@ export default function ChatWindow({ conversationId, onConversationCreated }: Ch
             </div>
 
             <div className="shrink-0">
-                <div className="max-w-5xl mx-auto w-full px-3 md:px-6 pb-3 md:pb-6 pt-2 md:pt-4">
+                <div className="max-w-[800px] mx-auto w-full px-3 md:px-6 pb-3 md:pb-6 pt-2 md:pt-4">
                     {/* 첨부 파일 칩 */}
                     {selectedFile && (
                         <div
