@@ -42,7 +42,9 @@ export default function MessageBubble({
             <div className="flex flex-col items-end gap-1 group">
                 <div
                     className="max-w-[65%] px-5 py-3.5 rounded-2xl rounded-tr-sm text-[15px] leading-[1.7] whitespace-pre-wrap break-words"
-                    style={{ backgroundColor: "#99f6e4", color: "#134e4a" }}
+                    style={d
+                        ? { backgroundColor: "#1a4d46", color: "#5eead4" }
+                        : { backgroundColor: "#99f6e4", color: "#134e4a" }}
                 >
                     {message.fileName && (
                         <div className="flex items-center gap-2 mb-2.5 px-3 py-1.5 rounded-lg bg-white/10 text-xs text-indigo-200">
@@ -54,7 +56,7 @@ export default function MessageBubble({
                     {isEditing ? (
                         <textarea
                             className="w-full bg-transparent outline-none resize-none text-[15px] leading-[1.7]"
-                            style={{ color: "#134e4a" }}
+                            style={{ color: d ? "#5eead4" : "#134e4a" }}
                             value={editValue}
                             onChange={(e) => setEditValue(e.target.value)}
                             autoFocus
