@@ -103,8 +103,8 @@ export default function ChatWindow({ conversationId, onConversationCreated }: Ch
                     <div
                         className="flex items-end gap-2 md:gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-[24px]"
                         style={{
-                            backgroundColor: theme.input,
-                            border: `1px solid ${theme.inputBorder}`,
+                            backgroundColor: d ? theme.input : 'rgba(45,212,191,0.06)',
+                            border: d ? `1px solid ${theme.inputBorder}` : '1px solid rgba(45,212,191,0.45)',
                         }}
                     >
                         {/* Plus 버튼 */}
