@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom'
 import {
   CctvItem, CityCctvItem,
   getCctvName, getCctvLat, getCctvLng, getCctvUrl,
-  getCctvMarkerImg, getCctvMarkerSize,
+  getCctvMarkerImg, getCctvMarkerSize, getCctvHitSize,
   getCityCctvMarkerImg, buildCityCctvStreamUrl,
   isVideoUrl, isImageUrl,
   CLUSTER_STYLES, CITY_CLUSTER_STYLES,
@@ -489,8 +489,9 @@ export default function CctvMap() {
     if (clustererRef.current) { clustererRef.current.clear(); clustererRef.current.setMap(null); clustererRef.current = null }
     if (!activeLayers.has('urban-cctv') || routeMode || urbanCctvState !== 'loaded') return
     const size = getCctvMarkerSize(zoomLevel)
-    const half = Math.round(size / 2)
-    const markerImage = new window.kakao.maps.MarkerImage(getCctvMarkerImg(size), new window.kakao.maps.Size(size, size), { offset: new window.kakao.maps.Point(half, half) })
+    const hitSize = getCctvHitSize(size)
+    const hitHalf = Math.round(hitSize / 2)
+    const markerImage = new window.kakao.maps.MarkerImage(getCctvMarkerImg(size), new window.kakao.maps.Size(hitSize, hitSize), { offset: new window.kakao.maps.Point(hitHalf, hitHalf) })
     const markers: any[] = []
     urbanCctvList.forEach(item => {
       const lng = getCctvLng(item); const lat = getCctvLat(item)
@@ -508,8 +509,9 @@ export default function CctvMap() {
     if (cityCctvClustererRef.current) { cityCctvClustererRef.current.clear(); cityCctvClustererRef.current.setMap(null); cityCctvClustererRef.current = null }
     if (!activeLayers.has('city-cctv') || cityCctvList.length === 0) return
     const size = getCctvMarkerSize(zoomLevel)
-    const half = Math.round(size / 2)
-    const markerImage = new window.kakao.maps.MarkerImage(getCityCctvMarkerImg(size), new window.kakao.maps.Size(size, size), { offset: new window.kakao.maps.Point(half, half) })
+    const hitSize = getCctvHitSize(size)
+    const hitHalf = Math.round(hitSize / 2)
+    const markerImage = new window.kakao.maps.MarkerImage(getCityCctvMarkerImg(size), new window.kakao.maps.Size(hitSize, hitSize), { offset: new window.kakao.maps.Point(hitHalf, hitHalf) })
     const markers: any[] = []
     cityCctvList.forEach(item => {
       if (!item.XCOORD || !item.YCOORD) return

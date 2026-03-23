@@ -49,12 +49,21 @@ export function isImageUrl(url: string): boolean {
   return /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/.test(url.toLowerCase().split('?')[0])
 }
 
+// 모바일 터치 hit area 최소 보장값 (px)
+const MIN_HIT_PX = 44
+
 export function getCctvMarkerImg(size: number): string {
-  const half = Math.round(size / 2)
-  const r = half - 1
+  const hit = Math.max(size, MIN_HIT_PX)
+  const cx = Math.round(hit / 2)
+  const r = Math.round(size / 2) - 1
   return 'data:image/svg+xml;base64,' + btoa(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${half}" cy="${half}" r="${r}" fill="#6366f1" stroke="#ffffff" stroke-width="1.5"/></svg>`
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${hit}" height="${hit}"><circle cx="${cx}" cy="${cx}" r="${r}" fill="#6366f1" stroke="#ffffff" stroke-width="1.5"/></svg>`
   )
+}
+
+/** MarkerImage Size/Point에 사용할 실제 hit 크기 반환 */
+export function getCctvHitSize(size: number): number {
+  return Math.max(size, MIN_HIT_PX)
 }
 
 export function getCctvMarkerSize(zoom: number): number {
@@ -115,10 +124,11 @@ export function buildCityCctvStreamUrl(
 }
 
 export function getCityCctvMarkerImg(size: number): string {
-  const half = Math.round(size / 2)
-  const r = half - 1
+  const hit = Math.max(size, MIN_HIT_PX)
+  const cx = Math.round(hit / 2)
+  const r = Math.round(size / 2) - 1
   return 'data:image/svg+xml;base64,' + btoa(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${half}" cy="${half}" r="${r}" fill="#14b8a6" stroke="#ffffff" stroke-width="1.5"/></svg>`
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${hit}" height="${hit}"><circle cx="${cx}" cy="${cx}" r="${r}" fill="#14b8a6" stroke="#ffffff" stroke-width="1.5"/></svg>`
   )
 }
 

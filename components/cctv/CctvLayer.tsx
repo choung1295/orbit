@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useEffect, useRef } from 'react'
-import { CctvItem, getCctvLat, getCctvLng, getCctvName, getCctvMarkerImg, getCctvMarkerSize, CLUSTER_STYLES } from './cctvUtils'
+import { CctvItem, getCctvLat, getCctvLng, getCctvName, getCctvMarkerImg, getCctvMarkerSize, getCctvHitSize, CLUSTER_STYLES } from './cctvUtils'
 
 interface Props {
   map: any
@@ -27,11 +27,12 @@ export default function CctvLayer({ map, cctvList, zoomLevel, onSelect }: Props)
     if (cctvList.length === 0) return
 
     const size = getCctvMarkerSize(zoomLevel)
-    const half = Math.round(size / 2)
+    const hitSize = getCctvHitSize(size)
+    const hitHalf = Math.round(hitSize / 2)
     const markerImage = new window.kakao.maps.MarkerImage(
       getCctvMarkerImg(size),
-      new window.kakao.maps.Size(size, size),
-      { offset: new window.kakao.maps.Point(half, half) }
+      new window.kakao.maps.Size(hitSize, hitSize),
+      { offset: new window.kakao.maps.Point(hitHalf, hitHalf) }
     )
 
     const markers: any[] = []
