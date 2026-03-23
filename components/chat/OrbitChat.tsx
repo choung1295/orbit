@@ -100,7 +100,7 @@ function OrbitChatContent() {
                 const cached = localStorage.getItem(NICK_KEY)
                 // 백그라운드에서 최신 nickname 갱신
                 supabase.from('users').select('nickname').eq('id', user.id).single()
-                    .then(({ data }) => {
+                    .then(({ data }: { data: { nickname?: string } | null }) => {
                         const fresh = data?.nickname || user.email?.split('@')[0] || '사용자'
                         if (fresh !== cached) {
                             localStorage.setItem(NICK_KEY, fresh)
