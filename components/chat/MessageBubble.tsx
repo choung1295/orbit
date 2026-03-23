@@ -86,12 +86,8 @@ export default function MessageBubble({
         <div className="flex flex-row items-start gap-2 w-full group -mt-2">
             <div className="flex-1 flex flex-col gap-1.5">
                 <div
-                    className={`px-4 py-3 rounded-2xl rounded-tl-sm text-[15px] leading-[1.7] max-w-none ${d ? 'prose prose-invert' : 'prose'}`}
-                    style={{
-                        backgroundColor: theme.msgAi,
-                        border: `1px solid ${theme.msgAiBorder}`,
-                        color: theme.msgAiText,
-                    }}
+                    className={`text-[15px] leading-[1.7] max-w-none ${d ? 'prose prose-invert' : 'prose'}`}
+                    style={{ color: theme.text }}
                 >
                     <ReactMarkdown
                         components={{
@@ -114,14 +110,36 @@ export default function MessageBubble({
                             ol: ({ children }) => (
                                 <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>
                             ),
-                            code: ({ children }) => (
-                                <code
-                                    className="px-1.5 py-0.5 rounded text-xs font-mono"
-                                    style={{ backgroundColor: theme.codeBg, color: theme.codeText }}
+                            pre: ({ children }) => (
+                                <pre
+                                    className="overflow-x-auto rounded-xl my-3 text-[13px] leading-relaxed"
+                                    style={{
+                                        backgroundColor: d ? '#1a1a26' : '#ffffff',
+                                        border: `1px solid ${d ? '#2a2a3a' : '#d9dee5'}`,
+                                        padding: '14px 18px',
+                                    }}
                                 >
                                     {children}
-                                </code>
+                                </pre>
                             ),
+                            code: ({ className, children }) => {
+                                const isBlock = !!className
+                                if (isBlock) {
+                                    return (
+                                        <code className={`${className} font-mono`} style={{ color: d ? '#a5b4fc' : '#4338ca' }}>
+                                            {children}
+                                        </code>
+                                    )
+                                }
+                                return (
+                                    <code
+                                        className="px-1.5 py-0.5 rounded text-[13px] font-mono"
+                                        style={{ backgroundColor: theme.codeBg, color: theme.codeText }}
+                                    >
+                                        {children}
+                                    </code>
+                                )
+                            },
                             strong: ({ children }) => (
                                 <strong className="font-semibold" style={{ color: theme.strong }}>
                                     {children}

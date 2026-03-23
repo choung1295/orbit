@@ -135,12 +135,8 @@ export default function MessageList({ messages, loading, streamingText, thinking
                     {loading && streamingText && (
                         <div className="flex flex-row items-start gap-2 w-full">
                             <div
-                                className="flex-1 px-4 py-3 rounded-2xl rounded-tl-sm text-[15px] leading-[1.7] whitespace-pre-wrap break-words"
-                                style={{
-                                    backgroundColor: theme.msgAi,
-                                    border: `1px solid ${theme.msgAiBorder}`,
-                                    color: theme.msgAiText,
-                                }}
+                                className="flex-1 text-[15px] leading-[1.7] whitespace-pre-wrap break-words"
+                                style={{ color: theme.text }}
                             >
                                 {streamingText}
                             </div>
