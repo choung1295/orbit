@@ -248,7 +248,7 @@ function ConversationItem({
                 setIsDragging(true)
             }}
             onDragEnd={() => setIsDragging(false)}
-            className={`w-full flex items-center gap-2 px-2 py-1 rounded-lg transition-all group cursor-grab active:cursor-grabbing select-none ${isDragging ? "opacity-40" : ""}`}
+            className={`w-full flex items-center gap-2 px-2 py-[3px] rounded-lg transition-all group cursor-grab active:cursor-grabbing select-none ${isDragging ? "opacity-40" : ""}`}
             style={{ backgroundColor: isActive ? theme.active : undefined }}
         >
             {!isActive && (

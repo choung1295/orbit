@@ -206,7 +206,7 @@ export default function ProjectsSection({
     const d = theme.isDark
 
     const [creating, setCreating] = useState(false)
-    const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set())
+    const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set())
     const [dragOverProjectId, setDragOverProjectId] = useState<string | null>(null)
     const [renamingConvId, setRenamingConvId] = useState<string | null>(null)
     const [renamingProjectId, setRenamingProjectId] = useState<string | null>(null)
@@ -260,7 +260,7 @@ export default function ProjectsSection({
     }
 
     const toggleCollapse = (projectId: string) => {
-        setCollapsedProjects((prev) => {
+        setExpandedProjects((prev) => {
             const next = new Set(prev)
             if (next.has(projectId)) next.delete(projectId)
             else next.add(projectId)
@@ -320,7 +320,7 @@ export default function ProjectsSection({
                 <div className="space-y-0.5">
                     {projects.map((project) => {
                         const projectChats = conversations.filter((c) => c.project_id === project.id)
-                        const isCollapsed = collapsedProjects.has(project.id)
+                        const isCollapsed = !expandedProjects.has(project.id)
                         const isDragOver = dragOverProjectId === project.id
                         const isRenamingProject = renamingProjectId === project.id
 
@@ -331,7 +331,7 @@ export default function ProjectsSection({
                                     onDragOver={(e) => handleDragOver(e, project.id)}
                                     onDragLeave={() => setDragOverProjectId(null)}
                                     onDrop={(e) => handleDrop(e, project.id)}
-                                    className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-all group/proj ${isDragOver
+                                    className={`flex items-center gap-1 px-2 py-[3px] rounded-lg transition-all group/proj ${isDragOver
                                         ? "bg-indigo-500/20 ring-1 ring-indigo-500/50"
                                         : ""}`}
                                     style={isDragOver ? {} : { cursor: 'default' }}
@@ -395,7 +395,7 @@ export default function ProjectsSection({
                                             return (
                                                 <div
                                                     key={chat.id}
-                                                    className="flex items-center gap-2 px-2 py-1 rounded-lg transition-colors group"
+                                                    className="flex items-center gap-2 px-2 py-[3px] rounded-lg transition-colors group"
                                                     style={{ backgroundColor: isActive ? theme.active : undefined }}
                                                     onMouseEnter={e => { if (!isActive) e.currentTarget.style.backgroundColor = theme.hover }}
                                                     onMouseLeave={e => { if (!isActive) e.currentTarget.style.backgroundColor = 'transparent' }}
