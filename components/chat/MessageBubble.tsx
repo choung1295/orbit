@@ -86,8 +86,8 @@ export default function MessageBubble({
                 <div
                     className="max-w-[65%] px-5 py-3.5 rounded-2xl rounded-tr-sm text-[15px] leading-[1.7] whitespace-pre-wrap break-words"
                     style={d
-                        ? { backgroundColor: 'rgba(255,255,255,0.07)', color: theme.text }
-                        : { backgroundColor: 'rgba(0,0,0,0.07)', color: theme.text }}
+                        ? { backgroundColor: 'rgba(255,255,255,0.12)', color: theme.text }
+                        : { backgroundColor: 'rgba(0,0,0,0.12)', color: theme.text }}
                 >
                     {message.fileName && (
                         <div className="flex items-center gap-2 mb-2.5 px-3 py-1.5 rounded-lg bg-white/10 text-xs text-indigo-200">
