@@ -272,10 +272,10 @@ function ConversationItem({
                     onMouseLeave={e => { if (!isActive) (e.currentTarget.parentElement as HTMLElement).style.backgroundColor = 'transparent' }}
                 >
                     <span
-                        className="text-[13px] truncate block transition-colors"
+                        className="text-[13px] block transition-colors whitespace-nowrap overflow-hidden"
                         style={{ color: isActive ? (d ? '#f0f0f5' : '#111827') : (d ? '#c8c8d8' : '#374151'), fontWeight: isActive ? 500 : 400 }}
                     >
-                        {chat.title}
+                        {chat.title.length > 15 ? chat.title.slice(0, 15) + '...' : chat.title}
                     </span>
                 </button>
             )}
@@ -571,7 +571,7 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
             {mobileOpen && (
                 <div className="md:hidden fixed inset-0 z-40 flex">
                     <div className={`absolute inset-0 ${d ? 'bg-black/60' : 'bg-black/30'}`} onClick={() => setMobileOpen(false)} />
-                    <div className="relative z-50 h-full animate-in slide-in-from-left duration-300">
+                    <div className="relative z-50 h-full w-[70vw] animate-in slide-in-from-left duration-300">
                         <SidebarContent onClose={() => setMobileOpen(false)} />
                     </div>
                 </div>
