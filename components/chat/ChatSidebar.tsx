@@ -441,17 +441,16 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
             style={{ backgroundColor: theme.panel, borderColor: d ? theme.panelBorder : 'transparent' }}
         >
             <div className="px-4 pt-5 pb-3">
-                <div className="flex items-center justify-between mb-4">
-                    <Link href="/orbit" className="flex items-center gap-2 group">
-                        <div className="w-6 h-6 shrink-0" aria-hidden="true" />
+                <div className="relative flex items-center mb-4">
+                    <Link href="/orbit" className="absolute left-1/2 -translate-x-1/2">
                         <span
-                            className="font-semibold text-lg tracking-wide transition-colors"
-                            style={{ color: d ? '#e4e4f0' : '#1f2937' }}
+                            className="font-semibold tracking-wide transition-colors"
+                            style={{ fontSize: '1.35rem', color: d ? '#e4e4f0' : '#1f2937' }}
                         >
                             Orbit
                         </span>
                     </Link>
-                    <div className="flex items-center gap-1">
+                    <div className="ml-auto flex items-center gap-1">
                         <ChevronDown className="w-4 h-4" style={{ color: theme.textMuted }} />
                         {onClose && (
                             <button
