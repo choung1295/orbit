@@ -86,6 +86,7 @@ function OrbitChatContent() {
     })
     const [isLoading, setIsLoading] = useState(() => !localStorage.getItem(NICK_KEY))
     const [isResizing, setIsResizing] = useState(false)
+    const [isHoveringHandle, setIsHoveringHandle] = useState(false)
 
     const dropdownRef = useRef<HTMLDivElement>(null)
     const resizeStartX = useRef(0)
@@ -199,6 +200,8 @@ function OrbitChatContent() {
                 <div
                     className="hidden md:flex shrink-0 items-center justify-center"
                     onMouseDown={handleResizeStart}
+                    onMouseEnter={() => setIsHoveringHandle(true)}
+                    onMouseLeave={() => setIsHoveringHandle(false)}
                     style={{
                         width: 8,
                         cursor: 'col-resize',
@@ -211,7 +214,7 @@ function OrbitChatContent() {
                         style={{
                             width: isResizing ? 3 : 2,
                             height: '100%',
-                            background: isResizing
+                            background: isResizing || isHoveringHandle
                                 ? '#6366f1'
                                 : d ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
                             transition: 'background 0.15s ease, width 0.15s ease',
@@ -227,11 +230,10 @@ function OrbitChatContent() {
                             display: 'flex',
                             flexDirection: 'column',
                             gap: 4,
-                            opacity: isResizing ? 1 : 0,
+                            opacity: isResizing || isHoveringHandle ? 1 : 0,
                             transition: 'opacity 0.15s ease',
                             pointerEvents: 'none',
                         }}
-                        className="group-hover:opacity-100"
                     >
                         {[0, 1, 2].map(i => (
                             <div key={i} style={{
@@ -356,13 +358,11 @@ function OrbitChatContent() {
                 </div>
 
                 {/* 채팅 창 */}
-                <div className="flex-1 min-h-0 flex flex-col items-center py-4">
-                    <div className="w-full max-w-3xl h-full flex flex-col px-4">
-                        <ChatWindow
-                            conversationId={conversationId}
-                            onConversationCreated={handleConversationCreated}
-                        />
-                    </div>
+                <div className="flex-1 min-h-0 flex flex-col">
+                    <ChatWindow
+                        conversationId={conversationId}
+                        onConversationCreated={handleConversationCreated}
+                    />
                 </div>
             </div>
         </div>
