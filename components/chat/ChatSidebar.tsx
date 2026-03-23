@@ -273,7 +273,7 @@ function ConversationItem({
                 >
                     <span
                         className="text-[13px] truncate block transition-colors"
-                        style={{ color: isActive ? (d ? '#f0f0f5' : '#1f2937') : (d ? '#a0a0b0' : '#6b7280'), fontWeight: isActive ? 500 : 400 }}
+                        style={{ color: isActive ? (d ? '#f0f0f5' : '#111827') : (d ? '#c8c8d8' : '#374151'), fontWeight: isActive ? 500 : 400 }}
                     >
                         {chat.title}
                     </span>
