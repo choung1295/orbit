@@ -783,13 +783,25 @@ export default function CctvMap() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
             </button>
           </div>
-          <iframe
-            src={buildCityCctvStreamUrl(selectedCityItem, mapBounds)}
-            style={{ flex: 1, width: '100%', border: 'none', background: '#000' }}
-            title={selectedCityItem.CCTVNAME}
-            allowFullScreen
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-fullscreen"
-          />
+          <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+            <iframe
+              src={buildCityCctvStreamUrl(selectedCityItem, mapBounds)}
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                width: '177.78vh',
+                height: '100%',
+                transform: 'translate(-50%, -50%) scale(1.8)',
+                transformOrigin: 'center center',
+                border: 'none',
+                background: '#000',
+              }}
+              title={selectedCityItem.CCTVNAME}
+              allowFullScreen
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-fullscreen"
+            />
+          </div>
         </div>,
         document.body
       )}
