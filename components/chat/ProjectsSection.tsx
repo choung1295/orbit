@@ -395,7 +395,7 @@ export default function ProjectsSection({
                                             return (
                                                 <div
                                                     key={chat.id}
-                                                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors group"
+                                                    className="flex items-center gap-2 px-2 py-1 rounded-lg transition-colors group"
                                                     style={{ backgroundColor: isActive ? theme.active : undefined }}
                                                     onMouseEnter={e => { if (!isActive) e.currentTarget.style.backgroundColor = theme.hover }}
                                                     onMouseLeave={e => { if (!isActive) e.currentTarget.style.backgroundColor = 'transparent' }}
