@@ -275,7 +275,7 @@ function OrbitChatContent() {
 
                     <Link
                         href="/orbit"
-                        className="flex-1 text-center md:flex-none md:text-left text-[1.25rem] font-extrabold md:text-sm md:font-medium truncate hover:opacity-70 transition-opacity"
+                        className="flex-1 text-center md:flex-none md:text-left text-[1.25rem] font-bold md:text-sm md:font-medium truncate hover:opacity-70 transition-opacity"
                         style={{ color: theme.textSub }}
                     >
                         Orbit AI
