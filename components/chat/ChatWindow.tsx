@@ -190,7 +190,7 @@ export default function ChatWindow({ conversationId, onConversationCreated }: Ch
                                 <button
                                     onClick={() => handleSend()}
                                     disabled={!input.trim() && !selectedFile}
-                                    className="h-9 w-9 rounded-full bg-[#2DD4BF] hover:bg-teal-400 active:bg-teal-600 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+                                    className="h-9 w-9 rounded-full bg-[#20C6B2] hover:bg-[#14b8a6] active:bg-[#0d9488] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
                                 >
                                     <Send className="w-4 h-4 text-white" />
                                 </button>
