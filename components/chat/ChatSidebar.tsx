@@ -464,10 +464,12 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                 </div>
                 <button
                     onClick={() => { onNewChat?.(); onClose?.() }}
-                    className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 transition-all text-sm text-white font-medium shadow-sm active:scale-[0.98]"
+                    className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all text-[13px] font-medium active:scale-[0.98] ${d
+                        ? 'bg-transparent border border-[#2e2e3a] text-[#a0a0b0] hover:bg-[#1a1a24] hover:text-[#f0f0f5]'
+                        : 'bg-transparent border border-[#d9dee5] text-[#6b7280] hover:bg-black/[0.04] hover:text-[#1f2937]'}`}
                 >
                     <Plus className="w-4 h-4" />
-                    New chat
+                    새 채팅
                 </button>
             </div>
 
