@@ -24,6 +24,7 @@ import {
 } from './map/useMapStore'
 // [임시] 점검중 표시 — useCityMaintenanceCctv.ts 로 교체 예정
 import { useCityMaintenanceCctv } from './cctv/useCityMaintenanceCctv'
+import { useCctvStatusCheck } from './cctv/useCctvStatusCheck'
 import { useLocationSearch, type LocationSearchResult } from './map/useLocationSearch'
 import LocationSearchBar from './map/LocationSearchBar'
 import { haversineKm } from './cctv/cctvUtils'
@@ -146,13 +147,16 @@ export default function CctvMap() {
   // [임시] 세션 내 클릭 실패 이력 기반 보조 마킹 — useCityMaintenanceCctv.ts 제거 시 이 줄도 함께 제거
   const { onCityPopupOpen, onCityPopupClose, maintenanceCctvIds: sessionIds } = useCityMaintenanceCctv()
 
-  // 두 소스 합산 (서버 기반 주, 세션 기반 보조)
+  // 실시간 HEAD 체크 기반 점검중 (뷰포트 변경마다 재체크, 백그라운드)
+  const realtimeFailedIds = useCctvStatusCheck(cityCctvList)
+
+  // 세 소스 합산 (실시간 > 서버 기반 > 세션 기반 순)
   const maintenanceCctvIds = useMemo(() => {
-    if (sessionIds.size === 0) return serverMaintenanceIds
     const merged = new Set(serverMaintenanceIds)
     sessionIds.forEach(id => merged.add(id))
+    realtimeFailedIds.forEach(id => merged.add(id))
     return merged
-  }, [serverMaintenanceIds, sessionIds])
+  }, [serverMaintenanceIds, sessionIds, realtimeFailedIds])
 
   // ── 위치 검색 ─────────────────────────────────────────────────────────
   const locationSearch = useLocationSearch()
