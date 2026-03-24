@@ -97,9 +97,10 @@ export default function CctvMap() {
   const preMountHistoryLengthRef = useRef(0) // 카카오 SDK 초기화 이전 history.length 기준점
 
   // ── 가로/세로 방향 감지 (시내 CCTV 전체화면 전환용) ─────────────────────
+  // 모바일 가로 회전 시에만 전체화면 전환 (데스크탑은 항상 landscape라 제외)
   const [isLandscape, setIsLandscape] = useState(false)
   useEffect(() => {
-    const mq = window.matchMedia('(orientation: landscape)')
+    const mq = window.matchMedia('(orientation: landscape) and (max-width: 767px)')
     const handler = (e: MediaQueryListEvent | MediaQueryList) => setIsLandscape(e.matches)
     handler(mq)
     mq.addEventListener('change', handler)
