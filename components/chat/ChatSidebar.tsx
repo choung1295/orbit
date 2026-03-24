@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import Link from "next/link"
 import {
-    Plus, MessageSquare, Settings, ChevronDown,
+    Plus, MessageSquare, Settings,
     Menu, X, MoreHorizontal, Pencil, Share2,
     FolderInput, Trash2, Archive,
 } from "lucide-react"
