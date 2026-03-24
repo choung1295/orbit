@@ -1,7 +1,7 @@
 'use client'
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
   CctvItem, CityCctvItem,
@@ -22,6 +22,9 @@ import {
   DEFAULT_VIEW, MAP_VIEW_KEY, MAP_MEMORY_KEY,
   type LayerId,
 } from './map/useMapStore'
+import { useLocationSearch, type LocationSearchResult } from './map/useLocationSearch'
+import LocationSearchBar from './map/LocationSearchBar'
+import { haversineKm } from './cctv/cctvUtils'
 
 declare global {
   interface Window { kakao: any }
@@ -30,6 +33,12 @@ declare global {
 const MY_LOCATION_IMG = 'data:image/svg+xml;base64,' + btoa(
   '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><circle cx="14" cy="14" r="13" fill="white"/><circle cx="14" cy="14" r="9" fill="#EF4444"/><circle cx="14" cy="14" r="3.5" fill="white"/></svg>'
 )
+
+const SEARCH_PIN_IMG = 'data:image/svg+xml;base64,' + btoa(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="36"><path d="M14 1C7.92 1 3 5.92 3 12c0 8.75 11 23 11 23S25 20.75 25 12C25 5.92 20.08 1 14 1z" fill="#2563EB" stroke="#fff" stroke-width="1.5"/><circle cx="14" cy="12" r="4.5" fill="#fff"/></svg>'
+)
+
+const SEARCH_RADIUS_KM = 1
 
 // ── 도시교통 CCTV 미디어 뷰어 ─────────────────────────────────────────────
 type MediaState = 'video' | 'image' | 'error'
@@ -78,6 +87,7 @@ export default function CctvMap() {
   const cityCctvClustererRef = useRef<any>(null)
   const fakeCityOverlaysRef = useRef<any[]>([])
   const myMarkerRef = useRef<any>(null)
+  const searchPinMarkerRef = useRef<any>(null)
   const reconnectTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const cityFetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const locationMemoryRef = useRef(true)
@@ -123,6 +133,9 @@ export default function CctvMap() {
   const selectedUrban = selectedCctv?.type === 'urban' ? selectedCctv.item : null
   const selectedCityItem = selectedCctv?.type === 'city' ? selectedCctv.item : null
 
+  // ── 위치 검색 ─────────────────────────────────────────────────────────
+  const locationSearch = useLocationSearch()
+
   // ── 경로 ──────────────────────────────────────────────────────────────
   const { routes, isLoading: routeLoading, error: routeError, fetchRoutesByCoords, selectRoute, clearRoutes } = useRoute()
   const routeCctvMap = useCctvFilter(routes, urbanCctvList)
@@ -132,6 +145,24 @@ export default function CctvMap() {
   const routeCctvCountMap = Object.fromEntries(
     Object.entries(routeCctvMap).map(([id, list]) => [id, list.length])
   )
+
+  // ── 검색 위치 주변 도시교통 CCTV (1km 이내) ───────────────────────────
+  const nearbyUrbanCctvs = useMemo(() => {
+    const sp = locationSearch.selectedPoint
+    if (!sp || urbanCctvState !== 'loaded') return []
+    return urbanCctvList
+      .filter(item => {
+        const lat = getCctvLat(item), lng = getCctvLng(item)
+        if (lat == null || lng == null) return false
+        return haversineKm(sp.lat, sp.lng, lat, lng) <= SEARCH_RADIUS_KM
+      })
+      .sort((a, b) => {
+        const sp2 = locationSearch.selectedPoint!
+        return haversineKm(sp2.lat, sp2.lng, getCctvLat(a)!, getCctvLng(a)!)
+             - haversineKm(sp2.lat, sp2.lng, getCctvLat(b)!, getCctvLng(b)!)
+      })
+  }, [locationSearch.selectedPoint, urbanCctvList, urbanCctvState])
+
   // ── CCTV 팝업 히스토리 / 뒤로가기 처리 ───────────────────────────────
   // 카카오 SDK가 히스토리 엔트리를 추가하기 전 기준 길이를 저장
   useEffect(() => {
@@ -483,6 +514,40 @@ export default function CctvMap() {
     )
   }, [isMapReady, myLocation, setMyLocation, setLocationLoading])
 
+  // ── 검색 핀 마커 ─────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!isMapReady || !mapInstanceRef.current) return
+    if (searchPinMarkerRef.current) { searchPinMarkerRef.current.setMap(null); searchPinMarkerRef.current = null }
+    const sp = locationSearch.selectedPoint
+    if (!sp) return
+    searchPinMarkerRef.current = new window.kakao.maps.Marker({
+      position: new window.kakao.maps.LatLng(sp.lat, sp.lng),
+      map: mapInstanceRef.current,
+      image: new window.kakao.maps.MarkerImage(
+        SEARCH_PIN_IMG,
+        new window.kakao.maps.Size(28, 36),
+        { offset: new window.kakao.maps.Point(14, 36) }
+      ),
+      title: sp.label,
+      zIndex: 100,
+    })
+  }, [isMapReady, locationSearch.selectedPoint])
+
+  // ── 위치 검색 선택 핸들러 ─────────────────────────────────────────────
+  const handleLocationSelect = useCallback((r: LocationSearchResult) => {
+    locationSearch.selectResult(r)
+    if (isMapReady && mapInstanceRef.current) {
+      mapInstanceRef.current.setCenter(new window.kakao.maps.LatLng(r.lat, r.lng))
+      mapInstanceRef.current.setLevel(5)
+    }
+    // 도시교통 CCTV 데이터 미로딩 시 로딩 시작 (주변 CCTV 조회용)
+    if (urbanCctvState === 'idle') loadUrbanCctv()
+  }, [locationSearch, isMapReady, urbanCctvState, loadUrbanCctv])
+
+  const handleSearchClear = useCallback(() => {
+    locationSearch.clear()
+  }, [locationSearch])
+
   // ── 도시교통 CCTV 클러스터러 ─────────────────────────────────────────
   useEffect(() => {
     if (!isMapReady || !mapInstanceRef.current) return
@@ -549,6 +614,69 @@ export default function CctvMap() {
       {/* ── 출처 표기 ── */}
       <div className="absolute bottom-1 right-2 z-[100] text-[10px] text-white/70 pointer-events-none select-none">
         교통정보 © ITS · UTIC
+      </div>
+
+      {/* ── 위치 검색 (우상단) ── */}
+      <div className="absolute top-3 right-3 z-[200] w-72 max-w-[calc(100vw-88px)] flex flex-col gap-1.5">
+        <LocationSearchBar
+          query={locationSearch.query}
+          results={locationSearch.results}
+          selectedPoint={locationSearch.selectedPoint}
+          onQueryChange={locationSearch.setQuery}
+          onSelect={handleLocationSelect}
+          onClear={handleSearchClear}
+        />
+
+        {/* 검색 결과 선택 후: 선택 위치 + 주변 CCTV */}
+        {locationSearch.selectedPoint && (
+          <div className="bg-gray-950/95 border border-white/10 rounded-xl p-3 shadow-2xl backdrop-blur-xl">
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <div className="min-w-0">
+                <p className="text-[10px] text-blue-400 font-medium">선택 위치</p>
+                <p className="text-white text-xs font-semibold truncate">{locationSearch.selectedPoint.label}</p>
+              </div>
+              <button onClick={handleSearchClear} className="text-gray-500 hover:text-white transition-colors flex-shrink-0 mt-0.5">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            {(urbanCctvState === 'idle' || urbanCctvState === 'loading') && (
+              <p className="text-[10px] text-gray-400 flex items-center gap-1.5">
+                <svg className="animate-spin w-3 h-3 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                </svg>
+                주변 CCTV 검색 중...
+              </p>
+            )}
+
+            {urbanCctvState === 'loaded' && nearbyUrbanCctvs.length === 0 && (
+              <p className="text-[10px] text-gray-500">반경 1km 이내 도시교통 CCTV 없음</p>
+            )}
+
+            {urbanCctvState === 'loaded' && nearbyUrbanCctvs.length > 0 && (
+              <div>
+                <p className="text-[10px] text-gray-400 mb-1.5">
+                  반경 1km · 도시교통 CCTV <span className="text-blue-400 font-semibold">{nearbyUrbanCctvs.length}개</span>
+                </p>
+                <div className="flex flex-col gap-0.5 max-h-32 overflow-y-auto">
+                  {nearbyUrbanCctvs.slice(0, 6).map((item, i) => (
+                    <button
+                      key={i}
+                      onClick={() => openUrbanCctv(item)}
+                      className="flex items-center gap-2 w-full px-2 py-1 rounded-lg text-left hover:bg-white/10 transition-colors"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                      <span className="text-xs text-gray-200 truncate">{getCctvName(item)}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── 좌측 상단: 메뉴바 + 도구버튼 컬럼 ── */}
