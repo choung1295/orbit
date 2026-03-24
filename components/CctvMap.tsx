@@ -181,8 +181,9 @@ export default function CctvMap() {
       if (!popupHistoryPushedRef.current) return
       popupHistoryPushedRef.current = false
       clearSelection()
-      // 마운트 기준점까지 남은 중간 엔트리 수 (카카오 SDK가 추가한 엔트리)
-      const remaining = history.length - preMountHistoryLengthRef.current - 1
+      // 마운트 기준점(지도 진입 전)까지 되돌아가야 할 엔트리 수
+      // -1 없이 계산: 카카오 SDK 엔트리 + /map 엔트리 자체까지 건너뛰어 채팅으로 직행
+      const remaining = history.length - preMountHistoryLengthRef.current
       if (remaining > 0) {
         popstateFromCodeRef.current = true
         history.go(-remaining)
