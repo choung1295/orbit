@@ -86,6 +86,8 @@ export default function CctvMap() {
   const clustererRef = useRef<any>(null)
   const cityCctvClustererRef = useRef<any>(null)
   const fakeCityOverlaysRef = useRef<any[]>([])
+  const cityMaintenanceOverlaysRef = useRef<any[]>([])
+  const cityOpenTimeRef = useRef<number>(0)
   const myMarkerRef = useRef<any>(null)
   const searchPinMarkerRef = useRef<any>(null)
   const reconnectTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -122,6 +124,7 @@ export default function CctvMap() {
     urbanCctvState, setUrbanCctvState,
     cityCctvList, setCityCctvList,
     setCityCctvState,
+    maintenanceCctvIds, markCctvMaintenance,
     myLocation, setMyLocation,
     locationLoading, setLocationLoading,
     showRoutePanel, setShowRoutePanel,
@@ -205,6 +208,7 @@ export default function CctvMap() {
   }, [selectUrbanCctv])
 
   const openCityCctv = useCallback((item: CityCctvItem) => {
+    cityOpenTimeRef.current = Date.now()
     if (!popupHistoryPushedRef.current) {
       history.pushState({ cctvPopup: true }, '')
       popupHistoryPushedRef.current = true
@@ -216,6 +220,11 @@ export default function CctvMap() {
 
   /** X 버튼 닫기: 즉시 닫고 카카오 SDK 엔트리 포함 CCTV 관련 히스토리 전부 제거 */
   const handleClosePopup = useCallback(() => {
+    // 4초 이내 닫히면 점검중 표시 (클릭 실패 이력 기반)
+    if (selectedCityItem && cityOpenTimeRef.current > 0 && Date.now() - cityOpenTimeRef.current < 4000) {
+      markCctvMaintenance(selectedCityItem.CCTVID)
+    }
+    cityOpenTimeRef.current = 0
     clearSelection()
     if (popupHistoryPushedRef.current) {
       popupHistoryPushedRef.current = false
@@ -224,7 +233,7 @@ export default function CctvMap() {
       const delta = history.length - preMountHistoryLengthRef.current
       history.go(-(delta > 0 ? delta : 1))
     }
-  }, [clearSelection])
+  }, [clearSelection, selectedCityItem, markCctvMaintenance])
 
   const handleSelectCctv = useCallback((item: CctvItem) => {
     openUrbanCctv(item)
@@ -588,6 +597,36 @@ export default function CctvMap() {
     })
     cityCctvClustererRef.current = new window.kakao.maps.MarkerClusterer({ map: mapInstanceRef.current, averageCenter: true, minLevel: 6, disableClickZoom: false, markers, styles: CITY_CLUSTER_STYLES })
   }, [isMapReady, cityCctvList, zoomLevel, activeLayers, openCityCctv])
+
+  // ── 시내 CCTV 점검중 오버레이 ──────────────────────────────────────────
+  useEffect(() => {
+    cityMaintenanceOverlaysRef.current.forEach(o => o.setMap(null))
+    cityMaintenanceOverlaysRef.current = []
+    if (!isMapReady || !mapInstanceRef.current) return
+    if (!activeLayers.has('city-cctv') || maintenanceCctvIds.size === 0) return
+    cityCctvList.forEach(item => {
+      if (!maintenanceCctvIds.has(item.CCTVID) || !item.XCOORD || !item.YCOORD) return
+      const wrap = document.createElement('div')
+      wrap.style.cssText = 'padding-left:9px;padding-bottom:5px;pointer-events:none;'
+      const span = document.createElement('span')
+      span.textContent = '점검중'
+      span.style.cssText = 'color:#ef4444;font-size:10px;font-weight:700;white-space:nowrap;line-height:1;letter-spacing:-0.02em;text-shadow:-1px 0 rgba(255,255,255,0.85),1px 0 rgba(255,255,255,0.85),0 -1px rgba(255,255,255,0.85),0 1px rgba(255,255,255,0.85);'
+      wrap.appendChild(span)
+      const overlay = new window.kakao.maps.CustomOverlay({
+        position: new window.kakao.maps.LatLng(item.YCOORD, item.XCOORD),
+        content: wrap,
+        xAnchor: 0,
+        yAnchor: 1,
+        zIndex: 3,
+      })
+      overlay.setMap(mapInstanceRef.current)
+      cityMaintenanceOverlaysRef.current.push(overlay)
+    })
+    return () => {
+      cityMaintenanceOverlaysRef.current.forEach(o => o.setMap(null))
+      cityMaintenanceOverlaysRef.current = []
+    }
+  }, [isMapReady, cityCctvList, activeLayers, maintenanceCctvIds])
 
   const urbanActive = activeLayers.has('urban-cctv')
   const cityActive = activeLayers.has('city-cctv')
