@@ -22,9 +22,6 @@ import {
   DEFAULT_VIEW, MAP_VIEW_KEY, MAP_MEMORY_KEY,
   type LayerId,
 } from './map/useMapStore'
-// [임시] 점검중 표시 — useCityMaintenanceCctv.ts 로 교체 예정
-import { useCityMaintenanceCctv } from './cctv/useCityMaintenanceCctv'
-import { useCctvStatusCheck } from './cctv/useCctvStatusCheck'
 import { useLocationSearch, type LocationSearchResult } from './map/useLocationSearch'
 import LocationSearchBar from './map/LocationSearchBar'
 import { haversineKm } from './cctv/cctvUtils'
@@ -89,7 +86,6 @@ export default function CctvMap() {
   const clustererRef = useRef<any>(null)
   const cityCctvClustererRef = useRef<any>(null)
   const fakeCityOverlaysRef = useRef<any[]>([])
-  const cityMaintenanceOverlaysRef = useRef<any[]>([])
   const myMarkerRef = useRef<any>(null)
   const searchPinMarkerRef = useRef<any>(null)
   const reconnectTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -137,26 +133,6 @@ export default function CctvMap() {
   // ── 파생 상태 ─────────────────────────────────────────────────────────
   const selectedUrban = selectedCctv?.type === 'urban' ? selectedCctv.item : null
   const selectedCityItem = selectedCctv?.type === 'city' ? selectedCctv.item : null
-
-  // 서버 기반 점검중 — 크론이 사전 점검한 결과를 cityCctvList에서 직접 파생
-  const serverMaintenanceIds = useMemo(
-    () => new Set(cityCctvList.filter(i => i.is_maintenance).map(i => i.CCTVID)),
-    [cityCctvList]
-  )
-
-  // [임시] 세션 내 클릭 실패 이력 기반 보조 마킹 — useCityMaintenanceCctv.ts 제거 시 이 줄도 함께 제거
-  const { onCityPopupOpen, onCityPopupClose, maintenanceCctvIds: sessionIds } = useCityMaintenanceCctv()
-
-  // 실시간 HEAD 체크 기반 점검중 (뷰포트 변경마다 재체크, 백그라운드)
-  const realtimeFailedIds = useCctvStatusCheck(cityCctvList)
-
-  // 세 소스 합산 (실시간 > 서버 기반 > 세션 기반 순)
-  const maintenanceCctvIds = useMemo(() => {
-    const merged = new Set(serverMaintenanceIds)
-    sessionIds.forEach(id => merged.add(id))
-    realtimeFailedIds.forEach(id => merged.add(id))
-    return merged
-  }, [serverMaintenanceIds, sessionIds, realtimeFailedIds])
 
   // ── 위치 검색 ─────────────────────────────────────────────────────────
   const locationSearch = useLocationSearch()
@@ -229,7 +205,6 @@ export default function CctvMap() {
   }, [selectUrbanCctv])
 
   const openCityCctv = useCallback((item: CityCctvItem) => {
-    onCityPopupOpen() // [임시] 점검중 감지용 열림 시각 기록
     if (!popupHistoryPushedRef.current) {
       history.pushState({ cctvPopup: true }, '')
       popupHistoryPushedRef.current = true
@@ -237,11 +212,10 @@ export default function CctvMap() {
       history.replaceState({ cctvPopup: true }, '')
     }
     selectCityCctv(item)
-  }, [selectCityCctv, onCityPopupOpen])
+  }, [selectCityCctv])
 
   /** X 버튼 닫기: 즉시 닫고 카카오 SDK 엔트리 포함 CCTV 관련 히스토리 전부 제거 */
   const handleClosePopup = useCallback(() => {
-    onCityPopupClose(selectedCityItem?.CCTVID) // [임시] 점검중 감지용 닫힘 시각 비교
     clearSelection()
     if (popupHistoryPushedRef.current) {
       popupHistoryPushedRef.current = false
@@ -250,7 +224,7 @@ export default function CctvMap() {
       const delta = history.length - preMountHistoryLengthRef.current
       history.go(-(delta > 0 ? delta : 1))
     }
-  }, [clearSelection, selectedCityItem, onCityPopupClose])
+  }, [clearSelection])
 
   const handleSelectCctv = useCallback((item: CctvItem) => {
     openUrbanCctv(item)
@@ -614,38 +588,6 @@ export default function CctvMap() {
     })
     cityCctvClustererRef.current = new window.kakao.maps.MarkerClusterer({ map: mapInstanceRef.current, averageCenter: true, minLevel: 6, disableClickZoom: false, markers, styles: CITY_CLUSTER_STYLES })
   }, [isMapReady, cityCctvList, zoomLevel, activeLayers, openCityCctv])
-
-  // ── [임시] 시내 CCTV 점검중 오버레이 ─────────────────────────────────
-  // useCityMaintenanceCctv 교체 시 이 effect는 그대로 유지됩니다.
-  // maintenanceCctvIds 가 달라지면 자동으로 오버레이가 갱신됩니다.
-  useEffect(() => {
-    cityMaintenanceOverlaysRef.current.forEach(o => o.setMap(null))
-    cityMaintenanceOverlaysRef.current = []
-    if (!isMapReady || !mapInstanceRef.current) return
-    if (!activeLayers.has('city-cctv') || maintenanceCctvIds.size === 0) return
-    cityCctvList.forEach(item => {
-      if (!maintenanceCctvIds.has(item.CCTVID) || !item.XCOORD || !item.YCOORD) return
-      const wrap = document.createElement('div')
-      wrap.style.cssText = 'padding-left:9px;padding-bottom:5px;pointer-events:none;'
-      const span = document.createElement('span')
-      span.textContent = '점검중'
-      span.style.cssText = 'color:#ef4444;font-size:10px;font-weight:700;white-space:nowrap;line-height:1;letter-spacing:-0.02em;text-shadow:-1px 0 rgba(255,255,255,0.85),1px 0 rgba(255,255,255,0.85),0 -1px rgba(255,255,255,0.85),0 1px rgba(255,255,255,0.85);'
-      wrap.appendChild(span)
-      const overlay = new window.kakao.maps.CustomOverlay({
-        position: new window.kakao.maps.LatLng(item.YCOORD, item.XCOORD),
-        content: wrap,
-        xAnchor: 0,
-        yAnchor: 1,
-        zIndex: 3,
-      })
-      overlay.setMap(mapInstanceRef.current)
-      cityMaintenanceOverlaysRef.current.push(overlay)
-    })
-    return () => {
-      cityMaintenanceOverlaysRef.current.forEach(o => o.setMap(null))
-      cityMaintenanceOverlaysRef.current = []
-    }
-  }, [isMapReady, cityCctvList, activeLayers, maintenanceCctvIds])
 
   const urbanActive = activeLayers.has('urban-cctv')
   const cityActive = activeLayers.has('city-cctv')
