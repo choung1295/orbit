@@ -137,8 +137,22 @@ export default function CctvMap() {
   const selectedUrban = selectedCctv?.type === 'urban' ? selectedCctv.item : null
   const selectedCityItem = selectedCctv?.type === 'city' ? selectedCctv.item : null
 
-  // [임시] 점검중 표시 훅 — 이 훅만 교체하면 전체 점검중 로직이 바뀜
-  const { maintenanceCctvIds, onCityPopupOpen, onCityPopupClose } = useCityMaintenanceCctv()
+  // 서버 기반 점검중 — 크론이 사전 점검한 결과를 cityCctvList에서 직접 파생
+  const serverMaintenanceIds = useMemo(
+    () => new Set(cityCctvList.filter(i => i.is_maintenance).map(i => i.CCTVID)),
+    [cityCctvList]
+  )
+
+  // [임시] 세션 내 클릭 실패 이력 기반 보조 마킹 — useCityMaintenanceCctv.ts 제거 시 이 줄도 함께 제거
+  const { onCityPopupOpen, onCityPopupClose, maintenanceCctvIds: sessionIds } = useCityMaintenanceCctv()
+
+  // 두 소스 합산 (서버 기반 주, 세션 기반 보조)
+  const maintenanceCctvIds = useMemo(() => {
+    if (sessionIds.size === 0) return serverMaintenanceIds
+    const merged = new Set(serverMaintenanceIds)
+    sessionIds.forEach(id => merged.add(id))
+    return merged
+  }, [serverMaintenanceIds, sessionIds])
 
   // ── 위치 검색 ─────────────────────────────────────────────────────────
   const locationSearch = useLocationSearch()

@@ -95,6 +95,8 @@ export interface CityCctvItem {
   CENTERNAME: string
   ID?: string
   CCTVIP?: string
+  /** 크론이 사전 점검한 점검중 여부 (서버에서 주입, 없으면 false로 처리) */
+  is_maintenance?: boolean
 }
 
 const CITY_KIND_MAP: Record<string, string> = {
