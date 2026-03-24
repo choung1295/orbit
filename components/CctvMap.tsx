@@ -22,6 +22,8 @@ import {
   DEFAULT_VIEW, MAP_VIEW_KEY, MAP_MEMORY_KEY,
   type LayerId,
 } from './map/useMapStore'
+// [임시] 점검중 표시 — useCityMaintenanceCctv.ts 로 교체 예정
+import { useCityMaintenanceCctv } from './cctv/useCityMaintenanceCctv'
 import { useLocationSearch, type LocationSearchResult } from './map/useLocationSearch'
 import LocationSearchBar from './map/LocationSearchBar'
 import { haversineKm } from './cctv/cctvUtils'
@@ -87,7 +89,6 @@ export default function CctvMap() {
   const cityCctvClustererRef = useRef<any>(null)
   const fakeCityOverlaysRef = useRef<any[]>([])
   const cityMaintenanceOverlaysRef = useRef<any[]>([])
-  const cityOpenTimeRef = useRef<number>(0)
   const myMarkerRef = useRef<any>(null)
   const searchPinMarkerRef = useRef<any>(null)
   const reconnectTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -124,7 +125,6 @@ export default function CctvMap() {
     urbanCctvState, setUrbanCctvState,
     cityCctvList, setCityCctvList,
     setCityCctvState,
-    maintenanceCctvIds, markCctvMaintenance,
     myLocation, setMyLocation,
     locationLoading, setLocationLoading,
     showRoutePanel, setShowRoutePanel,
@@ -136,6 +136,9 @@ export default function CctvMap() {
   // ── 파생 상태 ─────────────────────────────────────────────────────────
   const selectedUrban = selectedCctv?.type === 'urban' ? selectedCctv.item : null
   const selectedCityItem = selectedCctv?.type === 'city' ? selectedCctv.item : null
+
+  // [임시] 점검중 표시 훅 — 이 훅만 교체하면 전체 점검중 로직이 바뀜
+  const { maintenanceCctvIds, onCityPopupOpen, onCityPopupClose } = useCityMaintenanceCctv()
 
   // ── 위치 검색 ─────────────────────────────────────────────────────────
   const locationSearch = useLocationSearch()
@@ -208,7 +211,7 @@ export default function CctvMap() {
   }, [selectUrbanCctv])
 
   const openCityCctv = useCallback((item: CityCctvItem) => {
-    cityOpenTimeRef.current = Date.now()
+    onCityPopupOpen() // [임시] 점검중 감지용 열림 시각 기록
     if (!popupHistoryPushedRef.current) {
       history.pushState({ cctvPopup: true }, '')
       popupHistoryPushedRef.current = true
@@ -216,15 +219,11 @@ export default function CctvMap() {
       history.replaceState({ cctvPopup: true }, '')
     }
     selectCityCctv(item)
-  }, [selectCityCctv])
+  }, [selectCityCctv, onCityPopupOpen])
 
   /** X 버튼 닫기: 즉시 닫고 카카오 SDK 엔트리 포함 CCTV 관련 히스토리 전부 제거 */
   const handleClosePopup = useCallback(() => {
-    // 4초 이내 닫히면 점검중 표시 (클릭 실패 이력 기반)
-    if (selectedCityItem && cityOpenTimeRef.current > 0 && Date.now() - cityOpenTimeRef.current < 4000) {
-      markCctvMaintenance(selectedCityItem.CCTVID)
-    }
-    cityOpenTimeRef.current = 0
+    onCityPopupClose(selectedCityItem?.CCTVID) // [임시] 점검중 감지용 닫힘 시각 비교
     clearSelection()
     if (popupHistoryPushedRef.current) {
       popupHistoryPushedRef.current = false
@@ -233,7 +232,7 @@ export default function CctvMap() {
       const delta = history.length - preMountHistoryLengthRef.current
       history.go(-(delta > 0 ? delta : 1))
     }
-  }, [clearSelection, selectedCityItem, markCctvMaintenance])
+  }, [clearSelection, selectedCityItem, onCityPopupClose])
 
   const handleSelectCctv = useCallback((item: CctvItem) => {
     openUrbanCctv(item)
@@ -598,7 +597,9 @@ export default function CctvMap() {
     cityCctvClustererRef.current = new window.kakao.maps.MarkerClusterer({ map: mapInstanceRef.current, averageCenter: true, minLevel: 6, disableClickZoom: false, markers, styles: CITY_CLUSTER_STYLES })
   }, [isMapReady, cityCctvList, zoomLevel, activeLayers, openCityCctv])
 
-  // ── 시내 CCTV 점검중 오버레이 ──────────────────────────────────────────
+  // ── [임시] 시내 CCTV 점검중 오버레이 ─────────────────────────────────
+  // useCityMaintenanceCctv 교체 시 이 effect는 그대로 유지됩니다.
+  // maintenanceCctvIds 가 달라지면 자동으로 오버레이가 갱신됩니다.
   useEffect(() => {
     cityMaintenanceOverlaysRef.current.forEach(o => o.setMap(null))
     cityMaintenanceOverlaysRef.current = []

@@ -73,12 +73,6 @@ export function useMapStore() {
   const [cityCctvList, setCityCctvList] = useState<CityCctvItem[]>([])
   const [cityCctvState, setCityCctvState] = useState<LoadingState>('idle')
 
-  // ── 시내 CCTV 점검중 (세션 내 클릭 실패 이력 기반) ────────────────────
-  const [maintenanceCctvIds, setMaintenanceCctvIds] = useState<Set<string>>(new Set())
-  const markCctvMaintenance = useCallback((id: string) => {
-    setMaintenanceCctvIds(prev => prev.has(id) ? prev : new Set(prev).add(id))
-  }, [])
-
   // ── 내 위치 ───────────────────────────────────────────────────────────
   const [myLocation, setMyLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [locationLoading, setLocationLoading] = useState(false)
@@ -119,7 +113,6 @@ export function useMapStore() {
     // city cctv data
     cityCctvList, setCityCctvList,
     cityCctvState, setCityCctvState,
-    maintenanceCctvIds, markCctvMaintenance,
 
     // my location
     myLocation, setMyLocation,
