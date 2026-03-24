@@ -450,9 +450,7 @@ export default function ChatSidebar({ activeChatId, onSelectChat, onNewChat }: C
                             Orbit
                         </span>
                     </Link>
-                    <div className="ml-auto flex items-center gap-1">
-                        <ChevronDown className="w-4 h-4" style={{ color: theme.textMuted }} />
-                    </div>
+                    <div className="ml-auto" />
                 </div>
                 <button
                     onClick={() => { onNewChat?.(); onClose?.() }}
