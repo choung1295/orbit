@@ -641,8 +641,8 @@ export default function CctvMap() {
         교통정보 © ITS · UTIC
       </div>
 
-      {/* ── 위치 검색 (우상단) ── */}
-      <div className="absolute top-3 right-3 z-[200] w-72 max-w-[calc(100vw-88px)] flex flex-col gap-1.5">
+      {/* ── 위치 검색 (모바일: 메뉴바 아래 전체 너비 / 데스크탑: 우상단 고정) ── */}
+      <div className="absolute top-14 left-3 right-3 md:top-3 md:left-auto md:right-3 md:w-72 z-[201] flex flex-col gap-1.5">
         <LocationSearchBar
           query={locationSearch.query}
           results={locationSearch.results}
