@@ -7,7 +7,7 @@ const { createClient } = require('@supabase/supabase-js')
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-const SHARD_TOTAL = 10          // 전체 10묶음
+const SHARD_TOTAL = 30          // 전체 30묶음 (3일 × 하루 10회)
 const SHARD_WINDOW_MINS = 144   // 24 * 60 / 10 = 하루를 144분 단위로 분할
 const CONCURRENCY = 20          // 동시 요청 수
 const TIMEOUT_MS = 10000        // 요청 타임아웃 10초
@@ -21,14 +21,21 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 // ── 샤드 결정 ────────────────────────────────────────────────────────────────
-// SHARD_INDEX 환경변수가 있으면 사용, 없으면 현재 UTC 시간 기반 자동 계산
+// SHARD_INDEX 환경변수가 있으면 사용, 없으면 날짜+시간 기반 자동 계산
+//
+// shardIndex = dayOfCycle(0~2) × 10 + timeSlot(0~9)
+//   dayOfCycle : UTC 일련번호 % 3  → 3일 주기
+//   timeSlot   : floor(UTC분 / 144) % 10  → 하루를 144분 단위로 10분할
 
 function getShardIndex() {
   const envShard = process.env.SHARD_INDEX
   if (envShard !== undefined && envShard !== '') return parseInt(envShard, 10)
   const now = new Date()
+  const utcDayNumber = Math.floor(now.getTime() / (1000 * 60 * 60 * 24))
+  const dayOfCycle = utcDayNumber % 3
   const minuteOfDay = now.getUTCHours() * 60 + now.getUTCMinutes()
-  return Math.floor(minuteOfDay / SHARD_WINDOW_MINS) % SHARD_TOTAL
+  const timeSlot = Math.floor(minuteOfDay / SHARD_WINDOW_MINS) % 10
+  return dayOfCycle * 10 + timeSlot
 }
 
 // ── HTTP 헬퍼 ───────────────────────────────────────────────────────────────
