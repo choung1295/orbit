@@ -10,7 +10,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const SHARD_TOTAL = 30          // 전체 30묶음 (3일 × 하루 10회)
 const SHARD_WINDOW_MINS = 144   // 24 * 60 / 10 = 하루를 144분 단위로 분할
 const CONCURRENCY = 20          // 동시 요청 수
-const TIMEOUT_MS = 10000        // 요청 타임아웃 10초
+const TIMEOUT_MS = 15000        // 요청 타임아웃 15초
 const UPSERT_CHUNK = 100
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
