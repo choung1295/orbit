@@ -531,7 +531,17 @@ export default function CctvMap() {
     if (!navigator.geolocation) return
     setLocationLoading(true)
     navigator.geolocation.getCurrentPosition(
-      pos => { setMyLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setLocationLoading(false) },
+      pos => {
+        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+        setMyLocation(loc)
+        setLocationLoading(false)
+        // useEffect 대기 없이 콜백에서 직접 지도 이동 (모바일 비동기 타이밍 보장)
+        if (mapInstanceRef.current) {
+          const kakaoPos = new window.kakao.maps.LatLng(loc.lat, loc.lng)
+          mapInstanceRef.current.setLevel(5)
+          mapInstanceRef.current.setCenter(kakaoPos)
+        }
+      },
       () => setLocationLoading(false),
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     )
