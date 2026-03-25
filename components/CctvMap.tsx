@@ -102,6 +102,7 @@ export default function CctvMap() {
   // 모바일 가로 회전 시에만 전체화면 전환 (데스크탑은 항상 landscape라 제외)
   const [isLandscape, setIsLandscape] = useState(false)
   const [cctvStatusMap, setCctvStatusMap] = useState<Record<string, string>>({})
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   useEffect(() => {
     const mq = window.matchMedia('(orientation: landscape) and (max-width: 767px)')
     const handler = (e: MediaQueryListEvent | MediaQueryList) => setIsLandscape(e.matches)
@@ -568,6 +569,7 @@ export default function CctvMap() {
 
   const handleSearchClear = useCallback(() => {
     locationSearch.clear()
+    setMobileSearchOpen(false)
   }, [locationSearch])
 
   // ── 도시교통 CCTV 클러스터러 ─────────────────────────────────────────
@@ -641,16 +643,48 @@ export default function CctvMap() {
         교통정보 © ITS · UTIC
       </div>
 
-      {/* ── 위치 검색 (모바일: 메뉴바 아래 전체 너비 / 데스크탑: 우상단 고정) ── */}
-      <div className="absolute top-14 left-3 right-3 md:top-3 md:left-auto md:right-3 md:w-72 z-[201] flex flex-col gap-1.5">
-        <LocationSearchBar
-          query={locationSearch.query}
-          results={locationSearch.results}
-          selectedPoint={locationSearch.selectedPoint}
-          onQueryChange={locationSearch.setQuery}
-          onSelect={handleLocationSelect}
-          onClear={handleSearchClear}
-        />
+      {/* ── 모바일 전용 🔍 버튼 (우측 중간 고정, 검색창 닫혔을 때) ── */}
+      {!mobileSearchOpen && (
+        <button
+          onClick={() => setMobileSearchOpen(true)}
+          className="md:hidden absolute right-3 top-1/2 -translate-y-1/2 z-[201] w-10 h-10 bg-white rounded-full shadow-[0_2px_14px_rgba(0,0,0,0.28)] flex items-center justify-center active:scale-95 transition-transform"
+          aria-label="위치 검색"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </button>
+      )}
+
+      {/* ── 위치 검색 패널 (모바일: 열렸을 때만 / 데스크탑: 항상) ── */}
+      <div className={[
+        'absolute z-[201] flex flex-col gap-1.5',
+        'top-14 left-3 right-3',
+        'md:top-3 md:left-auto md:right-3 md:w-72',
+        mobileSearchOpen ? 'flex' : 'hidden md:flex',
+      ].join(' ')}>
+        {/* 검색 입력창 + 모바일 닫기 버튼 */}
+        <div className="flex items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <LocationSearchBar
+              query={locationSearch.query}
+              results={locationSearch.results}
+              selectedPoint={locationSearch.selectedPoint}
+              onQueryChange={locationSearch.setQuery}
+              onSelect={handleLocationSelect}
+              onClear={handleSearchClear}
+            />
+          </div>
+          <button
+            onClick={() => { setMobileSearchOpen(false); locationSearch.clear() }}
+            className="md:hidden flex-shrink-0 w-9 h-[34px] bg-white rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.18)] border border-black/10 flex items-center justify-center active:scale-95 transition-transform"
+            aria-label="검색창 닫기"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
 
         {/* 검색 결과 선택 후: 선택 위치 + 주변 CCTV */}
         {locationSearch.selectedPoint && (
