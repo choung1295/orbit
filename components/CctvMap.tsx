@@ -766,7 +766,7 @@ export default function CctvMap() {
 
               {/* CCTV 드롭다운 */}
               {showCctvDropdown && (
-                <div className="absolute top-full left-0 mt-1 bg-white border border-black/10 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.15)] overflow-hidden z-[210] min-w-[110px]">
+                <div className="absolute top-full left-4 mt-1 bg-white border border-black/10 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.15)] overflow-hidden z-[210] min-w-[110px]">
                   <button
                     onClick={() => toggleLayer('urban-cctv')}
                     className={['flex items-center gap-2 w-full px-3 py-2 text-xs font-medium transition-colors',
@@ -779,7 +779,7 @@ export default function CctvMap() {
                     className={['flex items-center gap-2 w-full px-3 py-2 text-xs font-medium transition-colors',
                       cityActive ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'].join(' ')}>
                     <span className={['w-2 h-2 rounded-full flex-shrink-0', cityActive ? 'bg-blue-500' : 'bg-gray-300'].join(' ')} />
-                    시내
+                    시내교통
                   </button>
                 </div>
               )}
