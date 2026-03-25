@@ -7,10 +7,11 @@ import {
   CctvItem, CityCctvItem,
   getCctvName, getCctvLat, getCctvLng, getCctvUrl,
   getCctvMarkerImg, getCctvMarkerSize, getCctvHitSize,
-  getCityCctvMarkerImg, buildCityCctvStreamUrl,
+  getCityCctvMarkerImg, getCityCctvStatusMarkerImg, buildCityCctvStreamUrl,
   isVideoUrl, isImageUrl,
   CLUSTER_STYLES, CITY_CLUSTER_STYLES,
 } from './cctv/cctvUtils'
+import { createClient } from '@/lib/supabase/client'
 import { useRoute } from './route/useRoute'
 import { useCctvFilter } from './cctv/useCctvFilter'
 import RouteLayer from './map/RouteLayer'
@@ -92,6 +93,7 @@ export default function CctvMap() {
   const cityFetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const locationMemoryRef = useRef(true)
   const cctvDropdownRef = useRef<HTMLDivElement>(null)
+  const cctvStatusLoadedRef = useRef(false)
   const popupHistoryPushedRef = useRef(false)
   const popstateFromCodeRef = useRef(false)  // 코드가 호출한 history.go/back() popstate 식별용
   const preMountHistoryLengthRef = useRef(0) // 카카오 SDK 초기화 이전 history.length 기준점
@@ -99,6 +101,7 @@ export default function CctvMap() {
   // ── 가로/세로 방향 감지 (시내 CCTV 전체화면 전환용) ─────────────────────
   // 모바일 가로 회전 시에만 전체화면 전환 (데스크탑은 항상 landscape라 제외)
   const [isLandscape, setIsLandscape] = useState(false)
+  const [cctvStatusMap, setCctvStatusMap] = useState<Record<string, string>>({})
   useEffect(() => {
     const mq = window.matchMedia('(orientation: landscape) and (max-width: 767px)')
     const handler = (e: MediaQueryListEvent | MediaQueryList) => setIsLandscape(e.matches)
@@ -420,6 +423,23 @@ export default function CctvMap() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMapReady, activeLayers, zoomLevel])
 
+  // ── 시내교통 CCTV 점검 상태 로딩 (레이어 최초 활성화 시 1회) ─────────────
+  useEffect(() => {
+    if (!activeLayers.has('city-cctv') || cctvStatusLoadedRef.current) return
+    cctvStatusLoadedRef.current = true
+    const supabase = createClient()
+    supabase
+      .from('cctv_status')
+      .select('cctv_id, status')
+      .limit(10000)
+      .then(({ data }: { data: { cctv_id: string; status: string }[] | null }) => {
+        if (!data) return
+        const map: Record<string, string> = {}
+        data.forEach((row: { cctv_id: string; status: string }) => { map[row.cctv_id] = row.status })
+        setCctvStatusMap(map)
+      })
+  }, [activeLayers])
+
   // ── 시내교통 CCTV 로딩 (줌인 시에만 실제 데이터, 디바운스) ──────────────
   useEffect(() => {
     if (!activeLayers.has('city-cctv') || !mapBounds) return
@@ -578,16 +598,19 @@ export default function CctvMap() {
     const size = getCctvMarkerSize(zoomLevel)
     const hitSize = getCctvHitSize(size)
     const hitHalf = Math.round(hitSize / 2)
-    const markerImage = new window.kakao.maps.MarkerImage(getCityCctvMarkerImg(size), new window.kakao.maps.Size(hitSize, hitSize), { offset: new window.kakao.maps.Point(hitHalf, hitHalf) })
+    const normalImage = new window.kakao.maps.MarkerImage(getCityCctvMarkerImg(size), new window.kakao.maps.Size(hitSize, hitSize), { offset: new window.kakao.maps.Point(hitHalf, hitHalf) })
+    const redImage = new window.kakao.maps.MarkerImage(getCityCctvStatusMarkerImg(size, '점검중'), new window.kakao.maps.Size(hitSize, hitSize), { offset: new window.kakao.maps.Point(hitHalf, hitHalf) })
     const markers: any[] = []
     cityCctvList.forEach(item => {
       if (!item.XCOORD || !item.YCOORD) return
-      const marker = new window.kakao.maps.Marker({ position: new window.kakao.maps.LatLng(item.YCOORD, item.XCOORD), image: markerImage, title: item.CCTVNAME })
+      const status = cctvStatusMap[item.CCTVID] ?? ''
+      const image = status === '점검중' ? redImage : normalImage
+      const marker = new window.kakao.maps.Marker({ position: new window.kakao.maps.LatLng(item.YCOORD, item.XCOORD), image, title: item.CCTVNAME })
       window.kakao.maps.event.addListener(marker, 'click', () => openCityCctv(item))
       markers.push(marker)
     })
     cityCctvClustererRef.current = new window.kakao.maps.MarkerClusterer({ map: mapInstanceRef.current, averageCenter: true, minLevel: 6, disableClickZoom: false, markers, styles: CITY_CLUSTER_STYLES })
-  }, [isMapReady, cityCctvList, zoomLevel, activeLayers, openCityCctv])
+  }, [isMapReady, cityCctvList, zoomLevel, activeLayers, cctvStatusMap, openCityCctv])
 
   const urbanActive = activeLayers.has('urban-cctv')
   const cityActive = activeLayers.has('city-cctv')
@@ -955,14 +978,28 @@ export default function CctvMap() {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                 </button>
               </div>
-              <iframe
-                src={buildCityCctvStreamUrl(selectedCityItem, mapBounds)}
-                className="w-full rounded-lg bg-black"
-                style={{ height: '200px', border: 'none' }}
-                title={selectedCityItem.CCTVNAME}
-                allowFullScreen
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-fullscreen"
-              />
+              {cctvStatusMap[selectedCityItem.CCTVID] === '점검중' ? (
+                <div className="py-6 text-center rounded-lg bg-red-950/40 border border-red-500/20">
+                  <p className="text-red-400 text-sm font-semibold">현재 점검 중입니다</p>
+                  <p className="text-gray-500 text-[10px] mt-1">일시적으로 영상이 제공되지 않습니다</p>
+                </div>
+              ) : cctvStatusMap[selectedCityItem.CCTVID] === '크롬안내' ? (
+                <div className="py-6 text-center rounded-lg bg-amber-950/40 border border-amber-500/20">
+                  <p className="text-amber-400 text-sm font-semibold">Chrome에서 재생이 지원되지 않습니다</p>
+                  <p className="text-gray-500 text-[10px] mt-1 leading-relaxed">이 CCTV는 Chrome 비호환 스트림 형식입니다.<br />Edge 또는 Safari에서 이용해 주세요.</p>
+                  <a href={buildCityCctvStreamUrl(selectedCityItem, mapBounds)} target="_blank" rel="noopener noreferrer"
+                    className="inline-block mt-2 text-[10px] text-amber-400 hover:text-amber-300 underline">새창으로 시도하기</a>
+                </div>
+              ) : (
+                <iframe
+                  src={buildCityCctvStreamUrl(selectedCityItem, mapBounds)}
+                  className="w-full rounded-lg bg-black"
+                  style={{ height: '200px', border: 'none' }}
+                  title={selectedCityItem.CCTVNAME}
+                  allowFullScreen
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-fullscreen"
+                />
+              )}
               <div className="flex items-center justify-between mt-2">
                 <p className="text-[10px] text-gray-600">영상 재생은 60초만 제공됩니다 (UTIC)</p>
                 <a href={buildCityCctvStreamUrl(selectedCityItem, mapBounds)} target="_blank" rel="noopener noreferrer"

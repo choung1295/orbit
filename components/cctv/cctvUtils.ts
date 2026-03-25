@@ -132,6 +132,17 @@ export function getCityCctvMarkerImg(size: number): string {
   )
 }
 
+/** 점검중 여부에 따라 빨간색(#EF4444) 또는 기본 teal(#14b8a6) 마커 반환 */
+export function getCityCctvStatusMarkerImg(size: number, status: string): string {
+  const fill = status === '점검중' ? '#EF4444' : '#14b8a6'
+  const hit = Math.max(size, MIN_HIT_PX)
+  const cx = Math.round(hit / 2)
+  const r = Math.round(size / 2) - 1
+  return 'data:image/svg+xml;base64,' + btoa(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${hit}" height="${hit}"><circle cx="${cx}" cy="${cx}" r="${r}" fill="${fill}" stroke="#ffffff" stroke-width="1.5"/></svg>`
+  )
+}
+
 export const CITY_CLUSTER_STYLES: any[] = [
   { width: '44px', height: '44px', background: '#0d9488', border: '2px solid rgba(255,255,255,0.9)', borderRadius: '50%', textAlign: 'center', lineHeight: '40px', fontSize: '13px', fontWeight: 'bold', color: '#FFFFFF', boxShadow: '0 2px 6px rgba(0,0,0,0.35)' },
   { width: '52px', height: '52px', background: '#0f766e', border: '2px solid rgba(255,255,255,0.9)', borderRadius: '50%', textAlign: 'center', lineHeight: '48px', fontSize: '14px', fontWeight: 'bold', color: '#FFFFFF', boxShadow: '0 2px 8px rgba(0,0,0,0.4)' },
