@@ -10,7 +10,7 @@ interface SplashIntroProps {
 
 export default function SplashIntro({
     onlyOnce = false,
-    duration = 1900,
+    duration = 2800,
 }: SplashIntroProps) {
     const [visible, setVisible] = useState(false);
     const [fading, setFading] = useState(false);
@@ -24,9 +24,10 @@ export default function SplashIntro({
 
         setVisible(true);
 
+        // 애니메이션 종료(~1s) 후 1.3s 잔상 → 총 2.3s 지점에서 페이드 시작
         const fadeTimer = setTimeout(() => {
             setFading(true);
-        }, duration - 300);
+        }, duration - 500);
 
         const removeTimer = setTimeout(() => {
             setVisible(false);
@@ -53,15 +54,16 @@ export default function SplashIntro({
                 justifyContent: "center",
                 background: "#0a1a12",
                 opacity: fading ? 0 : 1,
-                transition: "opacity 0.38s cubic-bezier(0.4, 0, 0.2, 1)",
+                transition: "opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
                 pointerEvents: "none",
             }}
         >
-            {/* 아이콘 */}
+            {/* 아이콘 — 텍스트와 함께 동시에 클로즈업 */}
             <div
                 style={{
-                    animation: "splash-icon-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+                    animation: "splash-icon-zoom 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards",
                     opacity: 0,
+                    transform: "scale(0.25)",
                 }}
             >
                 <Image
@@ -83,7 +85,7 @@ export default function SplashIntro({
                 />
             </div>
 
-            {/* 텍스트 — O 중앙에서 클로즈업 */}
+            {/* 텍스트 — O 중앙에서 아이콘과 동시에 클로즈업 */}
             <div style={{ marginTop: "20px", lineHeight: 1 }}>
                 <span
                     style={{
@@ -93,8 +95,7 @@ export default function SplashIntro({
                         fontSize: "clamp(36px, 8vw, 47px)",
                         letterSpacing: "0.12em",
                         color: "#e2f0e8",
-                        // 시작: O 중앙 좌표(위쪽)에서 아주 작게, 끝: 정상 위치 & 크기
-                        animation: "splash-text-zoom 0.78s cubic-bezier(0.22, 1, 0.36, 1) 0.28s forwards",
+                        animation: "splash-text-zoom 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.08s forwards",
                         opacity: 0,
                         transform: "translateY(-65px) scale(0.05)",
                     }}
@@ -116,14 +117,16 @@ export default function SplashIntro({
             />
 
             <style>{`
-        @keyframes splash-icon-in {
-          from { opacity: 0; transform: scale(0.72); }
-          to   { opacity: 1; transform: scale(1); }
+        @keyframes splash-icon-zoom {
+          0%   { opacity: 0; transform: scale(0.25); }
+          40%  { opacity: 1; }
+          75%  { transform: scale(1.06); }
+          100% { opacity: 1; transform: scale(1); }
         }
         @keyframes splash-text-zoom {
           0%   { opacity: 0;   transform: translateY(-65px) scale(0.05); }
-          30%  { opacity: 1; }
-          70%  { transform: translateY(3px) scale(1.04); }
+          35%  { opacity: 1; }
+          75%  { transform: translateY(3px) scale(1.05); }
           100% { opacity: 1;   transform: translateY(0) scale(1); }
         }
         @keyframes splash-line {
