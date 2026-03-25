@@ -112,7 +112,7 @@ export default function RoutePanel({
   return (
     // 모바일: w-[155px], PC: w-[220px]
     <div
-      className="absolute top-[60px] left-3 md:top-[60px] md:left-3 z-[100] w-[155px] md:w-[220px]"
+      className="absolute top-[95px] left-3 md:top-[60px] md:left-3 z-[100] w-[155px] md:w-[220px]"
       style={{ pointerEvents: 'auto' }}
     >
       {/* ── 메인 카드 ── */}
