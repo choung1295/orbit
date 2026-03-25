@@ -1,15 +1,44 @@
 name: CCTV Status Check
 
+# 하루 10회 실행 (144분 간격 = 2시간 24분)
+# 시내 CCTV를 10묶음으로 나눠 샤드별 순환 점검
+# 샤드 자동 계산: floor(UTC분 / 144) % 10
+#
+# UTC 스케줄 → KST (UTC+9)
+#   00:00 → 09:00  shard 0
+#   02:24 → 11:24  shard 1
+#   04:48 → 13:48  shard 2
+#   07:12 → 16:12  shard 3
+#   09:36 → 18:36  shard 4
+#   12:00 → 21:00  shard 5
+#   14:24 → 23:24  shard 6
+#   16:48 → 01:48  shard 7
+#   19:12 → 04:12  shard 8
+#   21:36 → 06:36  shard 9
+
 on:
   schedule:
-    - cron: '0 21 * * *'  # KST 06:00
-    - cron: '0 9 * * *'   # KST 18:00
+    - cron: '0 0 * * *'    # KST 09:00  shard 0
+    - cron: '24 2 * * *'   # KST 11:24  shard 1
+    - cron: '48 4 * * *'   # KST 13:48  shard 2
+    - cron: '12 7 * * *'   # KST 16:12  shard 3
+    - cron: '36 9 * * *'   # KST 18:36  shard 4
+    - cron: '0 12 * * *'   # KST 21:00  shard 5
+    - cron: '24 14 * * *'  # KST 23:24  shard 6
+    - cron: '48 16 * * *'  # KST 01:48  shard 7
+    - cron: '12 19 * * *'  # KST 04:12  shard 8
+    - cron: '36 21 * * *'  # KST 06:36  shard 9
   workflow_dispatch:
+    inputs:
+      shard_index:
+        description: '샤드 인덱스 (0-9, 미입력 시 시간 기반 자동 계산)'
+        required: false
+        default: ''
 
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -21,8 +50,9 @@ jobs:
       - name: 의존성 설치
         run: npm ci
 
-      - name: CCTV 상태 점검
+      - name: 시내 CCTV 상태 점검
         run: node scripts/cctv-check.js
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SHARD_INDEX: ${{ github.event.inputs.shard_index }}

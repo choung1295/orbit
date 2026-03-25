@@ -7,8 +7,10 @@ const { createClient } = require('@supabase/supabase-js')
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-const CONCURRENCY = 20
-const TIMEOUT_MS = 8000
+const SHARD_TOTAL = 10          // 전체 10묶음
+const SHARD_WINDOW_MINS = 144   // 24 * 60 / 10 = 하루를 144분 단위로 분할
+const CONCURRENCY = 20          // 동시 요청 수
+const TIMEOUT_MS = 10000        // 요청 타임아웃 10초
 const UPSERT_CHUNK = 100
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
@@ -17,6 +19,17 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
+// ── 샤드 결정 ────────────────────────────────────────────────────────────────
+// SHARD_INDEX 환경변수가 있으면 사용, 없으면 현재 UTC 시간 기반 자동 계산
+
+function getShardIndex() {
+  const envShard = process.env.SHARD_INDEX
+  if (envShard !== undefined && envShard !== '') return parseInt(envShard, 10)
+  const now = new Date()
+  const minuteOfDay = now.getUTCHours() * 60 + now.getUTCMinutes()
+  return Math.floor(minuteOfDay / SHARD_WINDOW_MINS) % SHARD_TOTAL
+}
 
 // ── HTTP 헬퍼 ───────────────────────────────────────────────────────────────
 
@@ -141,15 +154,16 @@ async function checkBatch(cctvs) {
 // ── 메인 ────────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log('=== CCTV 상태 점검 시작 ===')
+  const shardIndex = getShardIndex()
+  console.log(`=== 시내 CCTV 상태 점검 · 샤드 ${shardIndex}/${SHARD_TOTAL - 1} ===`)
 
-  // 1. UTIC CCTV 목록 조회
-  const body = new URLSearchParams({
+  // 1. UTIC 시내 CCTV 목록 조회
+  const postBody = new URLSearchParams({
     MIN_X: '124.0', MIN_Y: '33.0', MAX_X: '132.0', MAX_Y: '43.0',
   }).toString()
 
-  console.log('[ 1 ] UTIC CCTV 목록 조회 중...')
-  const { ok, data } = await httpPost('http://www.utic.go.kr/map/mapcctv.do', body)
+  console.log('[ 1 ] UTIC 시내 CCTV 목록 조회 중...')
+  const { ok, data } = await httpPost('http://www.utic.go.kr/map/mapcctv.do', postBody)
   if (!ok) {
     console.error('[ERR] UTIC API 호출 실패')
     process.exit(1)
@@ -168,18 +182,30 @@ async function main() {
     process.exit(1)
   }
 
-  const valid = cctvList.filter(c => c.CCTVID)
-  console.log(`[ 1 ] 전체 ${cctvList.length}건, 유효 ${valid.length}건`)
+  // CCTVID 기준으로 정렬 → 실행마다 동일한 순서 보장
+  const valid = cctvList
+    .filter(c => c.CCTVID)
+    .sort((a, b) => String(a.CCTVID).localeCompare(String(b.CCTVID)))
+
+  // 담당 샤드 분리: index % SHARD_TOTAL === shardIndex
+  const shard = valid.filter((_, i) => i % SHARD_TOTAL === shardIndex)
+
+  console.log(`[ 1 ] 전체 ${valid.length}건 → 샤드 ${shardIndex}: ${shard.length}건`)
+
+  if (shard.length === 0) {
+    console.log('[ 1 ] 처리 대상 없음, 종료')
+    return
+  }
 
   // 2. 병렬 상태 체크
-  console.log(`[ 2 ] 상태 체크 시작 (동시 ${CONCURRENCY}건)...`)
+  console.log(`[ 2 ] 상태 체크 시작 (동시 ${CONCURRENCY}건, 타임아웃 ${TIMEOUT_MS / 1000}초)...`)
   const results = []
 
-  for (let i = 0; i < valid.length; i += CONCURRENCY) {
-    const batch = valid.slice(i, i + CONCURRENCY)
+  for (let i = 0; i < shard.length; i += CONCURRENCY) {
+    const batch = shard.slice(i, i + CONCURRENCY)
     const batchResults = await checkBatch(batch)
     results.push(...batchResults)
-    process.stdout.write(`\r      진행: ${results.length}/${valid.length}`)
+    process.stdout.write(`\r      진행: ${results.length}/${shard.length}`)
   }
 
   console.log()
