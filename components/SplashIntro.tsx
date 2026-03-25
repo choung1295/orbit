@@ -10,7 +10,7 @@ interface SplashIntroProps {
 
 export default function SplashIntro({
     onlyOnce = false,
-    duration = 1100,
+    duration = 1900,
 }: SplashIntroProps) {
     const [visible, setVisible] = useState(false);
     const [fading, setFading] = useState(false);
@@ -51,32 +51,28 @@ export default function SplashIntro({
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                // backdrop-filter 제거 → GPU 합성 레이어 생성 차단
                 background: "#0a1a12",
                 opacity: fading ? 0 : 1,
                 transition: "opacity 0.38s cubic-bezier(0.4, 0, 0.2, 1)",
                 pointerEvents: "none",
-                // will-change 제거 → GPU 레이어 잔상 방지
             }}
         >
             {/* 아이콘 */}
             <div
                 style={{
-                    animation: "splash-icon-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+                    animation: "splash-icon-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards",
                     opacity: 0,
-                    // will-change 제거
                 }}
             >
                 <Image
                     src="/icon-512x512.png"
                     alt="Orbit AI"
-                    width={64}
-                    height={64}
+                    width={72}
+                    height={72}
                     priority
                     style={{
-                        borderRadius: "16px",
+                        borderRadius: "18px",
                         display: "block",
-                        // filter: drop-shadow 제거 → GPU 합성 레이어 차단
                     }}
                     onError={(e) => {
                         const target = e.target as HTMLImageElement;
@@ -87,14 +83,8 @@ export default function SplashIntro({
                 />
             </div>
 
-            {/* 텍스트 */}
-            <div
-                style={{
-                    marginTop: "20px",
-                    overflow: "hidden",
-                    lineHeight: 1,
-                }}
-            >
+            {/* 텍스트 — O 중앙에서 클로즈업 */}
+            <div style={{ marginTop: "20px", lineHeight: 1 }}>
                 <span
                     style={{
                         display: "block",
@@ -103,17 +93,17 @@ export default function SplashIntro({
                         fontSize: "clamp(36px, 8vw, 47px)",
                         letterSpacing: "0.12em",
                         color: "#e2f0e8",
-                        animation: "splash-text-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0s forwards",
+                        // 시작: O 중앙 좌표(위쪽)에서 아주 작게, 끝: 정상 위치 & 크기
+                        animation: "splash-text-zoom 0.78s cubic-bezier(0.22, 1, 0.36, 1) 0.28s forwards",
                         opacity: 0,
-                        transform: "translateX(-14px)",
-                        // will-change 제거
+                        transform: "translateY(-65px) scale(0.05)",
                     }}
                 >
                     Orbit AI
                 </span>
             </div>
 
-            {/* 하단 진행 라인 - will-change 제거 */}
+            {/* 하단 진행 라인 */}
             <div
                 style={{
                     position: "absolute",
@@ -127,12 +117,14 @@ export default function SplashIntro({
 
             <style>{`
         @keyframes splash-icon-in {
-          from { opacity: 0; transform: scale(0.82) translateY(6px); }
-          to   { opacity: 1; transform: scale(1) translateY(0); }
+          from { opacity: 0; transform: scale(0.72); }
+          to   { opacity: 1; transform: scale(1); }
         }
-        @keyframes splash-text-in {
-          from { opacity: 0; transform: translateX(-14px); }
-          to   { opacity: 1; transform: translateX(0); }
+        @keyframes splash-text-zoom {
+          0%   { opacity: 0;   transform: translateY(-65px) scale(0.05); }
+          30%  { opacity: 1; }
+          70%  { transform: translateY(3px) scale(1.04); }
+          100% { opacity: 1;   transform: translateY(0) scale(1); }
         }
         @keyframes splash-line {
           from { width: 0%; }
