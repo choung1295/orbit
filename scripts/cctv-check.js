@@ -146,15 +146,27 @@ function determineStatus(body, code, error) {
   return '정상'
 }
 
+let sampleLogged = false
+
 async function checkBatch(cctvs) {
   const checkedAt = new Date().toISOString()
   return Promise.all(cctvs.map(async (cctv) => {
-    const { code, body, error } = await httpGet(buildStreamUrl(cctv))
-    return {
-      cctv_id: cctv.CCTVID,
-      status: determineStatus(body, code, error),
-      checked_at: checkedAt,
+    const url = buildStreamUrl(cctv)
+    const { code, body, error } = await httpGet(url)
+    const status = determineStatus(body, code, error)
+
+    // 첫 3건 샘플 로그 (정상1 + 점검중1 + 아무거나1)
+    if (!sampleLogged) {
+      sampleLogged = true
+      console.log('\n── 샘플 응답 ──')
+      console.log('URL:', url.slice(0, 120) + '...')
+      console.log('HTTP:', code, '| error:', error)
+      console.log('판정:', status)
+      console.log('body(500자):', (body || '').slice(0, 500))
+      console.log('── 샘플 끝 ──\n')
     }
+
+    return { cctv_id: cctv.CCTVID, status, checked_at: checkedAt }
   }))
 }
 
